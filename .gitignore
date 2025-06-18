@@ -192,3 +192,49 @@ cython_debug/
 #  refer to https://docs.cursor.com/context/ignore-files
 .cursorignore
 .cursorindexingignore
+
+# Django Tailwind static build
+theme/static_src/
+theme/static/
+
+# Tailwind/NPM/Yarn junk
+node_modules/
+package-lock.json
+yarn.lock
+.npm/
+.npmrc
+
+# Tailwind config/temp files
+*.css.map
+*.tmp
+*.cache/
+tailwind.config.js
+postcss.config.js
+
+# Local dev settings
+*.env
+.env.*
+
+# SQLite backups
+*.sqlite3
+*.sqlite3-journal
+
+# Poetry cache
+.cache/pypoetry/
+# poetry.lock  # <-- à commenter ou non selon si tu veux le versionner
+
+# VSCode settings
+.vscode/
+
+# PyCharm settings (à ajouter si certains utilisent PyCharm)
+.idea/
+
+# Tests / coverage
+coverage/
+*.cover
+htmlcov/
+.pytest_cache/
+
+# Logs
+*.log
+logs/
