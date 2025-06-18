@@ -1,0 +1,36 @@
+[tool.poetry]
+name = "aura"
+version = "0.1.0"
+description = "Assistant intelligent pour la surveillance hospitalière (résumés, signaux faibles, entités médicales)"
+authors = [
+    "Nicolas Cassonnet <nicolas.cassonnet@wanadoo.fr>",  # GitHub: NicoCasso
+    "Wael Bensoltana <wael.bensoltana@gmail.com>",       # GitHub: wbensolt
+    "Dorothée Catry <catrydorothee@gmail.com>"           # GitHub: DorotheeCatry
+]
+license = "MIT"
+readme = "README.md"
+homepage = "https://github.com/DorotheeCatry/aura"
+repository = "https://github.com/DorotheeCatry/aura"
+keywords = ["django", "nlp", "medtech", "transformers", "bert", "résumé médical"]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+django = "^5.0.0"
+python-decouple = "^3.8"
+# Ajouts potentiels :
+# psycopg2-binary = "^2.9"     # PostgreSQL
+# channels = "^4.0"            # WebSockets
+# transformers = "*"           # NLP
+# torch = "*"                  # Si modèle local BERT
+django-tailwind = {extras = ["reload"], version = "^4.0.1"}
+
+[tool.poetry.group.dev.dependencies]
+black = "^24.3.0"
+flake8 = "^7.0.0"
+isort = "^5.13.2"
+ipython = "^8.24.0"
+pytest-django = "^4.8.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
