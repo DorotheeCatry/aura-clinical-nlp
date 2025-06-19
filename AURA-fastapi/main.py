@@ -1,27 +1,40 @@
 from fastapi import FastAPI
-from text_request import TextRequest
-from mt5_translator import MT5Translator
-from bioBERT_manager import BioBERTManager
+from json_format_requests_and_responses import AuraRequest, AuraResponse, AvailableModelsResponse
+from pre_trained_models import GPT2Manager, MedicalMT5Manager, MistralManager
+
 
 # run with : uvicorn main:app --reload 
 # then open http://127.0.0.1:8000 
 app = FastAPI()
 
+def available_models() -> list[str] :
+    available_models = []
+    available_models.append(GPT2Manager())
+    available_models.append(MedicalMT5Manager())
+    #available_models.append(MistralManager() ) # too long to load
+    available_models : list[str] = available_models
+    return available_models
+
+@app.get("/get_available_models")
+async def get_available_models() -> AvailableModelsResponse:
+
+    response_list : list[str] = []
+    for model in get_available_models() :
+        response_list.append(model.model_name)
+
+    json_response = AvailableModelsResponse(model_names= response_list)
+    return json_response
+
 @app.post("/process_text")
-async def process_text(request: TextRequest):
+async def process_text(request: AuraRequest) -> AuraResponse:
+    selected = None
+    for model in get_available_models() :
+        if model.model_name == request.model_name : 
+            selected = model
     
-    # 1. Traduction FR -> EN
-    translator = MT5Translator()
-    text_en = translator.translate_mt5(request.text, source_lang="fr", target_lang="en")
+    response_text = model.generate_fr(request.question_text)
 
-    # 2. Traitement BioBERT sur l'anglais (exemple: embeddings CLS)
-    bioBERT_manager  = BioBERTManager()
-    response_en = bioBERT_manager.process(text_en)
+    return AuraResponse(model_name= model.model_name, response=response_text)
 
-    # 3. Traduction EN -> FR
-    response_fr = translator.translate_mt5(response_en, source_lang="en", target_lang="fr")
 
-    return {"input_text_fr": request.text,
-            "translated_en": text_en,
-            "biobert_response_en": response_en,
-            "response_fr": response_fr}
+   
