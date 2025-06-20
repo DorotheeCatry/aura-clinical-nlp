@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from json_format_requests_and_responses import AuraRequest, AuraResponse, AvailableModelsResponse
-from pre_trained_models import GPT2Manager, MedicalMT5Manager, MistralManager
+from pre_trained_models import GPT2Manager, FacebookMBartManager, MedicalMT5Manager, MistralManager
 
 
 # run with : uvicorn main:app --reload 
@@ -10,8 +10,9 @@ app = FastAPI()
 def available_models() -> list[str] :
     available_models = []
     available_models.append(GPT2Manager())
-    available_models.append(MedicalMT5Manager())
-    #available_models.append(MistralManager() ) # too long to load
+    available_models.append(FacebookMBartManager())
+    #available_models.append(MedicalMT5Manager()) # inexploitable a cause des balises <input_id>
+    #available_models.append(MistralManager() ) # too long to load ??
     available_models : list[str] = available_models
     return available_models
 
