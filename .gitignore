@@ -192,3 +192,17 @@ cython_debug/
 #  refer to https://docs.cursor.com/context/ignore-files
 .cursorignore
 .cursorindexingignore
+
+venv_nlp
+.env
+
+notebooks/.ipynb_checkpoints/
+notebooks/data
+
+.ipynb_checkpoints/
+poetry.lock
+
+*.log
+*.bak
+*.tmp
+.cache/
