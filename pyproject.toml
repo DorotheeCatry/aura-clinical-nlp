@@ -13,6 +13,10 @@ homepage = "https://github.com/DorotheeCatry/aura"
 repository = "https://github.com/DorotheeCatry/aura"
 keywords = ["django", "nlp", "medtech", "transformers", "bert", "résumé médical"]
 
+[[tool.poetry.packages]]
+include = "aura_project"
+
+
 [tool.poetry.dependencies]
 python = "^3.10"
 django = "^5.0.0"
