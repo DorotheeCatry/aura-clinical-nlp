@@ -238,3 +238,32 @@ htmlcov/
 # Logs
 *.log
 logs/
+
+
+# Django migrations compilées
+**/migrations/__pycache__/
+
+# Base de données locale
+*.sqlite3
+*.sqlite3-journal
+
+# Fichiers utils ou expérimentaux
+utils.txt
+
+# Fichiers de sessions Django (si activés)
+*.session
+
+# Frontend compilé par Tailwind
+theme/static/
+theme/static_src/
+theme/node_modules/
+theme/.turbo/
+theme/.tailwind-cache/
+theme/postcss.config.js
+theme/tailwind.config.js
+
+# Cache de template Django
+**/*.pyc
+
+# VSCode Workspace (juste au cas où)
+*.code-workspace
