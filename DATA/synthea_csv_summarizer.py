@@ -1,20 +1,31 @@
-import pandas as pd
-import json
-import os
 from pathlib import Path
 from datetime import datetime
-import re
+from typing import List
+from collections import defaultdict
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
+import pandas as pd
+import json
+
+import torch
 
 class SyntheaCSVSummarizer:
     #region init
-    def __init__(self, data_dir):
+    def __init__(self, data_dir, model_name="facebook/bart-large-cnn"):
         self.data_dir = Path(data_dir)
         self.csv_dir = self.data_dir / "csv"
         self.fhir_dir = self.data_dir / "fhir"
-        
-        # Dictionnaires pour mapper les IDs
+
         self.patients = {}
         self.encounters = {}
+
+        # Charger GPT-2
+        print(f"Chargement du modèle {model_name}...")
+        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
+        self.model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
+        self.model.eval()
+        if torch.cuda.is_available():
+            self.model.to("cuda")
+        print("Modèle chargé avec succès.")
     
     #endregion
     #region load_csv_data
@@ -84,94 +95,231 @@ class SyntheaCSVSummarizer:
                     resource = entry.get('resource', {})
                     resource_type = resource.get('resourceType')
                     
-                    # Chercher les DocumentReference (notes cliniques)
-                    if resource_type == 'DocumentReference':
-                        # Vérifier si context existe et est un dictionnaire
-                        context = resource.get('context', {})
-                        if isinstance(context, dict):
-                            encounter = context.get('encounter', {})
+                    match resource_type :
+
+                        # Chercher les DocumentReference (notes cliniques)
+                        case 'DocumentReference':
+                            # Vérifier si context existe et est un dictionnaire
+                            context = resource.get('context', {})
+                            if isinstance(context, dict):
+                                encounter = context.get('encounter', {})
+                                if isinstance(encounter, dict):
+                                    encounter_ref = encounter.get('reference', '')
+                                    if encounter_ref.startswith('Encounter/'):
+                                        encounter_id = encounter_ref.replace('Encounter/', '')
+                                        
+                                        # Extraire le contenu de la note
+                                        content = resource.get('content', [])
+                                        if content and isinstance(content, list) and len(content) > 0:
+                                            attachment = content[0].get('attachment', {}) if isinstance(content[0], dict) else {}
+                                            if isinstance(attachment, dict):
+                                                note_text = attachment.get('data', '')
+                                                if note_text:
+                                                    # Décoder base64 si nécessaire
+                                                    try:
+                                                        import base64
+                                                        decoded_note = base64.b64decode(note_text).decode('utf-8')
+                                                        fhir_notes[encounter_id] = decoded_note
+                                                    except:
+                                                        fhir_notes[encounter_id] = note_text
+                        
+                        # Chercher les DiagnosticReport avec des notes
+                        case 'DiagnosticReport':
+                            encounter = resource.get('encounter', {})
                             if isinstance(encounter, dict):
                                 encounter_ref = encounter.get('reference', '')
                                 if encounter_ref.startswith('Encounter/'):
                                     encounter_id = encounter_ref.replace('Encounter/', '')
                                     
-                                    # Extraire le contenu de la note
-                                    content = resource.get('content', [])
-                                    if content and isinstance(content, list) and len(content) > 0:
-                                        attachment = content[0].get('attachment', {}) if isinstance(content[0], dict) else {}
-                                        if isinstance(attachment, dict):
-                                            note_text = attachment.get('data', '')
-                                            if note_text:
-                                                # Décoder base64 si nécessaire
-                                                try:
-                                                    import base64
-                                                    decoded_note = base64.b64decode(note_text).decode('utf-8')
-                                                    fhir_notes[encounter_id] = decoded_note
-                                                except:
-                                                    fhir_notes[encounter_id] = note_text
-                        
-                    # Chercher les DiagnosticReport avec des notes
-                    elif resource_type == 'DiagnosticReport':
-                        encounter = resource.get('encounter', {})
-                        if isinstance(encounter, dict):
-                            encounter_ref = encounter.get('reference', '')
-                            if encounter_ref.startswith('Encounter/'):
-                                encounter_id = encounter_ref.replace('Encounter/', '')
-                                
-                                conclusion = resource.get('conclusion', '')
-                                if conclusion:
-                                    if encounter_id in fhir_notes:
-                                        fhir_notes[encounter_id] += f"\n[Diagnostic] {conclusion}"
-                                    else:
-                                        fhir_notes[encounter_id] = f"[Diagnostic] {conclusion}"
+                                    conclusion = resource.get('conclusion', '')
+                                    if conclusion:
+                                        if encounter_id in fhir_notes:
+                                            fhir_notes[encounter_id] += f"\n[Diagnostic] {conclusion}"
+                                        else:
+                                            fhir_notes[encounter_id] = f"[Diagnostic] {conclusion}"
                     
-                    # Chercher les Observation avec des notes
-                    elif resource_type == 'Observation':
-                        encounter = resource.get('encounter', {})
-                        if isinstance(encounter, dict):
-                            encounter_ref = encounter.get('reference', '')
-                            if encounter_ref.startswith('Encounter/'):
-                                encounter_id = encounter_ref.replace('Encounter/', '')
+                        # Chercher les Observation avec des notes
+                        case 'Observation':
+                            encounter = resource.get('encounter', {})
+                            if isinstance(encounter, dict):
+                                encounter_ref = encounter.get('reference', '')
+                                if encounter_ref.startswith('Encounter/'):
+                                    encounter_id = encounter_ref.replace('Encounter/', '')
+                                    
+                                    # Chercher des notes dans les composants
+                                    components = resource.get('component', [])
+                                    if isinstance(components, list):
+                                        for comp in components:
+                                            if isinstance(comp, dict) and 'note' in comp:
+                                                notes = comp.get('note', [])
+                                                if isinstance(notes, list) and len(notes) > 0:
+                                                    note_text = notes[0].get('text', '') if isinstance(notes[0], dict) else ''
+                                                    if note_text:
+                                                        if encounter_id in fhir_notes:
+                                                            fhir_notes[encounter_id] += f"\n{note_text}"
+                                                        else:
+                                                            fhir_notes[encounter_id] = note_text
                                 
-                                # Chercher des notes dans les composants
-                                components = resource.get('component', [])
-                                if isinstance(components, list):
-                                    for comp in components:
-                                        if isinstance(comp, dict) and 'note' in comp:
-                                            notes = comp.get('note', [])
-                                            if isinstance(notes, list) and len(notes) > 0:
-                                                note_text = notes[0].get('text', '') if isinstance(notes[0], dict) else ''
+                                    # Chercher des notes directement dans l'observation
+                                    notes = resource.get('note', [])
+                                    if isinstance(notes, list):
+                                        for note in notes:
+                                            if isinstance(note, dict):
+                                                note_text = note.get('text', '')
                                                 if note_text:
                                                     if encounter_id in fhir_notes:
                                                         fhir_notes[encounter_id] += f"\n{note_text}"
                                                     else:
                                                         fhir_notes[encounter_id] = note_text
-                                
-                                # Chercher des notes directement dans l'observation
-                                notes = resource.get('note', [])
-                                if isinstance(notes, list):
-                                    for note in notes:
-                                        if isinstance(note, dict):
-                                            note_text = note.get('text', '')
-                                            if note_text:
-                                                if encounter_id in fhir_notes:
-                                                    fhir_notes[encounter_id] += f"\n{note_text}"
-                                                else:
-                                                    fhir_notes[encounter_id] = note_text
             
             except Exception as e:
                 print(f"Erreur lors du traitement de {json_file}: {e}")
-                # Optionnel : afficher plus de détails pour le débogage
-                # import traceback
-                # traceback.print_exc()
         
         print(f"Extrait {len(fhir_notes)} notes FHIR")
         return fhir_notes
     
     #endregion
+
+    #region group_observations
+    def group_observations(self, observations_df, fhir_notes):
+        """Grouper les observations par patient, date et clinicien - Version vectorisée"""
+        print("Groupement des observations...")
+        
+        # Vérifier que le DataFrame n'est pas vide
+        if observations_df.empty:
+            print("Aucune observation à grouper")
+            return {}
+        
+        # Créer une copie de travail pour éviter les modifications du DataFrame original
+        df_work = observations_df.copy()
+        
+        # Nettoyer et valider les données essentielles
+        df_work = df_work.dropna(subset=['PATIENT'])  # Supprimer les lignes sans patient_id
+        df_work['PATIENT'] = df_work['PATIENT'].astype(str)
+        df_work['ENCOUNTER'] = df_work['ENCOUNTER'].fillna('').astype(str)
+        
+        if df_work.empty:
+            print("Aucune observation valide après nettoyage")
+            return {}
+        
+        # Formater les dates de manière vectorisée
+        df_work['formatted_date'] = df_work['DATE'].apply(
+            lambda x: self.format_date(x) if pd.notna(x) else ''
+        )
+        
+        # Enrichir avec les informations des patients de manière vectorisée
+        def get_patient_name(patient_id):
+            patient_data = self.patients.get(patient_id)
+            if patient_data:
+                # Gérer différents types d'objets (dict, pandas Series, etc.)
+                if hasattr(patient_data, 'get'):
+                    return patient_data.get('name', 'Patient inconnu')
+                else:
+                    return getattr(patient_data, 'name', 'Patient inconnu')
+            return 'Patient inconnu'
+        
+        df_work['patient_name'] = df_work['PATIENT'].apply(get_patient_name)
+        
+        # Enrichir avec les informations des cliniciens de manière vectorisée
+        def get_clinician_id(encounter_id):
+            if not encounter_id:
+                return 'prov_unknown'
+            encounter_data = self.encounters.get(encounter_id)
+            if encounter_data:
+                if hasattr(encounter_data, 'get'):
+                    return encounter_data.get('provider_id', 'prov_unknown')
+                else:
+                    return getattr(encounter_data, 'provider_id', 'prov_unknown')
+            return 'prov_unknown'
+        
+        df_work['clinician_id'] = df_work['ENCOUNTER'].apply(get_clinician_id)
+        
+        # Formater les observations de manière vectorisée
+        def format_obs_safe(row):
+            try:
+                return self.format_observation(row)
+            except Exception as e:
+                print(f"Erreur formatage observation {getattr(row, 'Id', 'unknown')}: {e}")
+                return None
+        
+        df_work['observation_text'] = df_work.apply(format_obs_safe, axis=1)
+        
+        # Supprimer les observations qui n'ont pas pu être formatées
+        df_work = df_work.dropna(subset=['observation_text'])
+        df_work = df_work[df_work['observation_text'] != '']
+        
+        # Grouper par clé composite (patient, date, clinicien)
+        grouped = df_work.groupby(['PATIENT', 'formatted_date', 'clinician_id'])
+        
+        # Construire le résultat final
+        grouped_data = {}
+        
+        for group_key, group_df in grouped:
+            patient_id, formatted_date, clinician_id = group_key
+            
+            # Récupérer les informations du premier élément du groupe
+            first_row = group_df.iloc[0]
+            
+            # Construire l'entrée du groupe
+            group_entry = {
+                'observations': group_df['observation_text'].tolist(),
+                'notes': [],
+                'patient_name': first_row['patient_name'],
+                'date': formatted_date,
+                'clinician_id': clinician_id
+            }
+            
+            # Ajouter les notes FHIR uniques pour ce groupe
+            encounter_ids = group_df['ENCOUNTER'].dropna().unique()
+            notes_set = set()  # Pour éviter les doublons
+            
+            for encounter_id in encounter_ids:
+                if encounter_id and encounter_id in fhir_notes:
+                    clinician_notes = fhir_notes[encounter_id]
+                    if clinician_notes and clinician_notes not in notes_set:
+                        notes_set.add(clinician_notes)
+                        group_entry['notes'].append(clinician_notes)
+            
+            grouped_data[group_key] = group_entry
+        
+        print(f"Groupé en {len(grouped_data)} entrées uniques")
+        return grouped_data
+    #endregion
+
+    #region generate_ai_summary
+    def generate_ai_summary(self, texts: List[str], summary_type: str = "observations") -> str:
+        if not texts:
+            return ""
+
+        prompt_prefix = {
+            "observations": "Summarize the following medical observations:\n",
+            "notes_clinicien": "Summarize the following clinician notes:\n"
+        }.get(summary_type, "Summarize the following:\n")
+
+        combined_text = "\n".join([f"- {text}" for text in texts])
+        prompt = prompt_prefix + combined_text
+
+        inputs = self.tokenizer.encode(prompt, return_tensors="pt", truncation=True, max_length=1024)
+        if torch.cuda.is_available():
+            inputs = inputs.to("cuda")
+
+        with torch.no_grad():
+            outputs = self.model.generate(
+                inputs,
+                max_length=150,
+                min_length=40,
+                num_beams=4,
+                length_penalty=2.0,
+                early_stopping=True
+            )
+
+        summary = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
+        return summary.strip()
+    
+    #endregion
     #region create_summary_csv
     def create_summary_csv(self):
-        """Créer le CSV résumé final"""
+        """Créer le CSV résumé final avec groupement et IA"""
         # Charger toutes les données
         self.load_csv_data()
         observations_df = self.load_observations_csv()
@@ -181,49 +329,40 @@ class SyntheaCSVSummarizer:
             print("Aucune observation trouvée!")
             return
         
-        # Créer le résumé
-        summary_data = []
+        # Grouper les observations
+        grouped_data = self.group_observations(observations_df, fhir_notes)
         
-        print("Création du résumé...")
-        for _, obs in observations_df.iterrows():
+        # Créer le résumé avec IA
+        summary_data = []
+        total_groups = len(grouped_data)
+        
+        print("Génération des résumés IA...")
+        for i, (group_key, group_info) in enumerate(grouped_data.items(), 1):
+            print(f"Traitement du groupe {i}/{total_groups}...")
+            
             try:
-                # Informations de base
-                date = obs.get('DATE', '')
-                patient_id = obs.get('PATIENT', '')
-                encounter_id = obs.get('ENCOUNTER', '')
+                # Générer le résumé des observations avec IA
+                observations_summary = self.generate_ai_summary(
+                    group_info['observations'], 
+                    "observations"
+                )
                 
-                # Formater la date
-                formatted_date = self.format_date(date)
-                
-                # Nom du patient
-                patient_name = "Patient inconnu"
-                if patient_id in self.patients:
-                    patient_name = self.patients[patient_id]['name']
-                
-                # ID du clinicien (via encounter)
-                clinician_id = "Unknown"
-                if encounter_id in self.encounters:
-                    encounter = self.encounters[encounter_id]
-                    provider_id = encounter.get('provider_id', '')
-                    if provider_id:
-                        clinician_id = provider_id
-                
-                # Observation
-                observation_text = self.format_observation(obs)
-                
-                # Notes du clinicien
-                clinician_notes = fhir_notes.get(encounter_id, '')
+                # Générer le résumé des notes avec IA
+                notes_summary = self.generate_ai_summary(
+                    group_info['notes'], 
+                    "notes_clinicien"
+                )
                 
                 summary_data.append({
-                    'date': formatted_date,
-                    'nom_patient': patient_name,
-                    'id_clinicien': clinician_id,
-                    'observations': observation_text,
-                    'notes_clinicien': clinician_notes
+                    'date': group_info['date'],
+                    'nom_patient': group_info['patient_name'],
+                    'id_clinicien': group_info['clinician_id'],
+                    'observations': observations_summary,
+                    'notes_clinicien': notes_summary
                 })
                 
             except Exception as e:
-                print(f"Erreur lors du traitement de l'observation {obs.get('Id', 'unknown')}: {e}")
+                print(f"Erreur lors du traitement du groupe {group_key}: {e}")
         
         # Créer le DataFrame et sauvegarder
         summary_df = pd.DataFrame(summary_data)
@@ -233,7 +372,7 @@ class SyntheaCSVSummarizer:
         summary_df = summary_df.sort_values('date_sort').drop('date_sort', axis=1)
         
         # Sauvegarder le CSV
-        output_file = self.data_dir / "resume_observations.csv"
+        output_file = self.data_dir / "resume_observations_grouped.csv"
         summary_df.to_csv(output_file, index=False, encoding='utf-8-sig')
         
         print(f"\nRésumé créé avec succès!")
@@ -244,6 +383,9 @@ class SyntheaCSVSummarizer:
         # Afficher un aperçu
         print("\nAperçu des premières lignes:")
         print(summary_df.head().to_string())
+        
+        # Générer les statistiques
+        self.generate_stats(summary_df)
         
         return summary_df
     
@@ -310,10 +452,10 @@ class SyntheaCSVSummarizer:
             return
         
         print(f"\n{'='*50}")
-        print("STATISTIQUES DU RÉSUMÉ")
+        print("STATISTIQUES DU RÉSUMÉ GROUPÉ")
         print(f"{'='*50}")
         
-        print(f"Total observations: {len(summary_df)}")
+        print(f"Total entrées groupées: {len(summary_df)}")
         print(f"Patients uniques: {summary_df['nom_patient'].nunique()}")
         print(f"Cliniciens uniques: {summary_df['id_clinicien'].nunique()}")
         
@@ -326,10 +468,28 @@ class SyntheaCSVSummarizer:
         print(f"\nTop 5 cliniciens:")
         clinician_counts = summary_df['id_clinicien'].value_counts().head()
         for clinician, count in clinician_counts.items():
-            print(f"  {clinician}: {count} observations")
+            print(f"  {clinician}: {count} entrées")
         
-        # Observations avec notes
+        # Entrées avec notes
         with_notes = summary_df[summary_df['notes_clinicien'].str.len() > 0]
-        print(f"\nObservations avec notes: {len(with_notes)} ({len(with_notes)/len(summary_df)*100:.1f}%)")
+        print(f"\nEntrées avec notes: {len(with_notes)} ({len(with_notes)/len(summary_df)*100:.1f}%)")
+        
+        # Statistiques sur la longueur des résumés
+        obs_lengths = summary_df['observations'].str.len()
+        notes_lengths = summary_df['notes_clinicien'].str.len()
+        
+        print(f"\nLongueur moyenne des résumés d'observations: {obs_lengths.mean():.0f} caractères")
+        print(f"Longueur moyenne des résumés de notes: {notes_lengths.mean():.0f} caractères")
 
     #endregion
+
+# Exemple d'utilisation
+if __name__ == "__main__":
+    # Initialiser avec la clé API OpenAI
+    summarizer = SyntheaCSVSummarizer(
+        data_dir="path/to/synthea/data",
+        openai_api_key="your-openai-api-key"  # Ou définir OPENAI_API_KEY dans les variables d'environnement
+    )
+    
+    # Créer le résumé groupé
+    summary_df = summarizer.create_summary_csv()
