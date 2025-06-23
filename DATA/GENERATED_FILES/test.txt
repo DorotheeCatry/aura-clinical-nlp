@@ -1,0 +1,1 @@
+ce fichier n'a que l'intérêt de forcer la création du répertoire s'il n'existe pas
