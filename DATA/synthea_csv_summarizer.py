@@ -2,30 +2,20 @@ from pathlib import Path
 from datetime import datetime
 from typing import List
 from collections import defaultdict
-from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 import pandas as pd
 import json
 
-import torch
-
 class SyntheaCSVSummarizer:
     #region init
-    def __init__(self, data_dir, model_name="facebook/bart-large-cnn"):
+    def __init__(self, data_dir):
         self.data_dir = Path(data_dir)
         self.csv_dir = self.data_dir / "csv"
         self.fhir_dir = self.data_dir / "fhir"
 
         self.patients = {}
         self.encounters = {}
-
-        # Charger GPT-2
-        print(f"Chargement du modèle {model_name}...")
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
-        self.model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
-        self.model.eval()
-        if torch.cuda.is_available():
-            self.model.to("cuda")
-        print("Modèle chargé avec succès.")
+        
+        print("Initialisé avec succès.")
     
     #endregion
     #region load_csv_data
@@ -207,19 +197,6 @@ class SyntheaCSVSummarizer:
             lambda x: self.format_date(x) if pd.notna(x) else ''
         )
         
-        # Enrichir avec les informations des patients de manière vectorisée
-        def get_patient_name(patient_id):
-            patient_data = self.patients.get(patient_id)
-            if patient_data:
-                # Gérer différents types d'objets (dict, pandas Series, etc.)
-                if hasattr(patient_data, 'get'):
-                    return patient_data.get('name', 'Patient inconnu')
-                else:
-                    return getattr(patient_data, 'name', 'Patient inconnu')
-            return 'Patient inconnu'
-        
-        df_work['patient_name'] = df_work['PATIENT'].apply(get_patient_name)
-        
         # Enrichir avec les informations des cliniciens de manière vectorisée
         def get_clinician_id(encounter_id):
             if not encounter_id:
@@ -257,14 +234,11 @@ class SyntheaCSVSummarizer:
         for group_key, group_df in grouped:
             patient_id, formatted_date, clinician_id = group_key
             
-            # Récupérer les informations du premier élément du groupe
-            first_row = group_df.iloc[0]
-            
             # Construire l'entrée du groupe
             group_entry = {
+                'patient_id': patient_id,
                 'observations': group_df['observation_text'].tolist(),
                 'notes': [],
-                'patient_name': first_row['patient_name'],
                 'date': formatted_date,
                 'clinician_id': clinician_id
             }
@@ -286,40 +260,9 @@ class SyntheaCSVSummarizer:
         return grouped_data
     #endregion
 
-    #region generate_ai_summary
-    def generate_ai_summary(self, texts: List[str], summary_type: str = "observations") -> str:
-        if not texts:
-            return ""
-
-        prompt_prefix = {
-            "observations": "Summarize the following medical observations:\n",
-            "notes_clinicien": "Summarize the following clinician notes:\n"
-        }.get(summary_type, "Summarize the following:\n")
-
-        combined_text = "\n".join([f"- {text}" for text in texts])
-        prompt = prompt_prefix + combined_text
-
-        inputs = self.tokenizer.encode(prompt, return_tensors="pt", truncation=True, max_length=1024)
-        if torch.cuda.is_available():
-            inputs = inputs.to("cuda")
-
-        with torch.no_grad():
-            outputs = self.model.generate(
-                inputs,
-                max_length=150,
-                min_length=40,
-                num_beams=4,
-                length_penalty=2.0,
-                early_stopping=True
-            )
-
-        summary = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
-        return summary.strip()
-    
-    #endregion
     #region create_summary_csv
     def create_summary_csv(self):
-        """Créer le CSV résumé final avec groupement et IA"""
+        """Créer le CSV résumé final avec groupement"""
         # Charger toutes les données
         self.load_csv_data()
         observations_df = self.load_observations_csv()
@@ -332,33 +275,31 @@ class SyntheaCSVSummarizer:
         # Grouper les observations
         grouped_data = self.group_observations(observations_df, fhir_notes)
         
-        # Créer le résumé avec IA
+        # Créer le résumé
         summary_data = []
         total_groups = len(grouped_data)
         
-        print("Génération des résumés IA...")
+        print("Création du résumé...")
         for i, (group_key, group_info) in enumerate(grouped_data.items(), 1):
             print(f"Traitement du groupe {i}/{total_groups}...")
             
             try:
-                # Générer le résumé des observations avec IA
-                observations_summary = self.generate_ai_summary(
-                    group_info['observations'], 
-                    "observations"
-                )
+                # Concaténer les observations avec ' : ' et terminer par '.'
+                observations_text = ' : '.join(group_info['observations'])
+                if observations_text and not observations_text.endswith('.'):
+                    observations_text += '.'
                 
-                # Générer le résumé des notes avec IA
-                notes_summary = self.generate_ai_summary(
-                    group_info['notes'], 
-                    "notes_clinicien"
-                )
+                # Concaténer les notes avec ' : ' et terminer par '.'
+                notes_text = ' : '.join(group_info['notes'])
+                if notes_text and not notes_text.endswith('.'):
+                    notes_text += '.'
                 
                 summary_data.append({
                     'date': group_info['date'],
-                    'nom_patient': group_info['patient_name'],
-                    'id_clinicien': group_info['clinician_id'],
-                    'observations': observations_summary,
-                    'notes_clinicien': notes_summary
+                    'id_patient': group_info['patient_id'],
+                    'id_clinician': group_info['clinician_id'],
+                    'observations': observations_text,
+                    'notes': notes_text
                 })
                 
             except Exception as e:
@@ -414,35 +355,25 @@ class SyntheaCSVSummarizer:
     #endregion
     #region format_observation
     def format_observation(self, obs_row):
-        """Formater le texte de l'observation"""
+        """Formater le texte de l'observation en concaténant DESCRIPTION, VALUE et UNITS"""
         parts = []
         
         # Description principale
         description = obs_row.get('DESCRIPTION', '')
-        if description:
-            parts.append(description)
+        if description and str(description) != 'nan':
+            parts.append(str(description))
         
-        # Valeur et unité
+        # Valeur
         value = obs_row.get('VALUE', '')
-        units = obs_row.get('UNITS', '')
-        
         if value and str(value) != 'nan':
-            value_text = str(value)
-            if units and str(units) != 'nan':
-                value_text += f" {units}"
-            parts.append(f"Valeur: {value_text}")
+            parts.append(str(value))
         
-        # Type d'observation
-        obs_type = obs_row.get('TYPE', '')
-        if obs_type:
-            parts.append(f"Type: {obs_type}")
+        # Unités
+        units = obs_row.get('UNITS', '')
+        if units and str(units) != 'nan':
+            parts.append(str(units))
         
-        # Code
-        code = obs_row.get('CODE', '')
-        if code:
-            parts.append(f"Code: {code}")
-        
-        return " | ".join(parts)
+        return ' '.join(parts) if parts else ''
     
     #endregion
     #region generate_stats
@@ -456,8 +387,8 @@ class SyntheaCSVSummarizer:
         print(f"{'='*50}")
         
         print(f"Total entrées groupées: {len(summary_df)}")
-        print(f"Patients uniques: {summary_df['nom_patient'].nunique()}")
-        print(f"Cliniciens uniques: {summary_df['id_clinicien'].nunique()}")
+        print(f"Patients uniques: {summary_df['id_patient'].nunique()}")
+        print(f"Cliniciens uniques: {summary_df['id_clinician'].nunique()}")
         
         # Période couverte
         dates = pd.to_datetime(summary_df['date'], errors='coerce').dropna()
@@ -466,29 +397,28 @@ class SyntheaCSVSummarizer:
         
         # Top 5 des cliniciens les plus actifs
         print(f"\nTop 5 cliniciens:")
-        clinician_counts = summary_df['id_clinicien'].value_counts().head()
+        clinician_counts = summary_df['id_clinician'].value_counts().head()
         for clinician, count in clinician_counts.items():
             print(f"  {clinician}: {count} entrées")
         
         # Entrées avec notes
-        with_notes = summary_df[summary_df['notes_clinicien'].str.len() > 0]
+        with_notes = summary_df[summary_df['notes'].str.len() > 0]
         print(f"\nEntrées avec notes: {len(with_notes)} ({len(with_notes)/len(summary_df)*100:.1f}%)")
         
         # Statistiques sur la longueur des résumés
         obs_lengths = summary_df['observations'].str.len()
-        notes_lengths = summary_df['notes_clinicien'].str.len()
+        notes_lengths = summary_df['notes'].str.len()
         
-        print(f"\nLongueur moyenne des résumés d'observations: {obs_lengths.mean():.0f} caractères")
-        print(f"Longueur moyenne des résumés de notes: {notes_lengths.mean():.0f} caractères")
+        print(f"\nLongueur moyenne des observations: {obs_lengths.mean():.0f} caractères")
+        print(f"Longueur moyenne des notes: {notes_lengths.mean():.0f} caractères")
 
     #endregion
 
 # Exemple d'utilisation
 if __name__ == "__main__":
-    # Initialiser avec la clé API OpenAI
+    # Initialiser
     summarizer = SyntheaCSVSummarizer(
-        data_dir="path/to/synthea/data",
-        openai_api_key="your-openai-api-key"  # Ou définir OPENAI_API_KEY dans les variables d'environnement
+        data_dir="path/to/synthea/data"
     )
     
     # Créer le résumé groupé

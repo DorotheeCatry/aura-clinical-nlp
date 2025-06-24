@@ -27,4 +27,4 @@ RUN ./gradlew build -x test --no-daemon --max-workers=1
 RUN ls -la build/libs/
 
 # Générer les patients synthétiques au lancement
-CMD ["java", "-jar", "build/libs/synthea-with-dependencies.jar", "-p", "1000"]
+CMD ["java", "-jar", "build/libs/synthea-with-dependencies.jar", "-p", "50"]
