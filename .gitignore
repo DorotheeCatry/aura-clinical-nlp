@@ -1,3 +1,22 @@
+DATA/
+notebooks/base_medicale_augmented.csv
+notebooks/base_medicale_etendue_.csv
+notebooks/base_medicale_propre.csv
+notebooks/diabete_3.mp3
+notebooks/medical_dataset.csv
+notebooks/medical_dataset_enriched.csv
+notebooks/medical_dataset_with_entities_.csv
+notebooks/results/added_tokens.json
+notebooks/results/config.json
+notebooks/results/model.safetensors
+notebooks/results/sentencepiece.bpe.model
+notebooks/results/special_tokens_map.json
+notebooks/results/tokenizer.json
+notebooks/results/tokenizer_config.json
+notebooks/results/training_args.bin
+
+TEST_GPT/results/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
