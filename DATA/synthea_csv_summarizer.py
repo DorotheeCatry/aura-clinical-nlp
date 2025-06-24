@@ -14,6 +14,7 @@ class SyntheaCSVSummarizer:
 
         self.patients = {}
         self.encounters = {}
+        self.conditions = {}  # Nouveau: pour stocker les conditions/diagnostics
         
         print("Initialisé avec succès.")
     
@@ -34,7 +35,7 @@ class SyntheaCSVSummarizer:
                     'birthdate': row.get('BIRTHDATE', '')
                 }
         
-        # Charger les encounters pour avoir le lien patient-praticien (avec ID du praticien seulement)
+        # Charger les encounters
         encounters_file = self.csv_dir / "encounters.csv"
         if encounters_file.exists():
             encounters_df = pd.read_csv(encounters_file)
@@ -47,7 +48,22 @@ class SyntheaCSVSummarizer:
                     'description': row.get('DESCRIPTION', '')
                 }
         
-        print(f"Chargé: {len(self.patients)} patients, {len(self.encounters)} encounters")
+        # Charger les conditions/diagnostics
+        conditions_file = self.csv_dir / "conditions.csv"
+        if conditions_file.exists():
+            conditions_df = pd.read_csv(conditions_file)
+            for index, row in conditions_df.iterrows():
+                self.conditions[index] = {
+                    'patient_id': row.get('PATIENT', ''),
+                    'encounter_id': row.get('ENCOUNTER', ''),
+                    'start_date': row.get('START', ''),
+                    'stop_date': row.get('STOP', ''),
+                    'code': row.get('CODE', ''),
+                    'description': row.get('DESCRIPTION', ''),
+                    'system': row.get('SYSTEM', '')
+                }
+        
+        print(f"Chargé: {len(self.patients)} patients, {len(self.encounters)} encounters, {len(self.conditions)} conditions")
 
     #endregion
     #region load_observations_csv
@@ -66,12 +82,12 @@ class SyntheaCSVSummarizer:
         return observations_df
     
     #endregion
-    #region extract_fhir_notes
-    def extract_fhir_notes(self):
-        """Extraire les notes des praticiens des fichiers FHIR JSON"""
-        print("Extraction des notes FHIR...")
+    #region extract_fhir_diagnostics
+    def extract_fhir_diagnostics(self):
+        """Extraire les diagnostics des fichiers FHIR JSON"""
+        print("Extraction des diagnostics FHIR...")
         
-        fhir_notes = {}  # encounter_id -> notes
+        fhir_diagnostics = {}  # encounter_id -> list of diagnostics
         
         for json_file in self.fhir_dir.glob("*.json"):
             try:
@@ -85,35 +101,27 @@ class SyntheaCSVSummarizer:
                     resource = entry.get('resource', {})
                     resource_type = resource.get('resourceType')
                     
-                    match resource_type :
-
-                        # Chercher les DocumentReference (notes cliniques)
-                        case 'DocumentReference':
-                            # Vérifier si context existe et est un dictionnaire
-                            context = resource.get('context', {})
-                            if isinstance(context, dict):
-                                encounter = context.get('encounter', {})
-                                if isinstance(encounter, dict):
-                                    encounter_ref = encounter.get('reference', '')
-                                    if encounter_ref.startswith('Encounter/'):
-                                        encounter_id = encounter_ref.replace('Encounter/', '')
-                                        
-                                        # Extraire le contenu de la note
-                                        content = resource.get('content', [])
-                                        if content and isinstance(content, list) and len(content) > 0:
-                                            attachment = content[0].get('attachment', {}) if isinstance(content[0], dict) else {}
-                                            if isinstance(attachment, dict):
-                                                note_text = attachment.get('data', '')
-                                                if note_text:
-                                                    # Décoder base64 si nécessaire
-                                                    try:
-                                                        import base64
-                                                        decoded_note = base64.b64decode(note_text).decode('utf-8')
-                                                        fhir_notes[encounter_id] = decoded_note
-                                                    except:
-                                                        fhir_notes[encounter_id] = note_text
+                    match resource_type:
+                        # Chercher les Condition (diagnostics)
+                        case 'Condition':
+                            encounter = resource.get('encounter', {})
+                            if isinstance(encounter, dict):
+                                encounter_ref = encounter.get('reference', '')
+                                if encounter_ref.startswith('Encounter/'):
+                                    encounter_id = encounter_ref.replace('Encounter/', '')
+                                    
+                                    # Extraire le diagnostic
+                                    code = resource.get('code', {})
+                                    if isinstance(code, dict):
+                                        coding = code.get('coding', [])
+                                        if isinstance(coding, list) and len(coding) > 0:
+                                            condition_text = coding[0].get('display', '') if isinstance(coding[0], dict) else ''
+                                            if condition_text:
+                                                if encounter_id not in fhir_diagnostics:
+                                                    fhir_diagnostics[encounter_id] = []
+                                                fhir_diagnostics[encounter_id].append(condition_text)
                         
-                        # Chercher les DiagnosticReport avec des notes
+                        # Chercher les DiagnosticReport
                         case 'DiagnosticReport':
                             encounter = resource.get('encounter', {})
                             if isinstance(encounter, dict):
@@ -121,57 +129,76 @@ class SyntheaCSVSummarizer:
                                 if encounter_ref.startswith('Encounter/'):
                                     encounter_id = encounter_ref.replace('Encounter/', '')
                                     
+                                    # Extraire le code du diagnostic
+                                    code = resource.get('code', {})
+                                    if isinstance(code, dict):
+                                        coding = code.get('coding', [])
+                                        if isinstance(coding, list) and len(coding) > 0:
+                                            diagnostic_text = coding[0].get('display', '') if isinstance(coding[0], dict) else ''
+                                            if diagnostic_text:
+                                                if encounter_id not in fhir_diagnostics:
+                                                    fhir_diagnostics[encounter_id] = []
+                                                fhir_diagnostics[encounter_id].append(f"[Diagnostic] {diagnostic_text}")
+                                    
+                                    # Extraire la conclusion
                                     conclusion = resource.get('conclusion', '')
                                     if conclusion:
-                                        if encounter_id in fhir_notes:
-                                            fhir_notes[encounter_id] += f"\n[Diagnostic] {conclusion}"
-                                        else:
-                                            fhir_notes[encounter_id] = f"[Diagnostic] {conclusion}"
-                    
-                        # Chercher les Observation avec des notes
-                        case 'Observation':
-                            encounter = resource.get('encounter', {})
-                            if isinstance(encounter, dict):
-                                encounter_ref = encounter.get('reference', '')
-                                if encounter_ref.startswith('Encounter/'):
-                                    encounter_id = encounter_ref.replace('Encounter/', '')
-                                    
-                                    # Chercher des notes dans les composants
-                                    components = resource.get('component', [])
-                                    if isinstance(components, list):
-                                        for comp in components:
-                                            if isinstance(comp, dict) and 'note' in comp:
-                                                notes = comp.get('note', [])
-                                                if isinstance(notes, list) and len(notes) > 0:
-                                                    note_text = notes[0].get('text', '') if isinstance(notes[0], dict) else ''
-                                                    if note_text:
-                                                        if encounter_id in fhir_notes:
-                                                            fhir_notes[encounter_id] += f"\n{note_text}"
-                                                        else:
-                                                            fhir_notes[encounter_id] = note_text
-                                
-                                    # Chercher des notes directement dans l'observation
-                                    notes = resource.get('note', [])
-                                    if isinstance(notes, list):
-                                        for note in notes:
-                                            if isinstance(note, dict):
-                                                note_text = note.get('text', '')
-                                                if note_text:
-                                                    if encounter_id in fhir_notes:
-                                                        fhir_notes[encounter_id] += f"\n{note_text}"
-                                                    else:
-                                                        fhir_notes[encounter_id] = note_text
+                                        if encounter_id not in fhir_diagnostics:
+                                            fhir_diagnostics[encounter_id] = []
+                                        fhir_diagnostics[encounter_id].append(f"[Conclusion] {conclusion}")
             
             except Exception as e:
                 print(f"Erreur lors du traitement de {json_file}: {e}")
         
-        print(f"Extrait {len(fhir_notes)} notes FHIR")
-        return fhir_notes
+        print(f"Extrait {len(fhir_diagnostics)} entrées de diagnostics FHIR")
+        return fhir_diagnostics
     
     #endregion
-
+    #region get_csv_diagnostics_for_encounter
+    def get_csv_diagnostics_for_encounter(self, encounter_id, date_str):
+        """Récupérer les diagnostics CSV pour un encounter donné"""
+        diagnostics = []
+        
+        # Convertir la date pour comparaison
+        try:
+            encounter_date = datetime.strptime(date_str[:10], '%Y-%m-%d')
+        except:
+            encounter_date = None
+        
+        for condition_id, condition_data in self.conditions.items():
+            if condition_data['encounter_id'] == encounter_id:
+                # Vérifier si la condition est active à la date de l'encounter
+                start_date = condition_data['start_date']
+                stop_date = condition_data['stop_date']
+                
+                condition_active = True
+                
+                if start_date and encounter_date:
+                    try:
+                        condition_start = datetime.strptime(start_date[:10], '%Y-%m-%d')
+                        if encounter_date < condition_start:
+                            condition_active = False
+                    except:
+                        pass
+                
+                if stop_date and encounter_date:
+                    try:
+                        condition_stop = datetime.strptime(stop_date[:10], '%Y-%m-%d')
+                        if encounter_date > condition_stop:
+                            condition_active = False
+                    except:
+                        pass
+                
+                if condition_active:
+                    description = condition_data['description']
+                    if description:
+                        diagnostics.append(description)
+        
+        return diagnostics
+    
+    #endregion
     #region group_observations
-    def group_observations(self, observations_df, fhir_notes):
+    def group_observations(self, observations_df, fhir_diagnostics):
         """Grouper les observations par patient, date et clinicien - Version vectorisée"""
         print("Groupement des observations...")
         
@@ -238,21 +265,31 @@ class SyntheaCSVSummarizer:
             group_entry = {
                 'patient_id': patient_id,
                 'observations': group_df['observation_text'].tolist(),
-                'notes': [],
+                'diagnostics': [],  # Remplacé 'notes' par 'diagnostics'
                 'date': formatted_date,
                 'clinician_id': clinician_id
             }
             
-            # Ajouter les notes FHIR uniques pour ce groupe
+            # Ajouter les diagnostics uniques pour ce groupe
             encounter_ids = group_df['ENCOUNTER'].dropna().unique()
-            notes_set = set()  # Pour éviter les doublons
+            diagnostics_set = set()  # Pour éviter les doublons
             
             for encounter_id in encounter_ids:
-                if encounter_id and encounter_id in fhir_notes:
-                    clinician_notes = fhir_notes[encounter_id]
-                    if clinician_notes and clinician_notes not in notes_set:
-                        notes_set.add(clinician_notes)
-                        group_entry['notes'].append(clinician_notes)
+                if encounter_id:
+                    # Diagnostics des fichiers CSV
+                    csv_diagnostics = self.get_csv_diagnostics_for_encounter(encounter_id, formatted_date)
+                    for diagnostic in csv_diagnostics:
+                        if diagnostic and diagnostic not in diagnostics_set:
+                            diagnostics_set.add(diagnostic)
+                            group_entry['diagnostics'].append(diagnostic)
+                    
+                    # Diagnostics des fichiers FHIR
+                    if encounter_id in fhir_diagnostics:
+                        fhir_diags = fhir_diagnostics[encounter_id]
+                        for diagnostic in fhir_diags:
+                            if diagnostic and diagnostic not in diagnostics_set:
+                                diagnostics_set.add(diagnostic)
+                                group_entry['diagnostics'].append(diagnostic)
             
             grouped_data[group_key] = group_entry
         
@@ -266,14 +303,14 @@ class SyntheaCSVSummarizer:
         # Charger toutes les données
         self.load_csv_data()
         observations_df = self.load_observations_csv()
-        fhir_notes = self.extract_fhir_notes()
+        fhir_diagnostics = self.extract_fhir_diagnostics()
         
         if observations_df.empty:
             print("Aucune observation trouvée!")
             return
         
         # Grouper les observations
-        grouped_data = self.group_observations(observations_df, fhir_notes)
+        grouped_data = self.group_observations(observations_df, fhir_diagnostics)
         
         # Créer le résumé
         summary_data = []
@@ -284,22 +321,24 @@ class SyntheaCSVSummarizer:
             print(f"Traitement du groupe {i}/{total_groups}...")
             
             try:
+                # Concaténer les diagnostics avec ' : ' et terminer par '.'
+                diagnostics_text = ' : '.join(group_info['diagnostics'])
+                if diagnostics_text and not diagnostics_text.endswith('.'):
+                    diagnostics_text += '.'
+
                 # Concaténer les observations avec ' : ' et terminer par '.'
                 observations_text = ' : '.join(group_info['observations'])
                 if observations_text and not observations_text.endswith('.'):
                     observations_text += '.'
                 
-                # Concaténer les notes avec ' : ' et terminer par '.'
-                notes_text = ' : '.join(group_info['notes'])
-                if notes_text and not notes_text.endswith('.'):
-                    notes_text += '.'
+               
                 
                 summary_data.append({
                     'date': group_info['date'],
-                    'id_patient': group_info['patient_id'],
-                    'id_clinician': group_info['clinician_id'],
+                    'diagnostics': diagnostics_text,  # Remplacé 'notes' par 'diagnostics'
                     'observations': observations_text,
-                    'notes': notes_text
+                    'id_patient': group_info['patient_id'],
+                    'id_clinician': group_info['clinician_id']
                 })
                 
             except Exception as e:
@@ -313,7 +352,7 @@ class SyntheaCSVSummarizer:
         summary_df = summary_df.sort_values('date_sort').drop('date_sort', axis=1)
         
         # Sauvegarder le CSV
-        output_file = self.data_dir / "resume_observations_grouped.csv"
+        output_file = self.data_dir / "resume_observations_diagnostics.csv"
         summary_df.to_csv(output_file, index=False, encoding='utf-8-sig')
         
         print(f"\nRésumé créé avec succès!")
@@ -383,7 +422,7 @@ class SyntheaCSVSummarizer:
             return
         
         print(f"\n{'='*50}")
-        print("STATISTIQUES DU RÉSUMÉ GROUPÉ")
+        print("STATISTIQUES DU RÉSUMÉ AVEC DIAGNOSTICS")
         print(f"{'='*50}")
         
         print(f"Total entrées groupées: {len(summary_df)}")
@@ -401,25 +440,31 @@ class SyntheaCSVSummarizer:
         for clinician, count in clinician_counts.items():
             print(f"  {clinician}: {count} entrées")
         
-        # Entrées avec notes
-        with_notes = summary_df[summary_df['notes'].str.len() > 0]
-        print(f"\nEntrées avec notes: {len(with_notes)} ({len(with_notes)/len(summary_df)*100:.1f}%)")
+        # Entrées avec diagnostics
+        with_diagnostics = summary_df[summary_df['diagnostics'].str.len() > 0]
+        print(f"\nEntrées avec diagnostics: {len(with_diagnostics)} ({len(with_diagnostics)/len(summary_df)*100:.1f}%)")
         
         # Statistiques sur la longueur des résumés
         obs_lengths = summary_df['observations'].str.len()
-        notes_lengths = summary_df['notes'].str.len()
+        diagnostics_lengths = summary_df['diagnostics'].str.len()
         
         print(f"\nLongueur moyenne des observations: {obs_lengths.mean():.0f} caractères")
-        print(f"Longueur moyenne des notes: {notes_lengths.mean():.0f} caractères")
+        print(f"Longueur moyenne des diagnostics: {diagnostics_lengths.mean():.0f} caractères")
+        
+        # Top 10 des diagnostics les plus fréquents
+        print(f"\nTop 10 des diagnostics les plus fréquents:")
+        all_diagnostics = []
+        for diag_text in summary_df['diagnostics']:
+            if diag_text:
+                # Séparer les diagnostics multiples
+                diagnostics = [d.strip() for d in diag_text.split(':') if d.strip()]
+                all_diagnostics.extend(diagnostics)
+        
+        if all_diagnostics:
+            from collections import Counter
+            diag_counts = Counter(all_diagnostics)
+            for diag, count in diag_counts.most_common(10):
+                print(f"  {diag}: {count} occurrences")
 
     #endregion
 
-# Exemple d'utilisation
-if __name__ == "__main__":
-    # Initialiser
-    summarizer = SyntheaCSVSummarizer(
-        data_dir="path/to/synthea/data"
-    )
-    
-    # Créer le résumé groupé
-    summary_df = summarizer.create_summary_csv()
