@@ -50,10 +50,10 @@
                 <div>
                     <p class="text-white/80 text-sm font-medium uppercase tracking-wide">Patients totaux</p>
                     <p class="text-3xl font-bold mt-2">{{ total_patients }}</p>
-                    {% if active_patients %}
+                    {% if patients_recents %}
                     <p class="text-white/90 text-sm mt-1 flex items-center">
-                        <i class="fas fa-user-check mr-1"></i>
-                        {{ active_patients }} actifs (30j)
+                        <i class="fas fa-arrow-up mr-1"></i>
+                        +{{ patients_recents|length }} ce mois
                     </p>
                     {% endif %}
                 </div>
@@ -70,8 +70,8 @@
                     <p class="text-white/80 text-sm font-medium uppercase tracking-wide">Observations</p>
                     <p class="text-3xl font-bold mt-2">{{ total_observations }}</p>
                     <p class="text-white/90 text-sm mt-1 flex items-center">
-                        <i class="fas fa-chart-line mr-1"></i>
-                        {{ avg_obs_per_patient }} moy/patient
+                        <i class="fas fa-robot mr-1"></i>
+                        {% if nlp_status.fastapi_available %}FastAPI{% else %}Local{% endif %} actif
                     </p>
                 </div>
                 <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
@@ -80,24 +80,25 @@
             </div>
         </div>
 
-        <!-- AI Success Rate -->
+        <!-- AI Entities -->
         <div class="medical-card rounded-lg p-6 fade-in">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-gray-600 text-sm font-medium uppercase tracking-wide">Taux de succès IA</p>
-                    <p class="text-3xl font-bold mt-2 text-primary-dark">{{ success_rate }}%</p>
+                    <p class="text-gray-600 text-sm font-medium uppercase tracking-wide">Entités détectées</p>
+                    <p class="text-3xl font-bold mt-2 text-primary-dark">
+                        {% if entity_stats %}
+                            {{ entity_stats.values|length }}
+                        {% else %}
+                            0
+                        {% endif %}
+                    </p>
                     <p class="text-gray-500 text-sm mt-1 flex items-center">
                         <i class="fas fa-brain mr-1"></i>
-                        {% if nlp_status.fastapi_available %}FastAPI{% else %}Local{% endif %} actif
+                        {% if nlp_status.fastapi_available %}FastAPI{% else %}DrBERT{% endif %} NLP
                     </p>
                 </div>
-                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                    <i class="fas fa-check-circle text-xl text-green-600"></i>
-                </div>
-            </div>
-            <div class="mt-4">
-                <div class="w-full bg-gray-200 rounded-full h-2">
-                    <div class="bg-green-500 h-2 rounded-full transition-all duration-1000" style="width: {{ success_rate }}%"></div>
+                <div class="w-12 h-12 bg-primary-light/20 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-search-plus text-xl text-primary-steel"></i>
                 </div>
             </div>
         </div>
@@ -140,7 +141,7 @@
                 {% for theme, count in themes_stats.items %}
                 <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                     <div class="flex items-center space-x-3">
-                        <div class="w-4 h-4 rounded-full {% if 'Cardiovasculaire' in theme %}bg-red-500{% elif 'Psychique' in theme %}bg-purple-500{% elif 'Diabète' in theme or 'Métabolique' in theme %}bg-yellow-500{% else %}bg-gray-500{% endif %}"></div>
+                        <div class="w-4 h-4 rounded-full {% if 'Cardio' in theme %}bg-red-500{% elif 'Psy' in theme %}bg-purple-500{% elif 'Diabète' in theme %}bg-yellow-500{% else %}bg-gray-500{% endif %}"></div>
                         <span class="font-medium text-gray-700">{{ theme }}</span>
                     </div>
                     <div class="flex items-center space-x-4">
@@ -155,25 +156,22 @@
         </div>
         {% endif %}
 
-        <!-- Prédictions du modèle IA -->
-        {% if prediction_stats %}
+        <!-- Monthly Evolution -->
+        {% if monthly_stats %}
         <div class="medical-card rounded-lg p-6 fade-in">
             <div class="flex items-center justify-between mb-6">
-                <h2 class="text-xl font-semibold text-primary-dark">Prédictions IA</h2>
-                <i class="fas fa-robot text-xl text-indigo-600"></i>
+                <h2 class="text-xl font-semibold text-primary-dark">Évolution mensuelle</h2>
+                <i class="fas fa-chart-line text-xl text-primary-steel"></i>
             </div>
             <div class="space-y-4">
-                {% for prediction, count in prediction_stats.items %}
-                <div class="flex items-center justify-between p-4 bg-indigo-50 rounded-lg border border-indigo-200">
-                    <div class="flex items-center space-x-3">
-                        <div class="w-4 h-4 rounded-full bg-indigo-500"></div>
-                        <span class="font-medium text-indigo-800">{{ prediction }}</span>
-                    </div>
+                {% for stat in monthly_stats %}
+                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <span class="font-medium text-gray-700">{{ stat.month }}</span>
                     <div class="flex items-center space-x-4">
-                        <div class="w-24 bg-indigo-200 rounded-full h-2">
-                            <div class="bg-indigo-600 h-2 rounded-full" data-width="{{ count|floatformat:0 }}%"></div>
+                        <div class="w-24 bg-gray-200 rounded-full h-2">
+                            <div class="progress-bar h-2 rounded-full" data-width="{% if stat.count > 0 %}{{ stat.count|add:10 }}%{% else %}5%{% endif %}"></div>
                         </div>
-                        <span class="text-lg font-bold text-indigo-700 min-w-[2rem]">{{ count }}</span>
+                        <span class="text-lg font-bold text-primary-dark min-w-[2rem]">{{ stat.count }}</span>
                     </div>
                 </div>
                 {% endfor %}
@@ -181,27 +179,6 @@
         </div>
         {% endif %}
     </div>
-
-    <!-- Monthly Evolution -->
-    {% if monthly_stats %}
-    <div class="medical-card rounded-lg p-6 fade-in">
-        <div class="flex items-center justify-between mb-6">
-            <h2 class="text-xl font-semibold text-primary-dark">Évolution mensuelle</h2>
-            <i class="fas fa-chart-line text-xl text-primary-steel"></i>
-        </div>
-        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            {% for stat in monthly_stats %}
-            <div class="text-center p-4 bg-gray-50 rounded-lg">
-                <div class="text-sm text-gray-600 font-medium mb-2">{{ stat.month }}</div>
-                <div class="text-2xl font-bold text-primary-dark mb-2">{{ stat.count }}</div>
-                <div class="w-full bg-gray-200 rounded-full h-2">
-                    <div class="progress-bar h-2 rounded-full" data-width="{% if stat.count > 0 %}{{ stat.count|add:10 }}%{% else %}5%{% endif %}"></div>
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-    </div>
-    {% endif %}
 
     <!-- Recent Observations -->
     {% if observations_recentes %}
@@ -238,14 +215,8 @@
                 
                 <div class="flex items-center space-x-3">
                     {% if observation.theme_classe %}
-                    <span class="px-3 py-1 text-xs font-medium rounded-full {% if observation.theme_classe == 'cardiovasculaire' %}bg-red-100 text-red-700{% elif observation.theme_classe == 'psy' %}bg-purple-100 text-purple-700{% elif observation.theme_classe == 'diabete' %}bg-yellow-100 text-yellow-700{% else %}bg-gray-100 text-gray-700{% endif %} text-white">
+                    <span class="px-3 py-1 text-xs font-medium rounded-full {% if observation.theme_classe == 'cardio' %}theme-cardio{% elif observation.theme_classe == 'psy' %}theme-psy{% elif observation.theme_classe == 'diabete' %}theme-diabete{% else %}theme-general{% endif %} text-white">
                         {{ observation.get_theme_classe_display }}
-                    </span>
-                    {% endif %}
-                    
-                    {% if observation.model_prediction is not None %}
-                    <span class="px-2 py-1 text-xs font-medium rounded-full bg-indigo-100 text-indigo-700">
-                        Prédiction: {{ observation.model_prediction }}
                     </span>
                     {% endif %}
                     
