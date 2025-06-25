@@ -5,67 +5,89 @@
 {% block content %}
 <div class="space-y-6">
     <!-- En-tête -->
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-        <div>
-            <h1 class="text-2xl font-bold text-slate-800">Patients</h1>
-            <p class="text-slate-600 mt-1">Gérez vos patients et consultez leur historique médical</p>
-        </div>
-        <div class="mt-4 sm:mt-0">
-            <a href="{% url 'med_assistant:patient_create' %}" 
-               class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                <i class="fas fa-plus mr-2"></i>
-                Nouveau patient
-            </a>
+    <div class="medical-card rounded-lg p-6 fade-in">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Gestion des patients</h1>
+                <p class="text-gray-600 mt-1">Consultez et gérez les dossiers médicaux</p>
+            </div>
+            <div class="mt-4 sm:mt-0">
+                <a href="{% url 'med_assistant:patient_create' %}" 
+                   class="medical-button-primary px-4 py-2 rounded-lg text-sm font-medium inline-flex items-center space-x-2">
+                    <i class="fas fa-plus"></i>
+                    <span>Nouveau patient</span>
+                </a>
+            </div>
         </div>
     </div>
 
     <!-- Recherche -->
-    <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+    <div class="medical-card rounded-lg p-6 fade-in">
         <form method="get" class="flex flex-col sm:flex-row gap-4">
-            {{ form.search }}
+            <div class="flex-1">
+                {{ form.search }}
+            </div>
             <button type="submit" 
-                    class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center">
-                <i class="fas fa-search mr-2"></i>
-                Rechercher
+                    class="medical-button-primary px-6 py-3 rounded-lg font-medium flex items-center justify-center space-x-2">
+                <i class="fas fa-search"></i>
+                <span>Rechercher</span>
             </button>
         </form>
     </div>
 
     <!-- Liste des patients -->
     {% if patients %}
-    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        <div class="divide-y divide-slate-200">
+    <div class="medical-card rounded-lg overflow-hidden fade-in">
+        <div class="medical-table">
+            <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                <h2 class="text-lg font-semibold text-gray-900">Liste des patients</h2>
+            </div>
+            
             {% for patient in patients %}
-            <div class="p-6 hover:bg-slate-50 transition-colors">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center space-x-4">
-                        <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                            <i class="fas fa-user text-blue-600 text-lg"></i>
+            <div class="flex items-center justify-between p-6 border-b border-gray-200 last:border-b-0 hover:bg-gray-50 transition-colors">
+                <div class="flex items-center space-x-4">
+                    <div class="medical-icon w-12 h-12">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900">{{ patient.nom_complet }}</h3>
+                        <div class="flex items-center space-x-4 text-sm text-gray-500 mt-1">
+                            <span class="flex items-center">
+                                <i class="fas fa-calendar mr-1"></i>
+                                Né(e) le {{ patient.date_naissance|date:"d/m/Y" }}
+                            </span>
+                            {% if patient.age %}
+                            <span class="flex items-center">
+                                <i class="fas fa-clock mr-1"></i>
+                                {{ patient.age }} ans
+                            </span>
+                            {% endif %}
                         </div>
-                        <div>
-                            <h3 class="text-lg font-semibold text-slate-800">{{ patient.nom_complet }}</h3>
-                            <p class="text-slate-500">Né(e) le {{ patient.date_naissance|date:"d/m/Y" }}</p>
-                            <p class="text-sm text-slate-400">
+                        <div class="flex items-center space-x-2 mt-2">
+                            <span class="medical-badge medical-badge-general">
                                 {{ patient.observations.count }} observation{{ patient.observations.count|pluralize }}
-                            </p>
+                            </span>
                         </div>
                     </div>
-                    <div class="flex items-center space-x-2">
-                        <a href="{% url 'med_assistant:observation_create' %}?patient_id={{ patient.id }}" 
-                           class="px-3 py-2 text-sm bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors">
-                            <i class="fas fa-plus mr-1"></i>
-                            Observation
-                        </a>
-                        <a href="{% url 'med_assistant:patient_edit' patient.id %}" 
-                           class="px-3 py-2 text-sm bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors">
-                            <i class="fas fa-edit"></i>
-                        </a>
-                        <a href="{% url 'med_assistant:patient_detail' patient.id %}" 
-                           class="px-3 py-2 text-sm bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors">
-                            <i class="fas fa-eye mr-1"></i>
-                            Voir
-                        </a>
-                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-2">
+                    <a href="{% url 'med_assistant:observation_create' %}?patient_id={{ patient.id }}" 
+                       class="medical-button-secondary px-3 py-2 rounded-lg text-sm flex items-center space-x-1"
+                       title="Nouvelle observation">
+                        <i class="fas fa-plus"></i>
+                        <span class="hidden sm:inline">Observation</span>
+                    </a>
+                    <a href="{% url 'med_assistant:patient_edit' patient.id %}" 
+                       class="medical-button-secondary px-3 py-2 rounded-lg text-sm"
+                       title="Modifier">
+                        <i class="fas fa-edit"></i>
+                    </a>
+                    <a href="{% url 'med_assistant:patient_detail' patient.id %}" 
+                       class="medical-button-primary px-3 py-2 rounded-lg text-sm flex items-center space-x-1">
+                        <i class="fas fa-eye"></i>
+                        <span class="hidden sm:inline">Voir</span>
+                    </a>
                 </div>
             </div>
             {% endfor %}
@@ -74,30 +96,30 @@
 
     <!-- Pagination -->
     {% if page_obj.has_other_pages %}
-    <div class="flex justify-center">
+    <div class="flex justify-center fade-in">
         <nav class="flex items-center space-x-2">
             {% if page_obj.has_previous %}
                 <a href="?page=1{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" 
-                   class="px-3 py-2 text-sm text-slate-600 hover:text-blue-600 transition-colors">
+                   class="medical-button-secondary px-3 py-2 rounded-lg text-sm">
                     <i class="fas fa-angle-double-left"></i>
                 </a>
                 <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" 
-                   class="px-3 py-2 text-sm text-slate-600 hover:text-blue-600 transition-colors">
+                   class="medical-button-secondary px-3 py-2 rounded-lg text-sm">
                     <i class="fas fa-angle-left"></i>
                 </a>
             {% endif %}
 
-            <span class="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg">
+            <span class="medical-button-primary px-4 py-2 rounded-lg text-sm">
                 {{ page_obj.number }}
             </span>
 
             {% if page_obj.has_next %}
                 <a href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" 
-                   class="px-3 py-2 text-sm text-slate-600 hover:text-blue-600 transition-colors">
+                   class="medical-button-secondary px-3 py-2 rounded-lg text-sm">
                     <i class="fas fa-angle-right"></i>
                 </a>
                 <a href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" 
-                   class="px-3 py-2 text-sm text-slate-600 hover:text-blue-600 transition-colors">
+                   class="medical-button-secondary px-3 py-2 rounded-lg text-sm">
                     <i class="fas fa-angle-double-right"></i>
                 </a>
             {% endif %}
@@ -107,29 +129,29 @@
 
     {% else %}
     <!-- Aucun patient -->
-    <div class="bg-white rounded-xl p-8 shadow-sm border border-slate-200 text-center">
-        <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <i class="fas fa-users text-slate-400 text-2xl"></i>
+    <div class="medical-card rounded-lg p-12 text-center fade-in">
+        <div class="medical-icon w-20 h-20 mx-auto mb-6 bg-gray-100">
+            <i class="fas fa-users text-2xl text-gray-400"></i>
         </div>
-        <h3 class="text-lg font-medium text-slate-800 mb-2">
+        <h3 class="text-xl font-semibold text-gray-900 mb-3">
             {% if request.GET.search %}
                 Aucun patient trouvé
             {% else %}
                 Aucun patient enregistré
             {% endif %}
         </h3>
-        <p class="text-slate-500 mb-6">
+        <p class="text-gray-600 mb-8">
             {% if request.GET.search %}
                 Essayez avec d'autres termes de recherche.
             {% else %}
-                Commencez par ajouter votre premier patient.
+                Commencez par ajouter votre premier patient au système.
             {% endif %}
         </p>
         {% if not request.GET.search %}
         <a href="{% url 'med_assistant:patient_create' %}" 
-           class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-            <i class="fas fa-plus mr-2"></i>
-            Créer un patient
+           class="medical-button-primary px-6 py-3 rounded-lg font-medium inline-flex items-center space-x-2">
+            <i class="fas fa-plus"></i>
+            <span>Créer un patient</span>
         </a>
         {% endif %}
     </div>
