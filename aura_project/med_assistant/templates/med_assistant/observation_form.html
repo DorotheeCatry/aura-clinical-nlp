@@ -8,39 +8,55 @@
 <div class="h-full flex flex-col">
     <!-- NLP Status Info -->
     {% if nlp_status %}
-    <div class="medical-card rounded-lg p-4 mb-4 {% if nlp_status.fastapi_available and nlp_status.drbert_available %}border-l-4 border-green-500{% elif nlp_status.fastapi_available or nlp_status.drbert_available %}border-l-4 border-yellow-500{% else %}border-l-4 border-red-500{% endif %}">
+    <div class="medical-card rounded-lg p-4 mb-4 {% if nlp_status.fastapi_available and nlp_status.drbert_available and nlp_status.t5_available %}border-l-4 border-green-500{% elif nlp_status.fastapi_available or nlp_status.drbert_available or nlp_status.t5_available %}border-l-4 border-yellow-500{% else %}border-l-4 border-red-500{% endif %}">
         <div class="flex items-center justify-between">
             <div class="flex items-center space-x-3">
-                <div class="w-8 h-8 {% if nlp_status.fastapi_available and nlp_status.drbert_available %}bg-green-100{% elif nlp_status.fastapi_available or nlp_status.drbert_available %}bg-yellow-100{% else %}bg-red-100{% endif %} rounded-lg flex items-center justify-center">
-                    <i class="fas fa-robot {% if nlp_status.fastapi_available and nlp_status.drbert_available %}text-green-600{% elif nlp_status.fastapi_available or nlp_status.drbert_available %}text-yellow-600{% else %}text-red-600{% endif %}"></i>
+                <div class="w-8 h-8 {% if nlp_status.fastapi_available and nlp_status.drbert_available and nlp_status.t5_available %}bg-green-100{% elif nlp_status.fastapi_available or nlp_status.drbert_available or nlp_status.t5_available %}bg-yellow-100{% else %}bg-red-100{% endif %} rounded-lg flex items-center justify-center">
+                    <i class="fas fa-robot {% if nlp_status.fastapi_available and nlp_status.drbert_available and nlp_status.t5_available %}text-green-600{% elif nlp_status.fastapi_available or nlp_status.drbert_available or nlp_status.t5_available %}text-yellow-600{% else %}text-red-600{% endif %}"></i>
                 </div>
                 <div>
-                    <h3 class="text-sm font-semibold {% if nlp_status.fastapi_available and nlp_status.drbert_available %}text-green-800{% elif nlp_status.fastapi_available or nlp_status.drbert_available %}text-yellow-800{% else %}text-red-800{% endif %}">
-                        {% if nlp_status.fastapi_available and nlp_status.drbert_available %}
-                            FastAPI + DrBERT connectés
+                    <h3 class="text-sm font-semibold {% if nlp_status.fastapi_available and nlp_status.drbert_available and nlp_status.t5_available %}text-green-800{% elif nlp_status.fastapi_available or nlp_status.drbert_available or nlp_status.t5_available %}text-yellow-800{% else %}text-red-800{% endif %}">
+                        {% if nlp_status.fastapi_available and nlp_status.drbert_available and nlp_status.t5_available %}
+                            Pipeline complète active
+                        {% elif nlp_status.fastapi_available and nlp_status.drbert_available %}
+                            FastAPI + DrBERT connectés, T5 en simulation
+                        {% elif nlp_status.fastapi_available and nlp_status.t5_available %}
+                            FastAPI + T5 connectés, DrBERT en simulation
+                        {% elif nlp_status.drbert_available and nlp_status.t5_available %}
+                            DrBERT + T5 connectés, FastAPI non disponible
                         {% elif nlp_status.fastapi_available %}
-                            FastAPI connecté, DrBERT en simulation
+                            FastAPI connecté, DrBERT et T5 en simulation
                         {% elif nlp_status.drbert_available %}
-                            DrBERT connecté, FastAPI non disponible
+                            DrBERT connecté, FastAPI et T5 en simulation
+                        {% elif nlp_status.t5_available %}
+                            T5 connecté, FastAPI et DrBERT en simulation
                         {% else %}
                             Mode simulation complet
                         {% endif %}
                     </h3>
-                    <p class="text-xs {% if nlp_status.fastapi_available and nlp_status.drbert_available %}text-green-600{% elif nlp_status.fastapi_available or nlp_status.drbert_available %}text-yellow-600{% else %}text-red-600{% endif %}">
-                        {% if nlp_status.fastapi_available and nlp_status.drbert_available %}
-                            Classification + extraction d'entités réelles
+                    <p class="text-xs {% if nlp_status.fastapi_available and nlp_status.drbert_available and nlp_status.t5_available %}text-green-600{% elif nlp_status.fastapi_available or nlp_status.drbert_available or nlp_status.t5_available %}text-yellow-600{% else %}text-red-600{% endif %}">
+                        {% if nlp_status.fastapi_available and nlp_status.drbert_available and nlp_status.t5_available %}
+                            Classification + entités + résumés réels
+                        {% elif nlp_status.fastapi_available and nlp_status.drbert_available %}
+                            Classification + entités réelles, résumés simulés
+                        {% elif nlp_status.fastapi_available and nlp_status.t5_available %}
+                            Classification + résumés réels, entités simulées
+                        {% elif nlp_status.drbert_available and nlp_status.t5_available %}
+                            Entités + résumés réels, classification simulée
                         {% elif nlp_status.fastapi_available %}
-                            Classification réelle, entités simulées
+                            Classification réelle, entités et résumés simulés
                         {% elif nlp_status.drbert_available %}
-                            Entités réelles, classification simulée
+                            Entités réelles, classification et résumés simulés
+                        {% elif nlp_status.t5_available %}
+                            Résumés réels, classification et entités simulées
                         {% else %}
-                            Traitement local avec simulation
+                            Traitement local avec simulation complète
                         {% endif %}
                     </p>
                 </div>
             </div>
-            <div class="text-xs {% if nlp_status.fastapi_available and nlp_status.drbert_available %}text-green-600{% elif nlp_status.fastapi_available or nlp_status.drbert_available %}text-yellow-600{% else %}text-red-600{% endif %}">
-                Whisper: {% if nlp_status.whisper_available %}✓{% else %}✗{% endif %} | DrBERT: {% if nlp_status.drbert_available %}✓{% else %}✗{% endif %}
+            <div class="text-xs {% if nlp_status.fastapi_available and nlp_status.drbert_available and nlp_status.t5_available %}text-green-600{% elif nlp_status.fastapi_available or nlp_status.drbert_available or nlp_status.t5_available %}text-yellow-600{% else %}text-red-600{% endif %}">
+                Whisper: {% if nlp_status.whisper_available %}✓{% else %}✗{% endif %} | DrBERT: {% if nlp_status.drbert_available %}✓{% else %}✗{% endif %} | T5: {% if nlp_status.t5_available %}✓{% else %}✗{% endif %}
             </div>
         </div>
     </div>
@@ -192,7 +208,7 @@ Structure suggérée :
             </div>
         </div>
 
-        <!-- AI Info - Compact avec les bonnes couleurs et info FastAPI + DrBERT -->
+        <!-- AI Info - Compact avec les bonnes couleurs et info FastAPI + DrBERT + T5 -->
         <div class="stat-card rounded-lg p-4 text-white">
             <div class="flex items-center justify-between">
                 <div>
@@ -209,16 +225,29 @@ Structure suggérée :
                         {% else %}
                             <span class="ml-1 px-2 py-1 bg-gray-500 text-xs rounded-full">Sim</span>
                         {% endif %}
+                        {% if nlp_status.t5_available %}
+                            <span class="ml-1 px-2 py-1 bg-purple-500 text-xs rounded-full">T5</span>
+                        {% else %}
+                            <span class="ml-1 px-2 py-1 bg-gray-500 text-xs rounded-full">Sim</span>
+                        {% endif %}
                     </h3>
                     <p class="text-xs text-white/90">
-                        {% if nlp_status.fastapi_available and nlp_status.drbert_available %}
-                            L'IA analysera automatiquement votre observation avec classification FastAPI et extraction d'entités DrBERT
+                        {% if nlp_status.fastapi_available and nlp_status.drbert_available and nlp_status.t5_available %}
+                            L'IA analysera automatiquement votre observation avec classification FastAPI, extraction d'entités DrBERT et résumés T5
+                        {% elif nlp_status.fastapi_available and nlp_status.drbert_available %}
+                            L'IA analysera automatiquement votre observation avec classification FastAPI, entités DrBERT et résumés simulés
+                        {% elif nlp_status.fastapi_available and nlp_status.t5_available %}
+                            L'IA analysera automatiquement votre observation avec classification FastAPI, résumés T5 et entités simulées
+                        {% elif nlp_status.drbert_available and nlp_status.t5_available %}
+                            L'IA analysera automatiquement votre observation avec entités DrBERT, résumés T5 et classification simulée
                         {% elif nlp_status.fastapi_available %}
-                            L'IA analysera automatiquement votre observation avec classification FastAPI et entités simulées
+                            L'IA analysera automatiquement votre observation avec classification FastAPI et entités/résumés simulés
                         {% elif nlp_status.drbert_available %}
-                            L'IA analysera automatiquement votre observation avec extraction d'entités DrBERT et classification simulée
+                            L'IA analysera automatiquement votre observation avec entités DrBERT et classification/résumés simulés
+                        {% elif nlp_status.t5_available %}
+                            L'IA analysera automatiquement votre observation avec résumés T5 et classification/entités simulées
                         {% else %}
-                            L'IA analysera automatiquement votre observation en mode simulation
+                            L'IA analysera automatiquement votre observation en mode simulation complète
                         {% endif %}
                     </p>
                 </div>
@@ -236,7 +265,11 @@ Structure suggérée :
                     {% else %}
                         <div class="bg-white/20 rounded px-2 py-1 text-xs">Sim-NER</div>
                     {% endif %}
-                    <div class="bg-white/20 rounded px-2 py-1 text-xs">T5</div>
+                    {% if nlp_status.t5_available %}
+                        <div class="bg-white/20 rounded px-2 py-1 text-xs">T5-Sum</div>
+                    {% else %}
+                        <div class="bg-white/20 rounded px-2 py-1 text-xs">Sim-Sum</div>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -263,7 +296,7 @@ Structure suggérée :
                 class="btn-primary px-8 py-2 rounded-lg text-sm font-medium shadow-md hover:shadow-lg">
                 <i class="fas fa-save mr-2"></i>
                 Créer et analyser
-                {% if nlp_status.fastapi_available and nlp_status.drbert_available %}(FastAPI+DrBERT){% elif nlp_status.fastapi_available %}(FastAPI){% elif nlp_status.drbert_available %}(DrBERT){% else %}(Local){% endif %}
+                {% if nlp_status.fastapi_available and nlp_status.drbert_available and nlp_status.t5_available %}(Pipeline complète){% elif nlp_status.fastapi_available or nlp_status.drbert_available or nlp_status.t5_available %}(Hybride){% else %}(Local){% endif %}
             </button>
         </div>
     </form>
