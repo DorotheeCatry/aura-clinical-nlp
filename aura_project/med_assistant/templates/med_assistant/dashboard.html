@@ -1,46 +1,15 @@
 {% extends 'med_assistant/base.html' %}
 
 {% block title %}Dashboard - AURA Medical AI{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block page_subtitle %}Vue d'ensemble du système médical{% endblock %}
 
 {% block content %}
-<div class="space-y-8">
-    <!-- Hero Section -->
-    <div class="gradient-card rounded-2xl p-8 text-white fade-in">
-        <div class="flex items-center justify-between">
-            <div class="slide-in-left">
-                <h1 class="text-4xl font-bold mb-4">
-                    Tableau de bord médical
-                    <span class="block text-xl font-normal opacity-90 mt-2">
-                        Intelligence artificielle au service de la médecine
-                    </span>
-                </h1>
-                <div class="flex items-center space-x-6 text-sm opacity-90">
-                    <span class="flex items-center">
-                        <i class="fas fa-calendar mr-2"></i>
-                        {{ "now"|date:"d/m/Y" }}
-                    </span>
-                    <span class="flex items-center">
-                        <i class="fas fa-clock mr-2"></i>
-                        {{ "now"|date:"H:i" }}
-                    </span>
-                    <span class="flex items-center">
-                        <i class="fas fa-activity mr-2 text-green-300"></i>
-                        Système opérationnel
-                    </span>
-                </div>
-            </div>
-            <div class="hidden lg:block slide-in-right">
-                <div class="w-24 h-24 bg-white/20 rounded-2xl flex items-center justify-center floating-animation">
-                    <i class="fas fa-hospital text-4xl text-white"></i>
-                </div>
-            </div>
-        </div>
-    </div>
-
+<div class="space-y-6">
     <!-- Statistics Cards -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <!-- Total Patients -->
-        <div class="stat-card rounded-2xl p-6 text-white fade-in">
+        <div class="stat-card rounded-lg p-6 text-white fade-in">
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-white/80 text-sm font-medium uppercase tracking-wide">Patients totaux</p>
@@ -52,21 +21,14 @@
                     </p>
                     {% endif %}
                 </div>
-                <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
                     <i class="fas fa-users text-xl"></i>
                 </div>
-            </div>
-            <div class="mt-4">
-                <a href="{% url 'med_assistant:patient_list' %}" 
-                   class="text-white/90 hover:text-white text-sm font-medium flex items-center transition-colors">
-                    Gérer les patients
-                    <i class="fas fa-arrow-right ml-2 text-xs"></i>
-                </a>
             </div>
         </div>
 
         <!-- Total Observations -->
-        <div class="feature-card rounded-2xl p-6 text-white fade-in">
+        <div class="stat-card rounded-lg p-6 text-white fade-in">
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-white/80 text-sm font-medium uppercase tracking-wide">Observations</p>
@@ -76,51 +38,37 @@
                         Analyse IA active
                     </p>
                 </div>
-                <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
                     <i class="fas fa-file-medical-alt text-xl"></i>
                 </div>
-            </div>
-            <div class="mt-4">
-                <a href="{% url 'med_assistant:observation_create' %}" 
-                   class="text-white/90 hover:text-white text-sm font-medium flex items-center transition-colors">
-                    Nouvelle observation
-                    <i class="fas fa-plus ml-2 text-xs"></i>
-                </a>
             </div>
         </div>
 
         <!-- AI Entities -->
-        <div class="medical-card rounded-2xl p-6 text-gray-800 fade-in">
+        <div class="medical-card rounded-lg p-6 fade-in">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-gray-700 text-sm font-medium uppercase tracking-wide">Entités détectées</p>
-                    <p class="text-3xl font-bold mt-2">
+                    <p class="text-gray-600 text-sm font-medium uppercase tracking-wide">Entités détectées</p>
+                    <p class="text-3xl font-bold mt-2 text-primary-dark">
                         {% if entity_stats %}
                             {{ entity_stats.values|length }}
                         {% else %}
                             0
                         {% endif %}
                     </p>
-                    <p class="text-gray-600 text-sm mt-1 flex items-center">
+                    <p class="text-gray-500 text-sm mt-1 flex items-center">
                         <i class="fas fa-brain mr-1"></i>
                         DrBERT NLP
                     </p>
                 </div>
-                <div class="w-12 h-12 bg-gray-800/10 rounded-xl flex items-center justify-center">
-                    <i class="fas fa-search-plus text-xl text-gray-700"></i>
+                <div class="w-12 h-12 bg-primary-light/20 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-search-plus text-xl text-primary-steel"></i>
                 </div>
-            </div>
-            <div class="mt-4">
-                <a href="{% url 'med_assistant:statistics' %}" 
-                   class="text-gray-600 hover:text-gray-800 text-sm font-medium flex items-center transition-colors">
-                    Voir analyses
-                    <i class="fas fa-chart-bar ml-2 text-xs"></i>
-                </a>
             </div>
         </div>
 
         <!-- AI Performance -->
-        <div class="gradient-card rounded-2xl p-6 text-white fade-in pulse-glow">
+        <div class="stat-card rounded-lg p-6 text-white fade-in">
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-white/80 text-sm font-medium uppercase tracking-wide">Précision IA</p>
@@ -130,7 +78,7 @@
                         Performance optimale
                     </p>
                 </div>
-                <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
                     <i class="fas fa-bullseye text-xl"></i>
                 </div>
             </div>
@@ -143,26 +91,26 @@
     </div>
 
     <!-- Charts Section -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <!-- Specialty Distribution -->
         {% if themes_stats %}
-        <div class="glass-card rounded-2xl p-8 fade-in">
+        <div class="medical-card rounded-lg p-6 fade-in">
             <div class="flex items-center justify-between mb-6">
-                <h2 class="text-2xl font-bold text-gray-800">Répartition par spécialité</h2>
-                <i class="fas fa-chart-pie text-2xl icon-gradient"></i>
+                <h2 class="text-xl font-semibold text-primary-dark">Répartition par spécialité</h2>
+                <i class="fas fa-chart-pie text-xl text-primary-steel"></i>
             </div>
             <div class="space-y-4">
                 {% for theme, count in themes_stats.items %}
-                <div class="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl">
+                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                     <div class="flex items-center space-x-3">
-                        <div class="w-4 h-4 rounded-full {% if 'Cardio' in theme %}bg-gradient-to-r from-red-400 to-red-600{% elif 'Psy' in theme %}bg-gradient-to-r from-purple-400 to-purple-600{% elif 'Diabète' in theme %}bg-gradient-to-r from-yellow-400 to-yellow-600{% else %}bg-gradient-to-r from-gray-400 to-gray-600{% endif %}"></div>
-                        <span class="font-semibold text-gray-700">{{ theme }}</span>
+                        <div class="w-4 h-4 rounded-full {% if 'Cardio' in theme %}bg-red-500{% elif 'Psy' in theme %}bg-purple-500{% elif 'Diabète' in theme %}bg-yellow-500{% else %}bg-gray-500{% endif %}"></div>
+                        <span class="font-medium text-gray-700">{{ theme }}</span>
                     </div>
                     <div class="flex items-center space-x-4">
                         <div class="w-24 bg-gray-200 rounded-full h-2">
                             <div class="progress-bar h-2 rounded-full" data-width="{{ count|floatformat:0 }}%"></div>
                         </div>
-                        <span class="text-xl font-bold text-gray-800 min-w-[2rem]">{{ count }}</span>
+                        <span class="text-lg font-bold text-primary-dark min-w-[2rem]">{{ count }}</span>
                     </div>
                 </div>
                 {% endfor %}
@@ -172,20 +120,20 @@
 
         <!-- Monthly Evolution -->
         {% if monthly_stats %}
-        <div class="glass-card rounded-2xl p-8 fade-in">
+        <div class="medical-card rounded-lg p-6 fade-in">
             <div class="flex items-center justify-between mb-6">
-                <h2 class="text-2xl font-bold text-gray-800">Évolution mensuelle</h2>
-                <i class="fas fa-chart-line text-2xl icon-gradient"></i>
+                <h2 class="text-xl font-semibold text-primary-dark">Évolution mensuelle</h2>
+                <i class="fas fa-chart-line text-xl text-primary-steel"></i>
             </div>
             <div class="space-y-4">
                 {% for stat in monthly_stats %}
-                <div class="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl">
-                    <span class="font-semibold text-gray-700">{{ stat.month }}</span>
+                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <span class="font-medium text-gray-700">{{ stat.month }}</span>
                     <div class="flex items-center space-x-4">
                         <div class="w-24 bg-gray-200 rounded-full h-2">
-                            <div class="progress-bar bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full" data-width="{% if stat.count > 0 %}{{ stat.count|add:10 }}%{% else %}5%{% endif %}"></div>
+                            <div class="progress-bar h-2 rounded-full" data-width="{% if stat.count > 0 %}{{ stat.count|add:10 }}%{% else %}5%{% endif %}"></div>
                         </div>
-                        <span class="text-xl font-bold text-gray-800 min-w-[2rem]">{{ stat.count }}</span>
+                        <span class="text-lg font-bold text-primary-dark min-w-[2rem]">{{ stat.count }}</span>
                     </div>
                 </div>
                 {% endfor %}
@@ -196,10 +144,10 @@
 
     <!-- Recent Observations -->
     {% if observations_recentes %}
-    <div class="glass-card rounded-2xl overflow-hidden fade-in">
-        <div class="p-8 border-b border-gray-200">
+    <div class="medical-card rounded-lg overflow-hidden fade-in">
+        <div class="p-6 border-b border-gray-200">
             <div class="flex items-center justify-between">
-                <h2 class="text-2xl font-bold text-gray-800">Observations récentes</h2>
+                <h2 class="text-xl font-semibold text-primary-dark">Observations récentes</h2>
                 <span class="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">{{ observations_recentes|length }} dernières</span>
             </div>
         </div>
@@ -207,11 +155,11 @@
             {% for observation in observations_recentes %}
             <div class="flex items-center justify-between p-6 hover:bg-gray-50 transition-colors">
                 <div class="flex items-center space-x-4">
-                    <div class="w-12 h-12 bg-gradient-to-br from-blue-400 to-purple-600 rounded-xl flex items-center justify-center">
+                    <div class="w-12 h-12 bg-primary-steel rounded-lg flex items-center justify-center">
                         <i class="fas fa-user-md text-white"></i>
                     </div>
                     <div>
-                        <h3 class="font-bold text-gray-800">{{ observation.patient.nom_complet }}</h3>
+                        <h3 class="font-semibold text-primary-dark">{{ observation.patient.nom_complet }}</h3>
                         <p class="text-sm text-gray-500">{{ observation.date|date:"d/m/Y à H:i" }}</p>
                         {% if observation.patient.age %}
                         <p class="text-xs text-gray-400">{{ observation.patient.age }} ans</p>
@@ -229,7 +177,7 @@
                 
                 <div class="flex items-center space-x-3">
                     {% if observation.theme_classe %}
-                    <span class="px-3 py-1 text-xs font-medium rounded-full {% if observation.theme_classe == 'cardio' %}theme-cardio{% elif observation.theme_classe == 'psy' %}theme-psy{% elif observation.theme_classe == 'diabete' %}theme-diabete{% else %}theme-general{% endif %} text-gray-700">
+                    <span class="px-3 py-1 text-xs font-medium rounded-full {% if observation.theme_classe == 'cardio' %}theme-cardio{% elif observation.theme_classe == 'psy' %}theme-psy{% elif observation.theme_classe == 'diabete' %}theme-diabete{% else %}theme-general{% endif %} text-white">
                         {{ observation.get_theme_classe_display }}
                     </span>
                     {% endif %}
@@ -252,7 +200,7 @@
                     {% endif %}
                     
                     <a href="{% url 'med_assistant:observation_detail' observation.id %}" 
-                       class="btn-primary text-white px-4 py-2 rounded-xl text-sm">
+                       class="btn-primary px-4 py-2 rounded-lg text-sm">
                         <i class="fas fa-eye"></i>
                     </a>
                 </div>
@@ -261,23 +209,23 @@
         </div>
         <div class="p-6 bg-gray-50 text-center">
             <a href="{% url 'med_assistant:patient_list' %}" 
-               class="text-gray-600 hover:text-gray-800 text-sm font-medium transition-colors">
+               class="text-primary-steel hover:text-primary-deep text-sm font-medium transition-colors">
                 Voir toutes les observations
             </a>
         </div>
     </div>
     {% else %}
     <!-- Empty State -->
-    <div class="glass-card rounded-2xl p-12 text-center fade-in">
-        <div class="w-24 h-24 bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl flex items-center justify-center mx-auto mb-6">
+    <div class="medical-card rounded-lg p-12 text-center fade-in">
+        <div class="w-24 h-24 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-6">
             <i class="fas fa-file-medical text-3xl text-gray-400"></i>
         </div>
-        <h3 class="text-2xl font-bold text-gray-800 mb-4">Aucune observation</h3>
+        <h3 class="text-xl font-semibold text-primary-dark mb-4">Aucune observation</h3>
         <p class="text-gray-600 mb-8 max-w-md mx-auto">
             Commencez par créer votre première observation médicale pour voir la puissance de l'analyse IA d'AURA.
         </p>
         <a href="{% url 'med_assistant:observation_create' %}" 
-           class="btn-primary text-white px-8 py-3 rounded-xl font-medium inline-flex items-center space-x-2">
+           class="btn-primary px-8 py-3 rounded-lg font-medium inline-flex items-center space-x-2">
             <i class="fas fa-plus"></i>
             <span>Créer une observation</span>
         </a>
