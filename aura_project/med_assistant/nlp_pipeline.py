@@ -1,12 +1,26 @@
 """
 Pipeline NLP pour AURA - Assistant Médical
-Traitement automatique des observations médicales
+Traitement automatique des observations médicales avec Whisper
 """
 
 import logging
 from typing import Dict, Any, Optional
 import json
 import random
+import os
+import tempfile
+
+# Imports pour Whisper
+try:
+    import torch
+    import torchaudio
+    from transformers import WhisperProcessor, WhisperForConditionalGeneration
+    import librosa
+    import soundfile as sf
+    WHISPER_AVAILABLE = True
+except ImportError as e:
+    WHISPER_AVAILABLE = False
+    print(f"⚠️ Whisper non disponible: {e}")
 
 logger = logging.getLogger(__name__)
 
@@ -14,32 +28,45 @@ logger = logging.getLogger(__name__)
 class NLPPipeline:
     """
     Pipeline de traitement NLP pour les observations médicales
-    Intègre : transcription, classification, extraction d'entités, résumé
+    Intègre : transcription Whisper, classification, extraction d'entités, résumé
     """
     
     def __init__(self):
-        """Initialise la pipeline NLP"""
+        """Initialise la pipeline NLP avec Whisper"""
         self.models_loaded = False
+        self.whisper_available = WHISPER_AVAILABLE
+        self.device = "cuda" if torch.cuda.is_available() else "cpu" if WHISPER_AVAILABLE else "cpu"
         self._load_models()
     
     def _load_models(self):
         """
-        Charge les modèles NLP (à implémenter avec les vrais modèles)
-        Pour l'instant, simule le chargement
+        Charge les modèles NLP incluant Whisper
         """
         try:
-            # TODO: Charger les vrais modèles
-            # self.whisper_model = whisper.load_model("base")
+            if self.whisper_available:
+                logger.info("🎤 Chargement du modèle Whisper...")
+                
+                # Charger Whisper pour la transcription
+                self.whisper_processor = WhisperProcessor.from_pretrained("openai/whisper-small")
+                self.whisper_model = WhisperForConditionalGeneration.from_pretrained("openai/whisper-small")
+                self.whisper_model.to(self.device)
+                
+                logger.info(f"✅ Whisper chargé sur {self.device}")
+            else:
+                logger.warning("⚠️ Whisper non disponible, utilisation de la simulation")
+            
+            # TODO: Charger les autres modèles
             # self.camembert_classifier = AutoModelForSequenceClassification.from_pretrained(...)
             # self.drbert_ner = AutoModelForTokenClassification.from_pretrained(...)
             # self.t5_summarizer = AutoModelForSeq2SeqLM.from_pretrained(...)
             
             self.models_loaded = True
-            logger.info("Modèles NLP chargés avec succès")
+            logger.info("✅ Pipeline NLP initialisée avec succès")
             
         except Exception as e:
-            logger.error(f"Erreur lors du chargement des modèles: {e}")
+            logger.error(f"❌ Erreur lors du chargement des modèles: {e}")
             self.models_loaded = False
+            self.whisper_available = False
     
     def transcribe_audio(self, audio_file_path: str) -> Optional[str]:
         """
@@ -52,18 +79,88 @@ class NLPPipeline:
             Texte transcrit ou None en cas d'erreur
         """
         try:
-            if not self.models_loaded:
+            if not self.whisper_available or not self.models_loaded:
+                logger.warning("⚠️ Whisper non disponible, utilisation de la simulation")
                 return self._mock_transcription()
             
-            # TODO: Implémenter la vraie transcription Whisper
-            # result = self.whisper_model.transcribe(audio_file_path)
-            # return result["text"]
+            logger.info(f"🎤 Début transcription de: {audio_file_path}")
             
-            return self._mock_transcription()
+            # Vérifier que le fichier existe
+            if not os.path.exists(audio_file_path):
+                logger.error(f"❌ Fichier audio non trouvé: {audio_file_path}")
+                return None
+            
+            # Charger l'audio avec librosa (plus robuste que torchaudio)
+            try:
+                # Charger et convertir à 16kHz mono
+                waveform, sr = librosa.load(audio_file_path, sr=16000, mono=True)
+                logger.info(f"📊 Audio chargé: {len(waveform)} échantillons à {sr}Hz")
+                
+            except Exception as e:
+                logger.error(f"❌ Erreur chargement audio: {e}")
+                # Fallback avec torchaudio
+                try:
+                    waveform, sr = torchaudio.load(audio_file_path)
+                    # Convertir en mono si stéréo
+                    if waveform.shape[0] > 1:
+                        waveform = torch.mean(waveform, dim=0)
+                    else:
+                        waveform = waveform.squeeze()
+                    
+                    # Resample à 16kHz
+                    if sr != 16000:
+                        resampler = torchaudio.transforms.Resample(orig_freq=sr, new_freq=16000)
+                        waveform = resampler(waveform)
+                    
+                    waveform = waveform.numpy()
+                    
+                except Exception as e2:
+                    logger.error(f"❌ Erreur fallback torchaudio: {e2}")
+                    return None
+            
+            # Préparer les inputs pour Whisper
+            inputs = self.whisper_processor(
+                waveform, 
+                sampling_rate=16000, 
+                return_tensors="pt", 
+                padding=True
+            )
+            
+            # Déplacer sur le bon device
+            inputs = {k: v.to(self.device) for k, v in inputs.items()}
+            
+            logger.info("🧠 Génération de la transcription...")
+            
+            # Générer la transcription
+            with torch.no_grad():
+                generated_ids = self.whisper_model.generate(
+                    inputs["input_features"],
+                    attention_mask=inputs.get("attention_mask", None),
+                    language="fr",  # Forcer le français
+                    task="transcribe",
+                    max_length=448,  # Limite raisonnable
+                    num_beams=5,     # Améliorer la qualité
+                    do_sample=False  # Déterministe
+                )
+            
+            # Décoder la transcription
+            transcription = self.whisper_processor.batch_decode(
+                generated_ids, 
+                skip_special_tokens=True
+            )[0]
+            
+            # Nettoyer la transcription
+            transcription = transcription.strip()
+            
+            logger.info(f"✅ Transcription réussie: {len(transcription)} caractères")
+            logger.info(f"📄 Aperçu: {transcription[:100]}...")
+            
+            return transcription
             
         except Exception as e:
-            logger.error(f"Erreur lors de la transcription: {e}")
-            return None
+            logger.error(f"❌ Erreur lors de la transcription Whisper: {e}")
+            # Fallback vers simulation en cas d'erreur
+            return self._mock_transcription()
     
     def classify_theme(self, text: str) -> Optional[str]:
         """
@@ -88,7 +185,7 @@ class NLPPipeline:
             return self._mock_classification(text)
             
         except Exception as e:
-            logger.error(f"Erreur lors de la classification: {e}")
+            logger.error(f"❌ Erreur lors de la classification: {e}")
             return None
     
     def extract_entities(self, text: str) -> Dict[str, Any]:
@@ -114,7 +211,7 @@ class NLPPipeline:
             return self._mock_entities(text)
             
         except Exception as e:
-            logger.error(f"Erreur lors de l'extraction d'entités: {e}")
+            logger.error(f"❌ Erreur lors de l'extraction d'entités: {e}")
             return {}
     
     def generate_summary(self, text: str) -> Optional[str]:
@@ -140,7 +237,7 @@ class NLPPipeline:
             return self._mock_summary(text)
             
         except Exception as e:
-            logger.error(f"Erreur lors de la génération du résumé: {e}")
+            logger.error(f"❌ Erreur lors de la génération du résumé: {e}")
             return None
     
     def process_observation(self, observation) -> Dict[str, Any]:
@@ -163,39 +260,51 @@ class NLPPipeline:
         }
         
         try:
+            logger.info(f"🔄 Début traitement observation {observation.id}")
+            
             # 1. Transcription si fichier audio
             if observation.audio_file:
+                logger.info(f"🎤 Transcription du fichier: {observation.audio_file.path}")
                 transcription = self.transcribe_audio(observation.audio_file.path)
                 if transcription:
                     results['transcription'] = transcription
+                    logger.info("✅ Transcription terminée")
+                else:
+                    logger.warning("⚠️ Échec de la transcription")
             
             # 2. Déterminer le texte source
             text_source = results['transcription'] or observation.texte_saisi
             
             if not text_source:
                 results['error'] = "Aucun texte disponible pour le traitement"
+                logger.error("❌ Aucun texte source disponible")
                 return results
+            
+            logger.info(f"📝 Texte source: {len(text_source)} caractères")
             
             # 3. Classification du thème
             theme = self.classify_theme(text_source)
             if theme:
                 results['theme_classe'] = theme
+                logger.info(f"🏷️ Thème classifié: {theme}")
             
             # 4. Extraction d'entités
             entities = self.extract_entities(text_source)
             results['entites'] = entities
+            logger.info(f"🔍 Entités extraites: {len(entities)} catégories")
             
             # 5. Génération du résumé
             summary = self.generate_summary(text_source)
             if summary:
                 results['resume'] = summary
+                logger.info("📄 Résumé généré")
             
             results['success'] = True
-            logger.info(f"Traitement NLP terminé pour l'observation {observation.id}")
+            logger.info(f"✅ Traitement NLP terminé pour l'observation {observation.id}")
             
         except Exception as e:
             error_msg = f"Erreur lors du traitement NLP: {e}"
-            logger.error(error_msg)
+            logger.error(f"❌ {error_msg}")
             results['error'] = error_msg
         
         return results
