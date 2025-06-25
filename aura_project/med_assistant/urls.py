@@ -18,6 +18,9 @@ urlpatterns = [
     path('observations/<int:observation_id>/', views.observation_detail, name='observation_detail'),
     path('observations/<int:observation_id>/retraiter/', views.observation_reprocess, name='observation_reprocess'),
     
+    # Statistiques
+    path('statistiques/', views.statistics, name='statistics'),
+    
     # API
     path('api/patients/search/', views.api_patient_search, name='api_patient_search'),
 ]
