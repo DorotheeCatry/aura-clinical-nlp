@@ -1,16 +1,16 @@
 {% extends 'med_assistant/base.html' %}
 
-{% block title %}Nouvelle observation - AURA{% endblock %}
+{% block title %}Nouvelle observation - AURA Medical AI{% endblock %}
 
 {% block content %}
-<div class="max-w-5xl mx-auto">
-    <div class="medical-card rounded-lg p-8 fade-in">
-        <!-- En-tête -->
+<div class="max-w-6xl mx-auto">
+    <div class="glass-card rounded-2xl p-8 fade-in">
+        <!-- Header -->
         <div class="mb-8 text-center">
-            <div class="medical-icon w-20 h-20 mx-auto mb-4">
-                <i class="fas fa-file-medical text-2xl"></i>
+            <div class="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4 floating-animation">
+                <i class="fas fa-file-medical text-2xl text-white"></i>
             </div>
-            <h1 class="text-3xl font-bold text-gray-900 mb-2">
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">
                 Nouvelle observation médicale
             </h1>
             <p class="text-gray-600 max-w-2xl mx-auto">
@@ -19,23 +19,23 @@
             </p>
         </div>
 
-        <!-- Formulaire -->
+        <!-- Form -->
         <form method="post" enctype="multipart/form-data" class="space-y-8">
             {% csrf_token %}
             
-            <!-- Sélection du patient -->
-            <div class="medical-card border border-blue-200 bg-blue-50 rounded-lg p-6">
-                <h2 class="text-xl font-semibold text-blue-900 mb-4 flex items-center">
+            <!-- Patient Selection -->
+            <div class="stat-card rounded-2xl p-6 text-white">
+                <h2 class="text-xl font-bold mb-4 flex items-center">
                     <i class="fas fa-user mr-3"></i>
                     Sélection du patient
                 </h2>
                 <div>
-                    <label for="{{ form.patient.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-3">
+                    <label for="{{ form.patient.id_for_label }}" class="block text-sm font-medium text-white/90 mb-3">
                         Patient concerné *
                     </label>
                     {{ form.patient }}
                     {% if form.patient.errors %}
-                        <div class="mt-2 text-sm text-red-600">
+                        <div class="mt-2 text-sm text-red-200">
                             {% for error in form.patient.errors %}
                                 <p><i class="fas fa-exclamation-circle mr-1"></i>{{ error }}</p>
                             {% endfor %}
@@ -44,80 +44,80 @@
                 </div>
                 <div class="mt-4">
                     <a href="{% url 'med_assistant:patient_create' %}" 
-                       class="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center transition-colors">
+                       class="text-white/90 hover:text-white text-sm font-medium flex items-center transition-colors">
                         <i class="fas fa-plus mr-2"></i>
                         Créer un nouveau patient
                     </a>
                 </div>
             </div>
 
-            <!-- Méthodes de saisie -->
+            <!-- Input Methods -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <!-- Saisie texte -->
-                <div class="medical-card border border-green-200 bg-green-50 rounded-lg p-6">
-                    <h2 class="text-xl font-semibold text-green-900 mb-4 flex items-center">
+                <!-- Text Input -->
+                <div class="feature-card rounded-2xl p-6 text-white">
+                    <h2 class="text-xl font-bold mb-4 flex items-center">
                         <i class="fas fa-keyboard mr-3"></i>
                         Saisie manuelle
                     </h2>
                     <div>
-                        <label for="{{ form.texte_saisi.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-3">
+                        <label for="{{ form.texte_saisi.id_for_label }}" class="block text-sm font-medium text-white/90 mb-3">
                             Note médicale
                         </label>
                         {{ form.texte_saisi }}
                         {% if form.texte_saisi.errors %}
-                            <div class="mt-2 text-sm text-red-600">
+                            <div class="mt-2 text-sm text-red-200">
                                 {% for error in form.texte_saisi.errors %}
                                     <p><i class="fas fa-exclamation-circle mr-1"></i>{{ error }}</p>
                                 {% endfor %}
                             </div>
                         {% endif %}
-                        <p class="mt-3 text-sm text-gray-600 flex items-center">
-                            <i class="fas fa-info-circle mr-2 text-blue-500"></i>
+                        <p class="mt-3 text-sm text-white/80 flex items-center">
+                            <i class="fas fa-info-circle mr-2"></i>
                             Saisissez directement votre observation médicale
                         </p>
                     </div>
                 </div>
 
-                <!-- Enregistrement audio -->
-                <div class="medical-card border border-purple-200 bg-purple-50 rounded-lg p-6">
-                    <h2 class="text-xl font-semibold text-purple-900 mb-4 flex items-center">
+                <!-- Audio Recording -->
+                <div class="medical-card rounded-2xl p-6 text-gray-800">
+                    <h2 class="text-xl font-bold mb-4 flex items-center">
                         <i class="fas fa-microphone mr-3"></i>
                         Enregistrement audio
                     </h2>
                     
-                    <!-- Contrôles d'enregistrement -->
+                    <!-- Recording Controls -->
                     <div class="mb-4">
                         <div class="flex items-center justify-center space-x-4 mb-4">
                             <button type="button" id="startRecord" 
-                                    class="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium">
+                                    class="btn-secondary text-white px-6 py-3 rounded-xl font-medium">
                                 <i class="fas fa-microphone mr-2"></i>
                                 Démarrer
                             </button>
                             <button type="button" id="stopRecord" disabled
-                                    class="px-6 py-3 bg-gray-400 text-white rounded-lg transition-colors font-medium">
+                                    class="bg-gray-400 text-white px-6 py-3 rounded-xl font-medium">
                                 <i class="fas fa-stop mr-2"></i>
                                 Arrêter
                             </button>
                             <button type="button" id="playRecord" disabled
-                                    class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
+                                    class="btn-primary text-white px-6 py-3 rounded-xl font-medium">
                                 <i class="fas fa-play mr-2"></i>
                                 Écouter
                             </button>
                         </div>
                         
-                        <!-- Visualiseur audio -->
-                        <div class="bg-white rounded-lg p-4 border border-purple-200 mb-4">
+                        <!-- Audio Visualizer -->
+                        <div class="bg-white rounded-xl p-4 border border-gray-200 mb-4">
                             <canvas id="audioVisualizer" width="300" height="60" class="w-full h-15"></canvas>
                             <div id="recordingStatus" class="text-center text-sm text-gray-600 mt-2">
                                 Prêt à enregistrer
                             </div>
                         </div>
                         
-                        <!-- Audio player -->
+                        <!-- Audio Player -->
                         <audio id="audioPlayer" controls class="w-full mb-4" style="display: none;"></audio>
                     </div>
                     
-                    <!-- Upload de fichier -->
+                    <!-- File Upload -->
                     <div>
                         <label for="{{ form.audio_file.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-3">
                             Ou télécharger un fichier audio
@@ -131,45 +131,45 @@
                             </div>
                         {% endif %}
                         <p class="mt-3 text-sm text-gray-600 flex items-center">
-                            <i class="fas fa-file-audio mr-2 text-purple-500"></i>
+                            <i class="fas fa-file-audio mr-2"></i>
                             Formats: MP3, WAV, OGG, M4A, WebM
                         </p>
                     </div>
                 </div>
             </div>
 
-            <!-- Information sur le traitement IA -->
-            <div class="medical-card border border-gray-200 bg-gray-50 rounded-lg p-6">
-                <h3 class="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+            <!-- AI Processing Info -->
+            <div class="glass-card rounded-2xl p-6 border border-gray-200">
+                <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
                     <i class="fas fa-robot mr-3 text-blue-600"></i>
                     Traitement automatique AURA
                 </h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-                    <div class="flex items-center space-x-3 p-3 bg-white rounded-lg border border-gray-200">
+                    <div class="flex items-center space-x-3 p-3 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl border border-blue-200">
                         <i class="fas fa-volume-up text-blue-600 text-xl"></i>
                         <div>
-                            <div class="font-medium text-gray-900">Transcription</div>
+                            <div class="font-medium text-gray-800">Transcription</div>
                             <div class="text-sm text-gray-600">Whisper AI</div>
                         </div>
                     </div>
-                    <div class="flex items-center space-x-3 p-3 bg-white rounded-lg border border-gray-200">
+                    <div class="flex items-center space-x-3 p-3 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl border border-green-200">
                         <i class="fas fa-tags text-green-600 text-xl"></i>
                         <div>
-                            <div class="font-medium text-gray-900">Classification</div>
+                            <div class="font-medium text-gray-800">Classification</div>
                             <div class="text-sm text-gray-600">CamemBERT</div>
                         </div>
                     </div>
-                    <div class="flex items-center space-x-3 p-3 bg-white rounded-lg border border-gray-200">
+                    <div class="flex items-center space-x-3 p-3 bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl border border-purple-200">
                         <i class="fas fa-search text-purple-600 text-xl"></i>
                         <div>
-                            <div class="font-medium text-gray-900">Extraction</div>
+                            <div class="font-medium text-gray-800">Extraction</div>
                             <div class="text-sm text-gray-600">DrBERT</div>
                         </div>
                     </div>
-                    <div class="flex items-center space-x-3 p-3 bg-white rounded-lg border border-gray-200">
+                    <div class="flex items-center space-x-3 p-3 bg-gradient-to-br from-orange-50 to-red-50 rounded-xl border border-orange-200">
                         <i class="fas fa-compress-alt text-orange-600 text-xl"></i>
                         <div>
-                            <div class="font-medium text-gray-900">Résumé</div>
+                            <div class="font-medium text-gray-800">Résumé</div>
                             <div class="text-sm text-gray-600">T5 Français</div>
                         </div>
                     </div>
@@ -180,9 +180,9 @@
                 </p>
             </div>
 
-            <!-- Erreurs générales du formulaire -->
+            <!-- Form Errors -->
             {% if form.non_field_errors %}
-                <div class="p-4 bg-red-50 border border-red-200 rounded-lg">
+                <div class="p-4 bg-red-50 border border-red-200 rounded-xl">
                     {% for error in form.non_field_errors %}
                         <p class="text-sm text-red-600">
                             <i class="fas fa-exclamation-circle mr-1"></i>{{ error }}
@@ -191,15 +191,15 @@
                 </div>
             {% endif %}
 
-            <!-- Boutons d'action -->
+            <!-- Action Buttons -->
             <div class="flex flex-col sm:flex-row sm:justify-end space-y-3 sm:space-y-0 sm:space-x-4 pt-6 border-t border-gray-200">
                 <a href="{% url 'med_assistant:dashboard' %}" 
-                   class="medical-button-secondary px-8 py-3 rounded-lg text-center font-medium">
+                   class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-8 py-3 rounded-xl text-center font-medium transition-colors">
                     <i class="fas fa-times mr-2"></i>
                     Annuler
                 </a>
                 <button type="submit" 
-                        class="medical-button-primary px-8 py-3 rounded-lg font-medium">
+                        class="btn-primary text-white px-8 py-3 rounded-xl font-medium">
                     <i class="fas fa-save mr-2"></i>
                     Créer et analyser
                 </button>
@@ -232,7 +232,7 @@ document.addEventListener('DOMContentLoaded', function() {
     canvas = document.getElementById('audioVisualizer');
     canvasContext = canvas.getContext('2d');
     
-    // Validation côté client
+    // Form validation
     form.addEventListener('submit', function(e) {
         const hasText = texteField.value.trim().length > 0;
         const hasAudio = audioField.files.length > 0;
@@ -245,7 +245,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Enregistrement audio
+    // Audio recording
     startBtn.addEventListener('click', startRecording);
     stopBtn.addEventListener('click', stopRecording);
     playBtn.addEventListener('click', playRecording);
@@ -254,11 +254,10 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             
-            // Configuration MediaRecorder
             mediaRecorder = new MediaRecorder(stream);
             audioChunks = [];
             
-            // Configuration visualiseur
+            // Audio visualization setup
             audioContext = new AudioContext();
             analyser = audioContext.createAnalyser();
             microphone = audioContext.createMediaStreamSource(stream);
@@ -279,7 +278,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 audioPlayer.style.display = 'block';
                 playBtn.disabled = false;
                 
-                // Créer un fichier pour le formulaire
+                // Create file for form
                 const file = new File([audioBlob], 'recording.wav', { type: 'audio/wav' });
                 const dataTransfer = new DataTransfer();
                 dataTransfer.items.add(file);
@@ -295,7 +294,6 @@ document.addEventListener('DOMContentLoaded', function() {
             status.textContent = 'Enregistrement en cours...';
             status.className = 'text-center text-sm text-red-600 mt-2';
             
-            // Démarrer la visualisation
             visualize();
             
         } catch (err) {
@@ -321,7 +319,6 @@ document.addEventListener('DOMContentLoaded', function() {
             startBtn.disabled = false;
             stopBtn.disabled = true;
             
-            // Effacer le canvas
             canvasContext.clearRect(0, 0, canvas.width, canvas.height);
         }
     }
@@ -348,9 +345,9 @@ document.addEventListener('DOMContentLoaded', function() {
             barHeight = (dataArray[i] / 255) * canvas.height * 0.8;
             
             const intensity = dataArray[i] / 255;
-            const r = Math.floor(37 + intensity * 100);
-            const g = Math.floor(99 + intensity * 100);
-            const b = Math.floor(235);
+            const r = Math.floor(102 + intensity * 100);
+            const g = Math.floor(126 + intensity * 100);
+            const b = Math.floor(234);
             
             canvasContext.fillStyle = `rgb(${r},${g},${b})`;
             canvasContext.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
