@@ -19,6 +19,9 @@ faster-whisper>=0.10.0
 # DrBERT Dependencies
 sentencepiece>=0.1.96
 
+# Optimisation mémoire GPU
+accelerate>=0.20.0
+
 # Development
 black>=24.3.0
 flake8>=7.0.0

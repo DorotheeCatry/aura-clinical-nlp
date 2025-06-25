@@ -1,6 +1,7 @@
 """
 Pipeline NLP pour AURA - Assistant Médical
 Traitement automatique des observations médicales avec intégration FastAPI, DrBERT et T5
+Optimisé pour GPU avec mémoire limitée
 """
 
 import logging
@@ -46,6 +47,7 @@ class NLPPipeline:
     """
     Pipeline de traitement NLP pour les observations médicales
     Intègre : transcription Whisper, classification via FastAPI, extraction d'entités DrBERT, résumé T5
+    Optimisé pour GPU avec mémoire limitée
     """
     
     def __init__(self):
@@ -57,6 +59,12 @@ class NLPPipeline:
         self.device = "cuda" if torch.cuda.is_available() else "cpu" if WHISPER_AVAILABLE else "cpu"
         self.fastapi_available = False
         self.available_models = []
+        
+        # Modèles chargés à la demande pour économiser la mémoire
+        self.whisper_model = None
+        self.whisper_processor = None
+        self.drbert_pipeline = None
+        self.t5_pipeline = None
         
         # Mapping des pathologies du modèle
         self.pathology_mapping = {
@@ -81,9 +89,16 @@ class NLPPipeline:
         
         self._load_models()
     
+    def _clear_gpu_cache(self):
+        """Nettoie le cache GPU pour libérer de la mémoire"""
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+            logger.info("🧹 Cache GPU nettoyé")
+    
     def _load_models(self):
         """
         Charge les modèles NLP incluant Whisper, DrBERT, T5 et vérifie FastAPI
+        Optimisé pour GPU avec mémoire limitée
         """
         try:
             # Vérifier la disponibilité de FastAPI
@@ -94,7 +109,7 @@ class NLPPipeline:
             else:
                 logger.warning("⚠️ FastAPI non disponible, utilisation des modèles locaux")
             
-            # Charger Whisper pour la transcription (local)
+            # Charger Whisper pour la transcription (local) - PRIORITÉ
             if self.whisper_available:
                 logger.info("🎤 Chargement du modèle Whisper...")
                 
@@ -103,58 +118,17 @@ class NLPPipeline:
                 self.whisper_model.to(self.device)
                 
                 logger.info(f"✅ Whisper chargé sur {self.device}")
+                
+                # Afficher l'utilisation mémoire après Whisper
+                if torch.cuda.is_available():
+                    memory_used = torch.cuda.memory_allocated() / 1024**3
+                    memory_total = torch.cuda.get_device_properties(0).total_memory / 1024**3
+                    logger.info(f"📊 Mémoire GPU après Whisper: {memory_used:.2f}GB / {memory_total:.2f}GB")
             else:
                 logger.warning("⚠️ Whisper non disponible, utilisation de la simulation")
             
-            # Charger DrBERT pour l'extraction d'entités (local)
-            if self.drbert_available:
-                logger.info("🧠 Chargement du modèle DrBERT...")
-                
-                try:
-                    self.drbert_tokenizer = AutoTokenizer.from_pretrained("Thibeb/DrBert_generalized")
-                    self.drbert_model = AutoModelForTokenClassification.from_pretrained("Thibeb/DrBert_generalized")
-                    
-                    # Créer le pipeline NER
-                    self.drbert_pipeline = pipeline(
-                        "ner",
-                        model=self.drbert_model,
-                        tokenizer=self.drbert_tokenizer,
-                        aggregation_strategy="simple",
-                        device=0 if torch.cuda.is_available() else -1
-                    )
-                    
-                    logger.info(f"✅ DrBERT chargé sur {self.device}")
-                    
-                except Exception as e:
-                    logger.error(f"❌ Erreur chargement DrBERT: {e}")
-                    self.drbert_available = False
-            else:
-                logger.warning("⚠️ DrBERT non disponible, utilisation de la simulation")
-            
-            # Charger T5 pour les résumés (local)
-            if self.t5_available:
-                logger.info("📝 Chargement du modèle T5 pour résumés...")
-                
-                try:
-                    # Utiliser le modèle T5 français spécialisé pour les résumés
-                    self.t5_tokenizer = T5Tokenizer.from_pretrained("plguillou/t5-base-fr-sum-cnndm")
-                    self.t5_model = T5ForConditionalGeneration.from_pretrained("plguillou/t5-base-fr-sum-cnndm")
-                    
-                    # Créer le pipeline de résumé
-                    self.t5_pipeline = pipeline(
-                        "summarization",
-                        model=self.t5_model,
-                        tokenizer=self.t5_tokenizer,
-                        device=0 if torch.cuda.is_available() else -1
-                    )
-                    
-                    logger.info(f"✅ T5 résumé chargé sur {self.device}")
-                    
-                except Exception as e:
-                    logger.error(f"❌ Erreur chargement T5: {e}")
-                    self.t5_available = False
-            else:
-                logger.warning("⚠️ T5 non disponible, utilisation de la simulation")
+            # DrBERT et T5 seront chargés à la demande pour économiser la mémoire
+            logger.info("💡 DrBERT et T5 seront chargés à la demande pour optimiser la mémoire")
             
             self.models_loaded = True
             logger.info("✅ Pipeline NLP initialisée avec succès")
@@ -166,6 +140,130 @@ class NLPPipeline:
             self.drbert_available = False
             self.t5_available = False
             self.fastapi_available = False
+    
+    def _load_drbert_on_demand(self):
+        """Charge DrBERT à la demande et libère Whisper si nécessaire"""
+        if self.drbert_pipeline is not None:
+            return True
+            
+        if not self.drbert_available:
+            return False
+            
+        try:
+            logger.info("🧠 Chargement du modèle DrBERT à la demande...")
+            
+            # Libérer Whisper temporairement si nécessaire
+            whisper_was_loaded = self.whisper_model is not None
+            if whisper_was_loaded and torch.cuda.is_available():
+                logger.info("🔄 Libération temporaire de Whisper pour DrBERT...")
+                del self.whisper_model
+                del self.whisper_processor
+                self.whisper_model = None
+                self.whisper_processor = None
+                self._clear_gpu_cache()
+            
+            # Charger DrBERT avec optimisations mémoire
+            tokenizer = AutoTokenizer.from_pretrained("Thibeb/DrBert_generalized")
+            model = AutoModelForTokenClassification.from_pretrained(
+                "Thibeb/DrBert_generalized",
+                torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32,  # FP16 pour économiser la mémoire
+                low_cpu_mem_usage=True
+            )
+            
+            # Créer le pipeline NER avec optimisations
+            self.drbert_pipeline = pipeline(
+                "ner",
+                model=model,
+                tokenizer=tokenizer,
+                aggregation_strategy="simple",
+                device=0 if torch.cuda.is_available() else -1,
+                torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32
+            )
+            
+            logger.info(f"✅ DrBERT chargé sur {self.device}")
+            
+            # Afficher l'utilisation mémoire
+            if torch.cuda.is_available():
+                memory_used = torch.cuda.memory_allocated() / 1024**3
+                memory_total = torch.cuda.get_device_properties(0).total_memory / 1024**3
+                logger.info(f"📊 Mémoire GPU après DrBERT: {memory_used:.2f}GB / {memory_total:.2f}GB")
+            
+            return True
+            
+        except Exception as e:
+            logger.error(f"❌ Erreur chargement DrBERT: {e}")
+            self.drbert_available = False
+            
+            # Recharger Whisper si il était chargé
+            if whisper_was_loaded and self.whisper_available:
+                self._reload_whisper()
+            
+            return False
+    
+    def _load_t5_on_demand(self):
+        """Charge T5 à la demande et libère d'autres modèles si nécessaire"""
+        if self.t5_pipeline is not None:
+            return True
+            
+        if not self.t5_available:
+            return False
+            
+        try:
+            logger.info("📝 Chargement du modèle T5 à la demande...")
+            
+            # Libérer DrBERT temporairement si nécessaire
+            drbert_was_loaded = self.drbert_pipeline is not None
+            if drbert_was_loaded:
+                logger.info("🔄 Libération temporaire de DrBERT pour T5...")
+                del self.drbert_pipeline
+                self.drbert_pipeline = None
+                self._clear_gpu_cache()
+            
+            # Charger T5 avec optimisations mémoire
+            tokenizer = T5Tokenizer.from_pretrained("plguillou/t5-base-fr-sum-cnndm")
+            model = T5ForConditionalGeneration.from_pretrained(
+                "plguillou/t5-base-fr-sum-cnndm",
+                torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32,  # FP16 pour économiser la mémoire
+                low_cpu_mem_usage=True
+            )
+            
+            # Créer le pipeline de résumé avec optimisations
+            self.t5_pipeline = pipeline(
+                "summarization",
+                model=model,
+                tokenizer=tokenizer,
+                device=0 if torch.cuda.is_available() else -1,
+                torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32
+            )
+            
+            logger.info(f"✅ T5 résumé chargé sur {self.device}")
+            
+            # Afficher l'utilisation mémoire
+            if torch.cuda.is_available():
+                memory_used = torch.cuda.memory_allocated() / 1024**3
+                memory_total = torch.cuda.get_device_properties(0).total_memory / 1024**3
+                logger.info(f"📊 Mémoire GPU après T5: {memory_used:.2f}GB / {memory_total:.2f}GB")
+            
+            return True
+            
+        except Exception as e:
+            logger.error(f"❌ Erreur chargement T5: {e}")
+            self.t5_available = False
+            return False
+    
+    def _reload_whisper(self):
+        """Recharge Whisper si nécessaire"""
+        if self.whisper_model is not None or not self.whisper_available:
+            return
+            
+        try:
+            logger.info("🔄 Rechargement de Whisper...")
+            self.whisper_processor = WhisperProcessor.from_pretrained("openai/whisper-small")
+            self.whisper_model = WhisperForConditionalGeneration.from_pretrained("openai/whisper-small")
+            self.whisper_model.to(self.device)
+            logger.info("✅ Whisper rechargé")
+        except Exception as e:
+            logger.error(f"❌ Erreur rechargement Whisper: {e}")
     
     def transcribe_audio(self, audio_file_path: str) -> Optional[str]:
         """
@@ -181,6 +279,12 @@ class NLPPipeline:
             if not self.whisper_available or not self.models_loaded:
                 logger.warning("⚠️ Whisper non disponible, utilisation de la simulation")
                 return self._mock_transcription()
+            
+            # S'assurer que Whisper est chargé
+            if self.whisper_model is None:
+                self._reload_whisper()
+                if self.whisper_model is None:
+                    return self._mock_transcription()
             
             logger.info(f"🎤 Début transcription de: {audio_file_path}")
             
@@ -316,7 +420,7 @@ class NLPPipeline:
     
     def extract_entities_drbert(self, text: str) -> Dict[str, List[str]]:
         """
-        Extrait les entités médicales avec DrBERT
+        Extrait les entités médicales avec DrBERT (chargé à la demande)
         
         Args:
             text: Texte à analyser
@@ -325,7 +429,8 @@ class NLPPipeline:
             Dictionnaire des entités extraites par catégorie
         """
         try:
-            if not self.drbert_available or not self.models_loaded:
+            # Charger DrBERT à la demande
+            if not self._load_drbert_on_demand():
                 logger.warning("⚠️ DrBERT non disponible, utilisation de la simulation")
                 return self._mock_entities(text)
             
@@ -362,6 +467,13 @@ class NLPPipeline:
             
             logger.info(f"✅ DrBERT: {sum(len(v) for v in categorized_entities.values())} entités extraites")
             
+            # Libérer DrBERT après utilisation pour économiser la mémoire
+            if self.drbert_pipeline is not None:
+                logger.info("🔄 Libération de DrBERT après utilisation")
+                del self.drbert_pipeline
+                self.drbert_pipeline = None
+                self._clear_gpu_cache()
+            
             return categorized_entities
             
         except Exception as e:
@@ -382,7 +494,7 @@ class NLPPipeline:
     
     def generate_summary_t5(self, text: str) -> Optional[str]:
         """
-        Génère un résumé avec T5 français
+        Génère un résumé avec T5 français (chargé à la demande)
         
         Args:
             text: Texte à résumer
@@ -391,7 +503,8 @@ class NLPPipeline:
             Résumé généré ou None en cas d'erreur
         """
         try:
-            if not self.t5_available or not self.models_loaded:
+            # Charger T5 à la demande
+            if not self._load_t5_on_demand():
                 logger.warning("⚠️ T5 non disponible, utilisation de la simulation")
                 return self._mock_summary(text)
             
@@ -406,6 +519,13 @@ class NLPPipeline:
             )[0]['summary_text']
             
             logger.info(f"✅ T5: Résumé généré ({len(summary)} caractères)")
+            
+            # Libérer T5 après utilisation pour économiser la mémoire
+            if self.t5_pipeline is not None:
+                logger.info("🔄 Libération de T5 après utilisation")
+                del self.t5_pipeline
+                self.t5_pipeline = None
+                self._clear_gpu_cache()
             
             return summary.strip()
             
@@ -505,12 +625,12 @@ class NLPPipeline:
                 results['model_prediction'] = prediction
                 logger.info(f"🏷️ Thème classifié: {theme} (prédiction: {prediction})")
             
-            # 4. Extraction d'entités (DrBERT local)
+            # 4. Extraction d'entités (DrBERT local à la demande)
             entities = self.extract_entities(text_source)
             results['entites'] = entities
             logger.info(f"🔍 Entités extraites: {len(entities)} catégories")
             
-            # 5. Génération du résumé (T5 local ou FastAPI ou simulation)
+            # 5. Génération du résumé (T5 local à la demande ou FastAPI ou simulation)
             summary = self.generate_summary(text_source)
             if summary:
                 results['resume'] = summary
@@ -542,7 +662,8 @@ class NLPPipeline:
             'models_loaded': self.models_loaded,
             'device': self.device,
             'pathology_mapping': self.pathology_mapping,
-            'drbert_entity_mapping': self.drbert_entity_mapping
+            'drbert_entity_mapping': self.drbert_entity_mapping,
+            'memory_optimized': True  # Nouveau : indique que la pipeline est optimisée pour la mémoire
         }
     
     # Méthodes de simulation pour le développement
