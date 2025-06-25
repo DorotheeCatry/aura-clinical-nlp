@@ -1,4 +1,5 @@
-DATA/
+DATA/synthea/
+DATA/GENERATED_FILES/
 notebooks/base_medicale_augmented.csv
 notebooks/base_medicale_etendue_.csv
 notebooks/base_medicale_propre.csv
