@@ -9,6 +9,10 @@ from .forms import PatientForm, ObservationForm, PatientSearchForm
 from .nlp_pipeline import nlp_pipeline
 import json
 from collections import defaultdict
+from faster_whisper import WhisperModel
+from django.views.decorators.csrf import csrf_exempt
+import tempfile, subprocess, json
+
 
 
 def dashboard(request):
@@ -198,6 +202,34 @@ def observation_create(request):
     
     context = {'form': form}
     return render(request, 'med_assistant/observation_form.html', context)
+
+
+@csrf_exempt
+def transcribe_audio(request):
+    if request.method != "POST" or "audio" not in request.FILES:
+        return JsonResponse({"error": "no_audio"}, status=400)
+
+    uploaded = request.FILES["audio"]
+
+    # Enregistre temporairement le WebM
+    with tempfile.NamedTemporaryFile(suffix=".webm") as src:
+        for chunk in uploaded.chunks():
+            src.write(chunk)
+        src.flush()
+
+        # Convertit en WAV 16 kHz mono (Whisper préfère)
+        with tempfile.NamedTemporaryFile(suffix=".wav") as wav:
+            cmd = [
+                "ffmpeg", "-y", "-i", src.name,
+                "-ar", "16000", "-ac", "1", wav.name
+            ]
+            subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+            # Transcription
+            segments, _ = model.transcribe(wav.name)
+            text = " ".join([seg.text for seg in segments])
+
+    return JsonResponse({"text": text})
 
 
 def observation_detail(request, observation_id):

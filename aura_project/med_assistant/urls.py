@@ -15,6 +15,7 @@ urlpatterns = [
     
     # Observations
     path('observations/nouvelle/', views.observation_create, name='observation_create'),
+    path("api/transcribe/", views.transcribe_audio, name="transcribe"),
     path('observations/<int:observation_id>/', views.observation_detail, name='observation_detail'),
     path('observations/<int:observation_id>/retraiter/', views.observation_reprocess, name='observation_reprocess'),
     
