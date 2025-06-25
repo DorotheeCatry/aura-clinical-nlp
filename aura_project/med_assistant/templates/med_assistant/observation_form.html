@@ -51,17 +51,21 @@
                 
                 <!-- Recording Controls -->
                 <div class="flex items-center space-x-3">
+                    <!-- Bouton d'enregistrement -->
                     <button type="button" id="recordBtn" 
                             class="w-12 h-12 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center transition-all shadow-md hover:shadow-lg">
                         <i class="fas fa-microphone text-lg"></i>
                     </button>
                     
-                    <button type="button" id="stopBtn" style="display: none;"
-                            class="w-12 h-12 bg-gray-600 hover:bg-gray-700 text-white rounded-full flex items-center justify-center transition-all shadow-md">
+                    <!-- Bouton d'arrêt - TOUJOURS VISIBLE mais désactivé par défaut -->
+                    <button type="button" id="stopBtn" 
+                            class="w-12 h-12 bg-gray-400 text-white rounded-full flex items-center justify-center transition-all shadow-md cursor-not-allowed"
+                            disabled>
                         <i class="fas fa-stop text-lg"></i>
                     </button>
                     
-                    <div id="recordingInfo" style="display: none;" class="text-center">
+                    <!-- Informations d'enregistrement -->
+                    <div id="recordingInfo" class="hidden text-center">
                         <div id="timer" class="text-lg font-mono font-bold text-red-600">00:00</div>
                         <div class="text-xs text-gray-600">Enregistrement...</div>
                     </div>
@@ -69,7 +73,7 @@
             </div>
 
             <!-- Audio Player (when recording is done) - Compact -->
-            <div id="audioSection" style="display: none;" class="mb-4 p-3 bg-primary-light/10 rounded-lg border border-primary-light">
+            <div id="audioSection" class="hidden mb-4 p-3 bg-primary-light/10 rounded-lg border border-primary-light">
                 <div class="flex items-center justify-between mb-2">
                     <h3 class="text-sm font-medium text-primary-dark">
                         <i class="fas fa-volume-up mr-2"></i>
@@ -205,6 +209,8 @@ let timerInterval = null;
 let currentStream = null;
 
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 Initialisation du script d\'enregistrement...');
+    
     // Éléments DOM
     const texteField = document.querySelector('#{{ form.texte_saisi.id_for_label }}');
     const audioField = document.querySelector('#{{ form.audio_file.id_for_label }}');
@@ -217,6 +223,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const timer = document.getElementById('timer');
     const charCount = document.getElementById('charCount');
     const form = document.querySelector('form');
+    
+    // Vérifier que tous les éléments sont présents
+    console.log('🔍 Vérification des éléments DOM:');
+    console.log('  - recordBtn:', recordBtn ? '✅' : '❌');
+    console.log('  - stopBtn:', stopBtn ? '✅' : '❌');
+    console.log('  - texteField:', texteField ? '✅' : '❌');
     
     // Compteur de caractères
     function updateCharCount() {
@@ -282,10 +294,20 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Réinitialiser l'interface d'enregistrement
     function resetRecordingUI() {
+        console.log('🔄 Réinitialisation de l\'interface...');
+        
         isRecording = false;
-        recordBtn.style.display = 'block';
-        stopBtn.style.display = 'none';
-        recordingInfo.style.display = 'none';
+        
+        // Bouton d'enregistrement : actif et rouge
+        recordBtn.disabled = false;
+        recordBtn.className = 'w-12 h-12 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center transition-all shadow-md hover:shadow-lg';
+        
+        // Bouton d'arrêt : désactivé et gris
+        stopBtn.disabled = true;
+        stopBtn.className = 'w-12 h-12 bg-gray-400 text-white rounded-full flex items-center justify-center transition-all shadow-md cursor-not-allowed';
+        
+        // Cacher les infos d'enregistrement
+        recordingInfo.classList.add('hidden');
         
         if (timerInterval) {
             clearInterval(timerInterval);
@@ -294,18 +316,23 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Réinitialiser le timer
         timer.textContent = '00:00';
+        
+        console.log('✅ Interface réinitialisée');
     }
     
     // Démarrer l'enregistrement
     recordBtn.addEventListener('click', async function() {
         try {
-            console.log('🎤 Demande d\'accès au microphone...');
+            console.log('🎤 Clic sur le bouton d\'enregistrement...');
             
             // Arrêter tout enregistrement en cours
             if (isRecording) {
+                console.log('⚠️ Enregistrement déjà en cours, arrêt...');
                 stopRecording();
                 return;
             }
+            
+            console.log('🎤 Demande d\'accès au microphone...');
             
             const stream = await navigator.mediaDevices.getUserMedia({ 
                 audio: {
@@ -354,7 +381,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 const audioUrl = URL.createObjectURL(audioBlob);
                 audioPlayer.src = audioUrl;
-                audioSection.style.display = 'block';
+                audioSection.classList.remove('hidden');
                 
                 // Créer un fichier pour le formulaire
                 const file = new File([audioBlob], 'recording.wav', { 
@@ -379,13 +406,23 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Mettre à jour l'interface
             isRecording = true;
-            recordBtn.style.display = 'none';
-            stopBtn.style.display = 'block';
-            recordingInfo.style.display = 'block';
+            
+            // Bouton d'enregistrement : désactivé et gris
+            recordBtn.disabled = true;
+            recordBtn.className = 'w-12 h-12 bg-gray-400 text-white rounded-full flex items-center justify-center transition-all shadow-md cursor-not-allowed';
+            
+            // Bouton d'arrêt : actif et rouge
+            stopBtn.disabled = false;
+            stopBtn.className = 'w-12 h-12 bg-red-600 hover:bg-red-700 text-white rounded-full flex items-center justify-center transition-all shadow-md hover:shadow-lg cursor-pointer';
+            
+            // Afficher les infos d'enregistrement
+            recordingInfo.classList.remove('hidden');
             
             // Démarrer le timer
             startTime = Date.now();
             timerInterval = setInterval(updateTimer, 1000);
+            
+            console.log('✅ Interface mise à jour pour l\'enregistrement');
             
         } catch (error) {
             console.error('❌ Erreur d\'accès au microphone:', error);
@@ -409,32 +446,40 @@ document.addEventListener('DOMContentLoaded', function() {
         e.preventDefault();
         e.stopPropagation();
         console.log('🛑 Clic sur le bouton d\'arrêt');
+        
+        if (!isRecording) {
+            console.log('⚠️ Aucun enregistrement en cours');
+            return;
+        }
+        
         stopRecording();
     });
     
     // Transcrire l'enregistrement
-    transcribeBtn.addEventListener('click', function() {
-        transcribeBtn.disabled = true;
-        transcribeBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Transcription...';
-        
-        // Simulation de transcription (remplacer par vraie API)
-        setTimeout(() => {
-            const mockTranscriptions = [
-                "Patient présente des douleurs thoraciques depuis ce matin. Tension artérielle élevée à 160/95. Prescrit un ECG et analyses sanguines.",
-                "Consultation de suivi pour diabète de type 2. Glycémie à jeun à 1,45 g/L. Ajustement de la metformine à 1000mg matin et soir.",
-                "Patient anxieux, troubles du sommeil depuis 3 semaines. Prescrit anxiolytique léger et suivi psychologique.",
-                "Douleur abdominale chronique, suspicion de gastrite. Prescription d'IPP et fibroscopie à programmer.",
-                "Examen de routine. Patient en bonne santé générale. Vaccination à jour. Prochain rendez-vous dans 6 mois."
-            ];
+    if (transcribeBtn) {
+        transcribeBtn.addEventListener('click', function() {
+            transcribeBtn.disabled = true;
+            transcribeBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Transcription...';
             
-            const transcription = mockTranscriptions[Math.floor(Math.random() * mockTranscriptions.length)];
-            appendToTextArea(transcription, 'Enregistrement vocal transcrit');
-            
-            transcribeBtn.disabled = false;
-            transcribeBtn.innerHTML = '<i class="fas fa-check mr-1"></i> Transcrit';
-            transcribeBtn.className = 'px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-sm font-medium transition-colors';
-        }, 2000);
-    });
+            // Simulation de transcription (remplacer par vraie API)
+            setTimeout(() => {
+                const mockTranscriptions = [
+                    "Patient présente des douleurs thoraciques depuis ce matin. Tension artérielle élevée à 160/95. Prescrit un ECG et analyses sanguines.",
+                    "Consultation de suivi pour diabète de type 2. Glycémie à jeun à 1,45 g/L. Ajustement de la metformine à 1000mg matin et soir.",
+                    "Patient anxieux, troubles du sommeil depuis 3 semaines. Prescrit anxiolytique léger et suivi psychologique.",
+                    "Douleur abdominale chronique, suspicion de gastrite. Prescription d'IPP et fibroscopie à programmer.",
+                    "Examen de routine. Patient en bonne santé générale. Vaccination à jour. Prochain rendez-vous dans 6 mois."
+                ];
+                
+                const transcription = mockTranscriptions[Math.floor(Math.random() * mockTranscriptions.length)];
+                appendToTextArea(transcription, 'Enregistrement vocal transcrit');
+                
+                transcribeBtn.disabled = false;
+                transcribeBtn.innerHTML = '<i class="fas fa-check mr-1"></i> Transcrit';
+                transcribeBtn.className = 'px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-sm font-medium transition-colors';
+            }, 2000);
+        });
+    }
     
     // Gestion du fichier audio uploadé
     audioField.addEventListener('change', function(e) {
@@ -508,7 +553,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    console.log('✅ Script d\'enregistrement initialisé');
+    // Initialisation de l'interface
+    resetRecordingUI();
+    
+    console.log('✅ Script d\'enregistrement complètement initialisé');
 });
 </script>
 {% endblock %}
