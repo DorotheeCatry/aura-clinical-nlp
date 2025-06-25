@@ -5,114 +5,114 @@
 {% block page_subtitle %}Créer une nouvelle observation médicale{% endblock %}
 
 {% block content %}
-<div class="min-h-screen bg-gray-50 p-6">
+<div class="min-h-screen bg-gray-50 p-4">
     <div class="max-w-7xl mx-auto">
         <form method="post" enctype="multipart/form-data" class="space-y-6">
             {% csrf_token %}
             
             <!-- Patient Selection Header -->
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <div class="flex items-center justify-between">
                     <div class="flex-1 max-w-md">
-                        <label for="{{ form.patient.id_for_label }}" class="block text-sm font-semibold text-gray-700 mb-3">
-                            <i class="fas fa-user mr-2 text-primary-steel"></i>Sélectionner le patient
+                        <label for="{{ form.patient.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-3">
+                            <i class="fas fa-user mr-2 text-primary-steel text-sm"></i>Sélectionner le patient
                         </label>
                         {{ form.patient }}
                         {% if form.patient.errors %}
                             <div class="mt-2 text-sm text-red-600">
                                 {% for error in form.patient.errors %}
-                                    <p><i class="fas fa-exclamation-circle mr-1"></i>{{ error }}</p>
+                                    <p><i class="fas fa-exclamation-circle mr-1 text-xs"></i>{{ error }}</p>
                                 {% endfor %}
                             </div>
                         {% endif %}
                     </div>
                     <a href="{% url 'med_assistant:patient_create' %}" 
-                       class="ml-4 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors">
-                        <i class="fas fa-plus mr-2"></i>Nouveau patient
+                       class="ml-4 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors">
+                        <i class="fas fa-plus mr-2 text-xs"></i>Nouveau patient
                     </a>
                 </div>
             </div>
 
             <!-- Main Content - Two Columns -->
-            <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
+            <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
                 
                 <!-- Left Column: Audio Recording -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                     <!-- Header -->
-                    <div class="flex items-center mb-8">
-                        <div class="w-14 h-14 bg-primary-steel rounded-xl flex items-center justify-center mr-4">
-                            <i class="fas fa-microphone text-white text-xl"></i>
+                    <div class="flex items-center mb-6">
+                        <div class="w-10 h-10 bg-primary-steel rounded-lg flex items-center justify-center mr-3">
+                            <i class="fas fa-microphone text-white text-sm"></i>
                         </div>
                         <div>
-                            <h2 class="text-2xl font-bold text-gray-800">Enregistrement vocal</h2>
-                            <p class="text-gray-600">Dictez votre observation médicale</p>
+                            <h2 class="text-lg font-semibold text-gray-800">Enregistrement vocal</h2>
+                            <p class="text-sm text-gray-600">Dictez votre observation médicale</p>
                         </div>
                     </div>
                     
                     <!-- Recording Controls -->
-                    <div class="text-center mb-8">
-                        <div class="flex justify-center items-center space-x-8 mb-8">
+                    <div class="text-center mb-6">
+                        <div class="flex justify-center items-center space-x-6 mb-6">
                             <div class="text-center">
                                 <button type="button" id="startRecord" 
-                                        class="w-24 h-24 bg-green-500 hover:bg-green-600 text-white rounded-full flex items-center justify-center text-3xl transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105">
+                                        class="w-16 h-16 bg-green-500 hover:bg-green-600 text-white rounded-full flex items-center justify-center text-lg transition-all duration-200 shadow-md hover:shadow-lg">
                                     <i class="fas fa-microphone"></i>
                                 </button>
-                                <p class="text-sm text-gray-600 mt-2 font-medium">Démarrer</p>
+                                <p class="text-xs text-gray-600 mt-2 font-medium">Démarrer</p>
                             </div>
                             
                             <div class="text-center">
                                 <button type="button" id="stopRecord" disabled
-                                        class="w-24 h-24 bg-red-400 text-white rounded-full flex items-center justify-center text-3xl transition-all duration-200 shadow-lg disabled:opacity-50">
+                                        class="w-16 h-16 bg-red-400 text-white rounded-full flex items-center justify-center text-lg transition-all duration-200 shadow-md disabled:opacity-50">
                                     <i class="fas fa-stop"></i>
                                 </button>
-                                <p class="text-sm text-gray-600 mt-2 font-medium">Arrêter</p>
+                                <p class="text-xs text-gray-600 mt-2 font-medium">Arrêter</p>
                             </div>
                             
                             <div class="text-center">
                                 <button type="button" id="playRecord" disabled
-                                        class="w-24 h-24 bg-primary-steel hover:bg-primary-deep text-white rounded-full flex items-center justify-center text-3xl transition-all duration-200 shadow-lg disabled:opacity-50 hover:shadow-xl transform hover:scale-105">
+                                        class="w-16 h-16 bg-primary-steel hover:bg-primary-deep text-white rounded-full flex items-center justify-center text-lg transition-all duration-200 shadow-md disabled:opacity-50">
                                     <i class="fas fa-play"></i>
                                 </button>
-                                <p class="text-sm text-gray-600 mt-2 font-medium">Écouter</p>
+                                <p class="text-xs text-gray-600 mt-2 font-medium">Écouter</p>
                             </div>
                         </div>
                         
                         <!-- Status and Visualizer -->
-                        <div class="bg-gray-50 rounded-xl p-6 mb-6 border border-gray-200">
-                            <div class="mb-4">
-                                <canvas id="audioVisualizer" width="500" height="100" class="w-full h-24 rounded-lg bg-white border border-gray-200"></canvas>
+                        <div class="bg-gray-50 rounded-lg p-4 mb-4 border border-gray-200">
+                            <div class="mb-3">
+                                <canvas id="audioVisualizer" width="400" height="80" class="w-full h-16 rounded-lg bg-white border border-gray-200"></canvas>
                             </div>
-                            <div id="recordingStatus" class="text-lg font-semibold text-gray-700 mb-2">
+                            <div id="recordingStatus" class="text-sm font-medium text-gray-700 mb-2">
                                 Appuyez sur le microphone pour commencer
                             </div>
-                            <div id="recordingTimer" class="text-2xl font-mono font-bold text-primary-steel" style="display: none;">
+                            <div id="recordingTimer" class="text-xl font-mono font-bold text-primary-steel" style="display: none;">
                                 00:00
                             </div>
                         </div>
                         
                         <!-- Audio Player -->
-                        <div id="audioPlayerContainer" style="display: none;" class="mb-6">
+                        <div id="audioPlayerContainer" style="display: none;" class="mb-4">
                             <audio id="audioPlayer" controls class="w-full rounded-lg"></audio>
                         </div>
                     </div>
                     
                     <!-- File Upload Alternative -->
-                    <div class="border-t border-gray-200 pt-6">
-                        <h3 class="text-lg font-semibold text-gray-700 mb-4 flex items-center">
-                            <i class="fas fa-upload mr-3 text-primary-steel"></i>
+                    <div class="border-t border-gray-200 pt-4">
+                        <h3 class="text-sm font-medium text-gray-700 mb-3 flex items-center">
+                            <i class="fas fa-upload mr-2 text-primary-steel text-xs"></i>
                             Ou importer un fichier audio
                         </h3>
-                        <div class="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-primary-steel transition-colors">
+                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-primary-steel transition-colors">
                             {{ form.audio_file }}
                             {% if form.audio_file.errors %}
-                                <div class="mt-3 text-sm text-red-600">
+                                <div class="mt-2 text-sm text-red-600">
                                     {% for error in form.audio_file.errors %}
-                                        <p><i class="fas fa-exclamation-circle mr-1"></i>{{ error }}</p>
+                                        <p><i class="fas fa-exclamation-circle mr-1 text-xs"></i>{{ error }}</p>
                                     {% endfor %}
                                 </div>
                             {% endif %}
-                            <p class="mt-3 text-sm text-gray-500">
-                                <i class="fas fa-file-audio mr-2"></i>
+                            <p class="mt-2 text-xs text-gray-500">
+                                <i class="fas fa-file-audio mr-1 text-xs"></i>
                                 Formats supportés: MP3, WAV, OGG, M4A, WebM
                             </p>
                         </div>
@@ -120,27 +120,27 @@
                 </div>
 
                 <!-- Right Column: Text Input -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                     <!-- Header -->
-                    <div class="flex items-center mb-8">
-                        <div class="w-14 h-14 bg-primary-steel rounded-xl flex items-center justify-center mr-4">
-                            <i class="fas fa-keyboard text-white text-xl"></i>
+                    <div class="flex items-center mb-6">
+                        <div class="w-10 h-10 bg-primary-steel rounded-lg flex items-center justify-center mr-3">
+                            <i class="fas fa-keyboard text-white text-sm"></i>
                         </div>
                         <div>
-                            <h2 class="text-2xl font-bold text-gray-800">Saisie manuelle</h2>
-                            <p class="text-gray-600">Rédigez votre observation</p>
+                            <h2 class="text-lg font-semibold text-gray-800">Saisie manuelle</h2>
+                            <p class="text-sm text-gray-600">Rédigez votre observation</p>
                         </div>
                     </div>
                     
                     <!-- Text Area -->
                     <div class="h-full">
-                        <label for="{{ form.texte_saisi.id_for_label }}" class="block text-lg font-semibold text-gray-700 mb-4">
+                        <label for="{{ form.texte_saisi.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-3">
                             Note médicale
                         </label>
                         <div class="relative">
                             <textarea name="{{ form.texte_saisi.name }}" 
                                       id="{{ form.texte_saisi.id_for_label }}"
-                                      class="w-full h-96 px-6 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-steel focus:border-primary-steel transition-all resize-none text-base leading-relaxed"
+                                      class="w-full h-80 px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-steel focus:border-primary-steel transition-all resize-none text-sm leading-relaxed"
                                       placeholder="Saisissez votre observation médicale ici...
 
 Exemple de structure :
@@ -152,14 +152,14 @@ Exemple de structure :
 • Suivi recommandé">{{ form.texte_saisi.value|default_if_none:"" }}</textarea>
                             
                             <!-- Character counter -->
-                            <div class="absolute bottom-4 right-4 text-sm text-gray-400 bg-white px-2 py-1 rounded">
+                            <div class="absolute bottom-3 right-3 text-xs text-gray-400 bg-white px-2 py-1 rounded">
                                 <span id="charCount">0</span> caractères
                             </div>
                         </div>
                         {% if form.texte_saisi.errors %}
-                            <div class="mt-3 text-sm text-red-600">
+                            <div class="mt-2 text-sm text-red-600">
                                 {% for error in form.texte_saisi.errors %}
-                                    <p><i class="fas fa-exclamation-circle mr-1"></i>{{ error }}</p>
+                                    <p><i class="fas fa-exclamation-circle mr-1 text-xs"></i>{{ error }}</p>
                                 {% endfor %}
                             </div>
                         {% endif %}
@@ -168,36 +168,36 @@ Exemple de structure :
             </div>
 
             <!-- AI Processing Info -->
-            <div class="bg-gradient-to-r from-primary-deep to-primary-steel rounded-xl p-6 text-white">
+            <div class="bg-gradient-to-r from-primary-deep to-primary-steel rounded-lg p-6 text-white">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center">
-                        <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center mr-4">
-                            <i class="fas fa-robot text-white text-xl"></i>
+                        <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center mr-3">
+                            <i class="fas fa-robot text-white text-sm"></i>
                         </div>
                         <div>
-                            <h3 class="text-xl font-bold">Analyse automatique AURA</h3>
-                            <p class="text-white/90">L'IA analysera automatiquement votre observation</p>
+                            <h3 class="text-lg font-semibold">Analyse automatique AURA</h3>
+                            <p class="text-sm text-white/90">L'IA analysera automatiquement votre observation</p>
                         </div>
                     </div>
-                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
                         <div class="text-center bg-white/10 rounded-lg p-3">
-                            <i class="fas fa-volume-up text-xl mb-2"></i>
-                            <div class="font-semibold">Whisper</div>
+                            <i class="fas fa-volume-up text-sm mb-1"></i>
+                            <div class="font-medium">Whisper</div>
                             <div class="text-xs opacity-80">Transcription</div>
                         </div>
                         <div class="text-center bg-white/10 rounded-lg p-3">
-                            <i class="fas fa-tags text-xl mb-2"></i>
-                            <div class="font-semibold">CamemBERT</div>
+                            <i class="fas fa-tags text-sm mb-1"></i>
+                            <div class="font-medium">CamemBERT</div>
                             <div class="text-xs opacity-80">Classification</div>
                         </div>
                         <div class="text-center bg-white/10 rounded-lg p-3">
-                            <i class="fas fa-search text-xl mb-2"></i>
-                            <div class="font-semibold">DrBERT</div>
+                            <i class="fas fa-search text-sm mb-1"></i>
+                            <div class="font-medium">DrBERT</div>
                             <div class="text-xs opacity-80">Extraction</div>
                         </div>
                         <div class="text-center bg-white/10 rounded-lg p-3">
-                            <i class="fas fa-compress-alt text-xl mb-2"></i>
-                            <div class="font-semibold">T5</div>
+                            <i class="fas fa-compress-alt text-sm mb-1"></i>
+                            <div class="font-medium">T5</div>
                             <div class="text-xs opacity-80">Résumé</div>
                         </div>
                     </div>
@@ -206,25 +206,25 @@ Exemple de structure :
 
             <!-- Form Errors -->
             {% if form.non_field_errors %}
-                <div class="bg-red-50 border border-red-200 rounded-xl p-4">
+                <div class="bg-red-50 border border-red-200 rounded-lg p-4">
                     {% for error in form.non_field_errors %}
                         <p class="text-sm text-red-600">
-                            <i class="fas fa-exclamation-circle mr-1"></i>{{ error }}
+                            <i class="fas fa-exclamation-circle mr-1 text-xs"></i>{{ error }}
                         </p>
                     {% endfor %}
                 </div>
             {% endif %}
 
             <!-- Action Buttons -->
-            <div class="flex justify-between items-center pt-6">
+            <div class="flex justify-between items-center pt-4">
                 <a href="{% url 'med_assistant:dashboard' %}" 
-                   class="px-8 py-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-semibold transition-colors">
-                    <i class="fas fa-times mr-2"></i>
+                   class="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors">
+                    <i class="fas fa-times mr-2 text-sm"></i>
                     Annuler
                 </a>
                 <button type="submit" 
-                        class="px-12 py-4 bg-primary-steel hover:bg-primary-deep text-white rounded-xl font-semibold text-lg transition-colors shadow-lg hover:shadow-xl">
-                    <i class="fas fa-save mr-3"></i>
+                        class="px-8 py-3 bg-primary-steel hover:bg-primary-deep text-white rounded-lg font-medium transition-colors shadow-md hover:shadow-lg">
+                    <i class="fas fa-save mr-2 text-sm"></i>
                     Créer et analyser
                 </button>
             </div>
@@ -323,7 +323,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 audioField.files = dataTransfer.files;
                 
                 status.textContent = 'Enregistrement terminé avec succès';
-                status.className = 'text-lg font-semibold text-green-600 mb-2';
+                status.className = 'text-sm font-medium text-green-600 mb-2';
                 timer.style.display = 'none';
             };
             
@@ -331,7 +331,7 @@ document.addEventListener('DOMContentLoaded', function() {
             startBtn.disabled = true;
             stopBtn.disabled = false;
             status.textContent = 'Enregistrement en cours...';
-            status.className = 'text-lg font-semibold text-red-600 mb-2';
+            status.className = 'text-sm font-medium text-red-600 mb-2';
             timer.style.display = 'block';
             
             // Start timer
@@ -342,7 +342,7 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (err) {
             console.error('Erreur d\'accès au microphone:', err);
             status.textContent = 'Erreur d\'accès au microphone';
-            status.className = 'text-lg font-semibold text-red-600 mb-2';
+            status.className = 'text-sm font-medium text-red-600 mb-2';
         }
     }
     
