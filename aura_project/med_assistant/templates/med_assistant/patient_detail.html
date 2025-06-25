@@ -4,33 +4,22 @@
 
 {% block content %}
 <div class="space-y-6">
-    <!-- En-tête patient avec résumé automatique -->
+    <!-- En-tête patient -->
     <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
-        <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between">
-            <div class="flex items-center space-x-4 mb-4 lg:mb-0">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex items-center space-x-4">
                 <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
                     <i class="fas fa-user text-blue-600 text-2xl"></i>
                 </div>
                 <div>
                     <h1 class="text-2xl font-bold text-slate-800">{{ patient.nom_complet }}</h1>
-                    <p class="text-slate-600">Né(e) le {{ patient.date_naissance|date:"d/m/Y" }} ({{ patient.age }} ans)</p>
-                    <div class="flex items-center space-x-4 mt-2">
-                        <span class="text-sm text-slate-500">
-                            {{ patient.observations.count }} observation{{ patient.observations.count|pluralize }}
-                        </span>
-                        {% if patient_summary.risk_level %}
-                        <span class="px-2 py-1 text-xs font-medium rounded-full 
-                            {% if patient_summary.risk_level == 'Élevé' %}bg-red-100 text-red-700
-                            {% elif patient_summary.risk_level == 'Modéré' %}bg-yellow-100 text-yellow-700
-                            {% elif patient_summary.risk_level == 'Faible' %}bg-green-100 text-green-700
-                            {% else %}bg-gray-100 text-gray-700{% endif %}">
-                            Risque {{ patient_summary.risk_level|lower }}
-                        </span>
-                        {% endif %}
-                    </div>
+                    <p class="text-slate-600">Né(e) le {{ patient.date_naissance|date:"d/m/Y" }}</p>
+                    <p class="text-sm text-slate-500">
+                        {{ patient.observations.count }} observation{{ patient.observations.count|pluralize }}
+                    </p>
                 </div>
             </div>
-            <div class="flex space-x-2">
+            <div class="mt-4 sm:mt-0 flex space-x-2">
                 <a href="{% url 'med_assistant:observation_create' %}?patient_id={{ patient.id }}" 
                    class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
                     <i class="fas fa-plus mr-2"></i>
@@ -45,207 +34,18 @@
         </div>
     </div>
 
-    <!-- Résumé automatique du patient -->
-    {% if patient_summary %}
-    <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200">
-        <h2 class="text-xl font-semibold text-blue-800 mb-4 flex items-center">
-            <i class="fas fa-robot mr-2"></i>
-            Résumé automatique IA
-        </h2>
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div class="lg:col-span-2">
-                <p class="text-blue-700 text-lg leading-relaxed mb-4">{{ patient_summary.summary }}</p>
-                
-                {% if patient_summary.themes %}
-                <div class="mb-4">
-                    <h3 class="font-medium text-blue-800 mb-2">Thèmes principaux :</h3>
-                    <div class="flex flex-wrap gap-2">
-                        {% for theme in patient_summary.themes %}
-                        <span class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
-                            {{ theme.name }} ({{ theme.count }})
-                        </span>
-                        {% endfor %}
-                    </div>
-                </div>
-                {% endif %}
-
-                {% if patient_summary.predictions %}
-                <div>
-                    <h3 class="font-medium text-blue-800 mb-2">Prédictions IA :</h3>
-                    <div class="flex flex-wrap gap-2">
-                        {% for pred in patient_summary.predictions %}
-                        <span class="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-sm font-medium">
-                            {{ pred.pathology }} ({{ pred.count }})
-                        </span>
-                        {% endfor %}
-                    </div>
-                </div>
-                {% endif %}
-            </div>
-            
-            <div class="space-y-4">
-                {% if patient_summary.first_visit %}
-                <div class="bg-white rounded-lg p-4 border border-blue-200">
-                    <div class="text-sm text-blue-600 font-medium">Première visite</div>
-                    <div class="text-blue-800 font-semibold">{{ patient_summary.first_visit|date:"d/m/Y" }}</div>
-                </div>
-                {% endif %}
-                
-                {% if patient_summary.recent_activity %}
-                <div class="bg-white rounded-lg p-4 border border-blue-200">
-                    <div class="text-sm text-blue-600 font-medium">Dernière activité</div>
-                    <div class="text-blue-800 font-semibold">
-                        Il y a {{ patient_summary.recent_activity.days_ago }} jour{{ patient_summary.recent_activity.days_ago|pluralize }}
-                    </div>
-                    <div class="text-sm text-blue-600">{{ patient_summary.recent_activity.theme }}</div>
-                </div>
-                {% endif %}
-                
-                <div class="bg-white rounded-lg p-4 border border-blue-200">
-                    <div class="text-sm text-blue-600 font-medium">Niveau de risque</div>
-                    <div class="text-lg font-bold 
-                        {% if patient_summary.risk_level == 'Élevé' %}text-red-600
-                        {% elif patient_summary.risk_level == 'Modéré' %}text-yellow-600
-                        {% elif patient_summary.risk_level == 'Faible' %}text-green-600
-                        {% else %}text-gray-600{% endif %}">
-                        {{ patient_summary.risk_level }}
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    {% endif %}
-
-    <!-- Statistiques du patient -->
-    {% if patient_stats %}
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div class="bg-white rounded-lg p-4 border border-slate-200">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm text-slate-600">Suivi depuis</p>
-                    <p class="text-lg font-semibold text-slate-800">
-                        {{ patient_stats.follow_up_duration_days }} jours
-                    </p>
-                </div>
-                <i class="fas fa-calendar-alt text-blue-500"></i>
-            </div>
-        </div>
-        
-        <div class="bg-white rounded-lg p-4 border border-slate-200">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm text-slate-600">Fréquence moyenne</p>
-                    <p class="text-lg font-semibold text-slate-800">
-                        {{ patient_stats.avg_days_between_visits }} jours
-                    </p>
-                </div>
-                <i class="fas fa-clock text-green-500"></i>
-            </div>
-        </div>
-        
-        <div class="bg-white rounded-lg p-4 border border-slate-200">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm text-slate-600">Taux de traitement</p>
-                    <p class="text-lg font-semibold text-slate-800">
-                        {{ patient_stats.success_rate }}%
-                    </p>
-                </div>
-                <i class="fas fa-check-circle text-purple-500"></i>
-            </div>
-        </div>
-        
-        <div class="bg-white rounded-lg p-4 border border-slate-200">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm text-slate-600">Observations traitées</p>
-                    <p class="text-lg font-semibold text-slate-800">
-                        {{ patient_stats.total_processed }}
-                    </p>
-                </div>
-                <i class="fas fa-brain text-orange-500"></i>
-            </div>
-        </div>
-    </div>
-    {% endif %}
-
-    <!-- Timeline des observations -->
-    {% if timeline_data %}
-    <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
-        <h2 class="text-xl font-semibold text-slate-800 mb-6 flex items-center">
-            <i class="fas fa-timeline mr-2 text-blue-600"></i>
-            Timeline médicale
-        </h2>
-        <div class="relative">
-            <!-- Ligne de timeline -->
-            <div class="absolute left-4 top-0 bottom-0 w-0.5 bg-slate-200"></div>
-            
-            <div class="space-y-6">
-                {% for event in timeline_data %}
-                <div class="relative flex items-start space-x-4">
-                    <!-- Point de timeline -->
-                    <div class="relative z-10 w-8 h-8 rounded-full flex items-center justify-center
-                        {% if event.theme == 'cardiovasculaire' %}bg-red-100 text-red-600
-                        {% elif event.theme == 'psy' %}bg-purple-100 text-purple-600
-                        {% elif event.theme == 'diabete' %}bg-yellow-100 text-yellow-600
-                        {% else %}bg-blue-100 text-blue-600{% endif %}">
-                        <i class="fas fa-circle text-xs"></i>
-                    </div>
-                    
-                    <!-- Contenu de l'événement -->
-                    <div class="flex-1 bg-slate-50 rounded-lg p-4 border border-slate-200">
-                        <div class="flex items-center justify-between mb-2">
-                            <h3 class="font-medium text-slate-800">{{ event.title }}</h3>
-                            <div class="flex items-center space-x-2">
-                                <span class="text-sm text-slate-500">{{ event.date|date:"d/m/Y H:i" }}</span>
-                                {% if event.processed %}
-                                <span class="w-2 h-2 bg-green-500 rounded-full"></span>
-                                {% else %}
-                                <span class="w-2 h-2 bg-yellow-500 rounded-full"></span>
-                                {% endif %}
-                            </div>
-                        </div>
-                        
-                        <p class="text-slate-600 text-sm mb-3">{{ event.description }}</p>
-                        
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center space-x-2">
-                                {% if event.prediction is not None %}
-                                <span class="px-2 py-1 bg-indigo-100 text-indigo-700 text-xs rounded-full">
-                                    Prédiction: {{ event.prediction }}
-                                </span>
-                                {% endif %}
-                                {% if event.theme %}
-                                <span class="px-2 py-1 bg-slate-100 text-slate-700 text-xs rounded-full">
-                                    {{ event.theme|title }}
-                                </span>
-                                {% endif %}
-                            </div>
-                            <a href="{% url 'med_assistant:observation_detail' event.id %}" 
-                               class="text-blue-600 hover:text-blue-800 text-sm font-medium">
-                                Voir détails →
-                            </a>
-                        </div>
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-    </div>
-    {% endif %}
-
-    <!-- Historique des observations (version compacte) -->
+    <!-- Historique des observations -->
     {% if observations %}
     <div class="bg-white rounded-xl shadow-sm border border-slate-200">
         <div class="p-6 border-b border-slate-200">
             <h2 class="text-xl font-semibold text-slate-800 flex items-center">
                 <i class="fas fa-file-medical mr-2 text-blue-600"></i>
-                Historique détaillé ({{ observations|length }} observations)
+                Historique médical
             </h2>
         </div>
         <div class="divide-y divide-slate-200">
             {% for observation in observations %}
-            <div class="p-6 hover:bg-slate-50 transition-colors">
+            <div class="p-6">
                 <div class="flex items-start justify-between">
                     <div class="flex-1">
                         <div class="flex items-center space-x-3 mb-3">
@@ -254,45 +54,60 @@
                             </div>
                             <div>
                                 <h3 class="font-medium text-slate-800">
-                                    {{ observation.date|date:"d/m/Y à H:i" }}
+                                    Observation du {{ observation.date|date:"d/m/Y à H:i" }}
                                 </h3>
-                                <div class="flex items-center space-x-2 mt-1">
-                                    {% if observation.theme_classe %}
-                                    <span class="inline-block px-2 py-1 text-xs font-medium rounded-full {{ observation.get_theme_display_color }}">
-                                        {{ observation.get_theme_classe_display }}
-                                    </span>
-                                    {% endif %}
-                                    {% if observation.model_prediction is not None %}
-                                    <span class="inline-block px-2 py-1 text-xs font-medium rounded-full bg-indigo-100 text-indigo-700">
-                                        Prédiction: {{ observation.model_prediction }}
-                                    </span>
-                                    {% endif %}
-                                </div>
+                                {% if observation.theme_classe %}
+                                <span class="inline-block mt-1 px-2 py-1 text-xs font-medium rounded-full {{ observation.get_theme_display_color }}">
+                                    {{ observation.get_theme_classe_display }}
+                                </span>
+                                {% endif %}
                             </div>
                         </div>
                         
                         {% if observation.resume %}
-                        <p class="text-slate-600 text-sm mb-3">{{ observation.resume|truncatewords:20 }}</p>
+                        <div class="mb-3">
+                            <h4 class="text-sm font-medium text-slate-700 mb-1">Résumé</h4>
+                            <p class="text-slate-600 text-sm">{{ observation.resume }}</p>
+                        </div>
                         {% endif %}
                         
-                        <div class="flex items-center space-x-4 text-sm">
-                            {% if not observation.traitement_termine %}
-                            <span class="flex items-center text-yellow-600">
-                                <i class="fas fa-clock mr-1"></i>
-                                En cours
-                            </span>
-                            {% elif observation.traitement_erreur %}
-                            <span class="flex items-center text-red-600">
-                                <i class="fas fa-exclamation-triangle mr-1"></i>
-                                Erreur
-                            </span>
-                            {% else %}
-                            <span class="flex items-center text-green-600">
-                                <i class="fas fa-check-circle mr-1"></i>
-                                Traité
-                            </span>
-                            {% endif %}
+                        {% if observation.entites_formatees %}
+                        <div class="mb-3">
+                            <h4 class="text-sm font-medium text-slate-700 mb-2">Entités extraites</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                                {% for type, items in observation.entites_formatees.items %}
+                                {% if items %}
+                                <div>
+                                    <span class="font-medium text-slate-600 capitalize">{{ type|title }}:</span>
+                                    <div class="mt-1">
+                                        {% if items|length == 1 and items.0.valeur %}
+                                            <span class="text-slate-700">{{ items.0.valeur }} {{ items.0.unite|default:"" }}</span>
+                                        {% else %}
+                                            {% for item in items %}
+                                            <span class="inline-block bg-slate-100 text-slate-700 px-2 py-1 rounded text-xs mr-1 mb-1">
+                                                {% if item.valeur %}{{ item.valeur }} {{ item.unite|default:"" }}{% else %}{{ item }}{% endif %}
+                                            </span>
+                                            {% endfor %}
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                {% endif %}
+                                {% endfor %}
+                            </div>
                         </div>
+                        {% endif %}
+                        
+                        {% if not observation.traitement_termine %}
+                        <div class="flex items-center text-yellow-600 text-sm">
+                            <i class="fas fa-clock mr-1"></i>
+                            Traitement en cours...
+                        </div>
+                        {% elif observation.traitement_erreur %}
+                        <div class="flex items-center text-red-600 text-sm">
+                            <i class="fas fa-exclamation-triangle mr-1"></i>
+                            Erreur de traitement
+                        </div>
+                        {% endif %}
                     </div>
                     
                     <div class="ml-4 flex flex-col space-y-2">
