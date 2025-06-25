@@ -1,0 +1,215 @@
+{% extends 'med_assistant/base.html' %}
+
+{% block title %}Observation {{ observation.patient.nom_complet }} - AURA{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- En-tête -->
+    <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+            <div>
+                <h1 class="text-2xl font-bold text-slate-800 flex items-center">
+                    <i class="fas fa-file-medical mr-3 text-blue-600"></i>
+                    Observation médicale
+                </h1>
+                <div class="mt-2 flex flex-wrap items-center gap-4 text-sm text-slate-600">
+                    <span><i class="fas fa-user mr-1"></i>{{ observation.patient.nom_complet }}</span>
+                    <span><i class="fas fa-calendar mr-1"></i>{{ observation.date|date:"d/m/Y à H:i" }}</span>
+                    {% if observation.theme_classe %}
+                    <span class="px-2 py-1 text-xs font-medium rounded-full {{ observation.get_theme_display_color }}">
+                        {{ observation.get_theme_classe_display }}
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="mt-4 sm:mt-0 flex space-x-2">
+                <a href="{% url 'med_assistant:patient_detail' observation.patient.id %}" 
+                   class="px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors">
+                    <i class="fas fa-user mr-2"></i>
+                    Voir patient
+                </a>
+                {% if observation.traitement_erreur %}
+                <form method="post" action="{% url 'med_assistant:observation_reprocess' observation.id %}" class="inline">
+                    {% csrf_token %}
+                    <button type="submit" 
+                            class="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors">
+                        <i class="fas fa-redo mr-2"></i>
+                        Retraiter
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Statut du traitement -->
+    <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+        <h2 class="text-lg font-semibold text-slate-800 mb-4 flex items-center">
+            <i class="fas fa-info-circle mr-2 text-blue-600"></i>
+            Statut du traitement
+        </h2>
+        {% if observation.traitement_termine %}
+            <div class="flex items-center text-green-600">
+                <i class="fas fa-check-circle mr-2"></i>
+                <span class="font-medium">Traitement terminé avec succès</span>
+            </div>
+        {% elif observation.traitement_erreur %}
+            <div class="space-y-2">
+                <div class="flex items-center text-red-600">
+                    <i class="fas fa-exclamation-triangle mr-2"></i>
+                    <span class="font-medium">Erreur lors du traitement</span>
+                </div>
+                <div class="bg-red-50 border border-red-200 rounded-lg p-3">
+                    <p class="text-sm text-red-700">{{ observation.traitement_erreur }}</p>
+                </div>
+            </div>
+        {% else %}
+            <div class="flex items-center text-yellow-600">
+                <i class="fas fa-clock mr-2"></i>
+                <span class="font-medium">Traitement en cours...</span>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Contenu source -->
+    <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+        <h2 class="text-lg font-semibold text-slate-800 mb-4 flex items-center">
+            <i class="fas fa-file-alt mr-2 text-blue-600"></i>
+            Contenu source
+        </h2>
+        
+        {% if observation.audio_file %}
+        <div class="mb-6 p-4 bg-purple-50 border border-purple-200 rounded-lg">
+            <h3 class="font-medium text-purple-800 mb-2 flex items-center">
+                <i class="fas fa-microphone mr-2"></i>
+                Fichier audio
+            </h3>
+            <audio controls class="w-full">
+                <source src="{{ observation.audio_file.url }}" type="audio/mpeg">
+                Votre navigateur ne supporte pas l'élément audio.
+            </audio>
+        </div>
+        {% endif %}
+
+        {% if observation.transcription %}
+        <div class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <h3 class="font-medium text-blue-800 mb-2 flex items-center">
+                <i class="fas fa-volume-up mr-2"></i>
+                Transcription automatique
+            </h3>
+            <p class="text-slate-700">{{ observation.transcription }}</p>
+        </div>
+        {% endif %}
+
+        {% if observation.texte_saisi %}
+        <div class="p-4 bg-green-50 border border-green-200 rounded-lg">
+            <h3 class="font-medium text-green-800 mb-2 flex items-center">
+                <i class="fas fa-keyboard mr-2"></i>
+                Texte saisi
+            </h3>
+            <p class="text-slate-700">{{ observation.texte_saisi }}</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Résultats de l'analyse NLP -->
+    {% if observation.traitement_termine %}
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Résumé -->
+        {% if observation.resume %}
+        <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+            <h2 class="text-lg font-semibold text-slate-800 mb-4 flex items-center">
+                <i class="fas fa-compress-alt mr-2 text-orange-600"></i>
+                Résumé automatique
+            </h2>
+            <div class="p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                <p class="text-slate-700">{{ observation.resume }}</p>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Classification -->
+        {% if observation.theme_classe %}
+        <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+            <h2 class="text-lg font-semibold text-slate-800 mb-4 flex items-center">
+                <i class="fas fa-tags mr-2 text-green-600"></i>
+                Classification automatique
+            </h2>
+            <div class="p-4 bg-green-50 border border-green-200 rounded-lg">
+                <span class="inline-block px-3 py-2 text-lg font-medium rounded-full {{ observation.get_theme_display_color }}">
+                    {{ observation.get_theme_classe_display }}
+                </span>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Entités extraites -->
+    {% if observation.entites_formatees %}
+    <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+        <h2 class="text-lg font-semibold text-slate-800 mb-4 flex items-center">
+            <i class="fas fa-search mr-2 text-purple-600"></i>
+            Entités médicales extraites
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for type, items in observation.entites_formatees.items %}
+            {% if items %}
+            <div class="p-4 bg-purple-50 border border-purple-200 rounded-lg">
+                <h3 class="font-medium text-purple-800 mb-3 capitalize flex items-center">
+                    <i class="fas fa-{% if type == 'symptomes' %}heartbeat{% elif type == 'medicaments' %}pills{% elif type == 'examens' %}microscope{% elif type == 'valeurs_biologiques' %}chart-line{% else %}tag{% endif %} mr-2"></i>
+                    {{ type|title }}
+                </h3>
+                <div class="space-y-2">
+                    {% for item in items %}
+                    <div class="bg-white px-3 py-2 rounded-lg border border-purple-200">
+                        {% if item.valeur %}
+                            <span class="font-medium">{{ item.valeur }}</span>
+                            {% if item.unite %}
+                                <span class="text-slate-600 ml-1">{{ item.unite }}</span>
+                            {% endif %}
+                            {% if item.type %}
+                                <div class="text-xs text-slate-500 mt-1">{{ item.type }}</div>
+                            {% endif %}
+                        {% else %}
+                            <span>{{ item }}</span>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    {% endif %}
+
+    <!-- Métadonnées -->
+    <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+        <h2 class="text-lg font-semibold text-slate-800 mb-4 flex items-center">
+            <i class="fas fa-info mr-2 text-slate-600"></i>
+            Informations techniques
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div>
+                <span class="font-medium text-slate-700">Créé le:</span>
+                <span class="text-slate-600 ml-2">{{ observation.created_at|date:"d/m/Y à H:i:s" }}</span>
+            </div>
+            <div>
+                <span class="font-medium text-slate-700">Modifié le:</span>
+                <span class="text-slate-600 ml-2">{{ observation.updated_at|date:"d/m/Y à H:i:s" }}</span>
+            </div>
+            <div>
+                <span class="font-medium text-slate-700">ID:</span>
+                <span class="text-slate-600 ml-2">{{ observation.id }}</span>
+            </div>
+            <div>
+                <span class="font-medium text-slate-700">Traitement:</span>
+                <span class="text-slate-600 ml-2">
+                    {% if observation.traitement_termine %}Terminé{% else %}En cours{% endif %}
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,180 @@
+{% extends 'med_assistant/base.html' %}
+
+{% block title %}Nouvelle observation - AURA{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="bg-white rounded-xl p-8 shadow-sm border border-slate-200">
+        <!-- En-tête -->
+        <div class="mb-8">
+            <h1 class="text-2xl font-bold text-slate-800 flex items-center">
+                <i class="fas fa-file-medical mr-3 text-blue-600"></i>
+                Nouvelle observation médicale
+            </h1>
+            <p class="text-slate-600 mt-2">
+                Ajoutez une nouvelle observation par saisie de texte ou upload audio. 
+                L'analyse NLP sera effectuée automatiquement.
+            </p>
+        </div>
+
+        <!-- Formulaire -->
+        <form method="post" enctype="multipart/form-data" class="space-y-8">
+            {% csrf_token %}
+            
+            <!-- Sélection du patient -->
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                <h2 class="text-lg font-semibold text-blue-800 mb-4 flex items-center">
+                    <i class="fas fa-user mr-2"></i>
+                    Patient
+                </h2>
+                <div>
+                    <label for="{{ form.patient.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">
+                        Sélectionner le patient *
+                    </label>
+                    {{ form.patient }}
+                    {% if form.patient.errors %}
+                        <div class="mt-2 text-sm text-red-600">
+                            {% for error in form.patient.errors %}
+                                <p><i class="fas fa-exclamation-circle mr-1"></i>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="mt-3">
+                    <a href="{% url 'med_assistant:patient_create' %}" 
+                       class="text-blue-600 hover:text-blue-700 text-sm font-medium">
+                        <i class="fas fa-plus mr-1"></i>
+                        Créer un nouveau patient
+                    </a>
+                </div>
+            </div>
+
+            <!-- Méthodes de saisie -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Saisie texte -->
+                <div class="bg-green-50 border border-green-200 rounded-lg p-6">
+                    <h2 class="text-lg font-semibold text-green-800 mb-4 flex items-center">
+                        <i class="fas fa-keyboard mr-2"></i>
+                        Saisie manuelle
+                    </h2>
+                    <div>
+                        <label for="{{ form.texte_saisi.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">
+                            Note médicale
+                        </label>
+                        {{ form.texte_saisi }}
+                        {% if form.texte_saisi.errors %}
+                            <div class="mt-2 text-sm text-red-600">
+                                {% for error in form.texte_saisi.errors %}
+                                    <p><i class="fas fa-exclamation-circle mr-1"></i>{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        <p class="mt-2 text-sm text-slate-500">
+                            Saisissez directement votre observation médicale
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Upload audio -->
+                <div class="bg-purple-50 border border-purple-200 rounded-lg p-6">
+                    <h2 class="text-lg font-semibold text-purple-800 mb-4 flex items-center">
+                        <i class="fas fa-microphone mr-2"></i>
+                        Enregistrement audio
+                    </h2>
+                    <div>
+                        <label for="{{ form.audio_file.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">
+                            Fichier audio
+                        </label>
+                        {{ form.audio_file }}
+                        {% if form.audio_file.errors %}
+                            <div class="mt-2 text-sm text-red-600">
+                                {% for error in form.audio_file.errors %}
+                                    <p><i class="fas fa-exclamation-circle mr-1"></i>{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        <p class="mt-2 text-sm text-slate-500">
+                            Formats acceptés: MP3, WAV, OGG, M4A
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Information sur le traitement -->
+            <div class="bg-slate-50 border border-slate-200 rounded-lg p-6">
+                <h3 class="text-lg font-semibold text-slate-800 mb-3 flex items-center">
+                    <i class="fas fa-robot mr-2 text-blue-600"></i>
+                    Traitement automatique AURA
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-volume-up text-blue-600"></i>
+                        <span>Transcription Whisper</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-tags text-green-600"></i>
+                        <span>Classification CamemBERT</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-search text-purple-600"></i>
+                        <span>Extraction DrBERT</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-compress-alt text-orange-600"></i>
+                        <span>Résumé T5</span>
+                    </div>
+                </div>
+                <p class="mt-3 text-slate-600">
+                    Une fois l'observation créée, AURA analysera automatiquement le contenu pour extraire 
+                    les informations médicales pertinentes.
+                </p>
+            </div>
+
+            <!-- Erreurs générales du formulaire -->
+            {% if form.non_field_errors %}
+                <div class="p-4 bg-red-50 border border-red-200 rounded-lg">
+                    {% for error in form.non_field_errors %}
+                        <p class="text-sm text-red-600">
+                            <i class="fas fa-exclamation-circle mr-1"></i>{{ error }}
+                        </p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <!-- Boutons d'action -->
+            <div class="flex flex-col sm:flex-row sm:justify-end space-y-3 sm:space-y-0 sm:space-x-3 pt-6 border-t border-slate-200">
+                <a href="{% url 'med_assistant:dashboard' %}" 
+                   class="px-6 py-3 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors text-center">
+                    <i class="fas fa-times mr-2"></i>
+                    Annuler
+                </a>
+                <button type="submit" 
+                        class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                    <i class="fas fa-save mr-2"></i>
+                    Créer et analyser
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// Validation côté client
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    const texteField = document.querySelector('#{{ form.texte_saisi.id_for_label }}');
+    const audioField = document.querySelector('#{{ form.audio_file.id_for_label }}');
+    
+    form.addEventListener('submit', function(e) {
+        const hasText = texteField.value.trim().length > 0;
+        const hasAudio = audioField.files.length > 0;
+        
+        if (!hasText && !hasAudio) {
+            e.preventDefault();
+            alert('Veuillez fournir soit un texte, soit un fichier audio.');
+            return false;
+        }
+    });
+});
+</script>
+{% endblock %}

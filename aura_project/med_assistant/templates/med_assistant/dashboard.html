@@ -1,0 +1,169 @@
+{% extends 'med_assistant/base.html' %}
+
+{% block title %}Dashboard - AURA{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+    <!-- En-tête du dashboard -->
+    <div class="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl p-8 text-white">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-3xl font-bold mb-2">Bienvenue sur AURA</h1>
+                <p class="text-blue-100 text-lg">Assistant d'URgence & d'Analyse - Votre partenaire pour l'analyse médicale intelligente</p>
+            </div>
+            <div class="hidden md:block">
+                <div class="w-20 h-20 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                    <i class="fas fa-stethoscope text-4xl"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiques principales -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Total patients -->
+        <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-slate-500 text-sm font-medium">Total Patients</p>
+                    <p class="text-3xl font-bold text-slate-800 mt-1">{{ total_patients }}</p>
+                </div>
+                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-users text-blue-600 text-xl"></i>
+                </div>
+            </div>
+            <div class="mt-4">
+                <a href="{% url 'med_assistant:patient_list' %}" 
+                   class="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center">
+                    Voir tous les patients
+                    <i class="fas fa-arrow-right ml-1 text-xs"></i>
+                </a>
+            </div>
+        </div>
+
+        <!-- Total observations -->
+        <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-slate-500 text-sm font-medium">Observations</p>
+                    <p class="text-3xl font-bold text-slate-800 mt-1">{{ total_observations }}</p>
+                </div>
+                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-file-medical text-green-600 text-xl"></i>
+                </div>
+            </div>
+            <div class="mt-4">
+                <a href="{% url 'med_assistant:observation_create' %}" 
+                   class="text-green-600 hover:text-green-700 text-sm font-medium flex items-center">
+                    Nouvelle observation
+                    <i class="fas fa-plus ml-1 text-xs"></i>
+                </a>
+            </div>
+        </div>
+
+        <!-- Actions rapides -->
+        <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <p class="text-slate-500 text-sm font-medium">Actions rapides</p>
+                </div>
+                <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-bolt text-purple-600 text-xl"></i>
+                </div>
+            </div>
+            <div class="space-y-2">
+                <a href="{% url 'med_assistant:patient_create' %}" 
+                   class="block w-full text-left px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 rounded-lg transition-colors">
+                    <i class="fas fa-user-plus mr-2"></i>Nouveau patient
+                </a>
+                <a href="{% url 'med_assistant:observation_create' %}" 
+                   class="block w-full text-left px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 rounded-lg transition-colors">
+                    <i class="fas fa-microphone mr-2"></i>Enregistrer audio
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Répartition par thème -->
+    {% if themes_stats %}
+    <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+        <h2 class="text-xl font-semibold text-slate-800 mb-6 flex items-center">
+            <i class="fas fa-chart-pie mr-2 text-blue-600"></i>
+            Répartition par spécialité
+        </h2>
+        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            {% for theme, count in themes_stats.items %}
+            <div class="text-center p-4 bg-slate-50 rounded-lg">
+                <div class="text-2xl font-bold text-slate-800">{{ count }}</div>
+                <div class="text-sm text-slate-600 mt-1">{{ theme }}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Observations récentes -->
+    {% if observations_recentes %}
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200">
+        <div class="p-6 border-b border-slate-200">
+            <h2 class="text-xl font-semibold text-slate-800 flex items-center">
+                <i class="fas fa-clock mr-2 text-blue-600"></i>
+                Observations récentes
+            </h2>
+        </div>
+        <div class="divide-y divide-slate-200">
+            {% for observation in observations_recentes %}
+            <div class="p-6 hover:bg-slate-50 transition-colors">
+                <div class="flex items-center justify-between">
+                    <div class="flex-1">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                <i class="fas fa-user text-blue-600"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-medium text-slate-800">{{ observation.patient.nom_complet }}</h3>
+                                <p class="text-sm text-slate-500">{{ observation.date|date:"d/m/Y à H:i" }}</p>
+                            </div>
+                        </div>
+                        {% if observation.resume %}
+                        <p class="mt-2 text-sm text-slate-600 line-clamp-2">{{ observation.resume }}</p>
+                        {% endif %}
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        {% if observation.theme_classe %}
+                        <span class="px-2 py-1 text-xs font-medium rounded-full {{ observation.get_theme_display_color }}">
+                            {{ observation.get_theme_classe_display }}
+                        </span>
+                        {% endif %}
+                        <a href="{% url 'med_assistant:observation_detail' observation.id %}" 
+                           class="text-blue-600 hover:text-blue-700">
+                            <i class="fas fa-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="p-4 bg-slate-50 text-center">
+            <a href="{% url 'med_assistant:patient_list' %}" 
+               class="text-blue-600 hover:text-blue-700 text-sm font-medium">
+                Voir toutes les observations
+            </a>
+        </div>
+    </div>
+    {% else %}
+    <div class="bg-white rounded-xl p-8 shadow-sm border border-slate-200 text-center">
+        <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <i class="fas fa-file-medical text-slate-400 text-2xl"></i>
+        </div>
+        <h3 class="text-lg font-medium text-slate-800 mb-2">Aucune observation</h3>
+        <p class="text-slate-500 mb-6">Commencez par créer votre première observation médicale.</p>
+        <a href="{% url 'med_assistant:observation_create' %}" 
+           class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+            <i class="fas fa-plus mr-2"></i>
+            Créer une observation
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
