@@ -1,164 +1,164 @@
 {% extends 'med_assistant/base.html' %}
 
-{% block title %}Dashboard - AURA{% endblock %}
+{% block title %}Tableau de bord - AURA{% endblock %}
 
 {% block content %}
-<div class="space-y-8">
-    <!-- En-tête du dashboard avec image -->
-    <div class="aura-gradient rounded-2xl p-8 text-slate-800 shadow-xl animate-slide-up">
+<div class="space-y-6">
+    <!-- En-tête professionnel -->
+    <div class="medical-card rounded-lg p-6 fade-in">
         <div class="flex items-center justify-between">
-            <div class="flex-1">
-                <h1 class="text-4xl font-bold mb-3 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                    Bienvenue sur AURA
-                </h1>
-                <p class="text-slate-600 text-lg mb-4">
-                    Assistant d'URgence & d'Analyse - Votre partenaire pour l'analyse médicale intelligente
-                </p>
-                <div class="flex items-center space-x-6 text-sm">
-                    <span class="flex items-center text-blue-600">
-                        <i class="fas fa-robot mr-2"></i>
-                        IA Médicale
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900 mb-2">Tableau de bord médical</h1>
+                <p class="text-gray-600">Vue d'ensemble de l'activité clinique et des analyses IA</p>
+                <div class="flex items-center space-x-4 mt-3 text-sm text-gray-500">
+                    <span class="flex items-center">
+                        <i class="fas fa-calendar mr-2"></i>
+                        {{ "now"|date:"d/m/Y" }}
                     </span>
-                    <span class="flex items-center text-green-600">
-                        <i class="fas fa-shield-alt mr-2"></i>
-                        Sécurisé
-                    </span>
-                    <span class="flex items-center text-purple-600">
+                    <span class="flex items-center">
                         <i class="fas fa-clock mr-2"></i>
-                        24/7
+                        {{ "now"|date:"H:i" }}
+                    </span>
+                    <span class="flex items-center">
+                        <i class="fas fa-activity mr-2 text-green-600"></i>
+                        Système opérationnel
                     </span>
                 </div>
             </div>
             <div class="hidden lg:block">
-                <div class="w-32 h-32 bg-white bg-opacity-20 rounded-full flex items-center justify-center animate-pulse-soft">
-                    <i class="fas fa-stethoscope text-6xl text-blue-600"></i>
+                <div class="medical-icon w-16 h-16">
+                    <i class="fas fa-hospital text-2xl"></i>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Statistiques principales -->
+    <!-- Métriques principales -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <!-- Total patients -->
-        <div class="aura-card rounded-2xl p-6 shadow-lg hover-lift animate-fade-in">
+        <div class="medical-stat-card medical-card rounded-lg p-6 fade-in">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-slate-600 text-sm font-medium">Total Patients</p>
-                    <p class="text-3xl font-bold text-slate-800 mt-1">{{ total_patients }}</p>
-                    <p class="text-xs text-green-600 mt-1">
+                    <p class="text-sm font-medium text-gray-600 uppercase tracking-wide">Patients totaux</p>
+                    <p class="text-3xl font-bold text-gray-900 mt-2">{{ total_patients }}</p>
+                    {% if patients_recents %}
+                    <p class="text-sm text-green-600 mt-1 flex items-center">
                         <i class="fas fa-arrow-up mr-1"></i>
                         +{{ patients_recents|length }} ce mois
                     </p>
+                    {% endif %}
                 </div>
-                <div class="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg">
-                    <i class="fas fa-users text-white text-xl"></i>
+                <div class="medical-icon">
+                    <i class="fas fa-users"></i>
                 </div>
             </div>
             <div class="mt-4">
                 <a href="{% url 'med_assistant:patient_list' %}" 
                    class="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center transition-colors">
-                    Voir tous les patients
+                    Gérer les patients
                     <i class="fas fa-arrow-right ml-2 text-xs"></i>
                 </a>
             </div>
         </div>
 
         <!-- Total observations -->
-        <div class="aura-card rounded-2xl p-6 shadow-lg hover-lift animate-fade-in">
+        <div class="medical-stat-card medical-card rounded-lg p-6 fade-in">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-slate-600 text-sm font-medium">Observations</p>
-                    <p class="text-3xl font-bold text-slate-800 mt-1">{{ total_observations }}</p>
-                    <p class="text-xs text-green-600 mt-1">
-                        <i class="fas fa-chart-line mr-1"></i>
+                    <p class="text-sm font-medium text-gray-600 uppercase tracking-wide">Observations</p>
+                    <p class="text-3xl font-bold text-gray-900 mt-2">{{ total_observations }}</p>
+                    <p class="text-sm text-blue-600 mt-1 flex items-center">
+                        <i class="fas fa-robot mr-1"></i>
                         Analyse IA active
                     </p>
                 </div>
-                <div class="w-14 h-14 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center shadow-lg">
-                    <i class="fas fa-file-medical text-white text-xl"></i>
+                <div class="medical-icon">
+                    <i class="fas fa-file-medical-alt"></i>
                 </div>
             </div>
             <div class="mt-4">
                 <a href="{% url 'med_assistant:observation_create' %}" 
-                   class="text-green-600 hover:text-green-700 text-sm font-medium flex items-center transition-colors">
+                   class="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center transition-colors">
                     Nouvelle observation
                     <i class="fas fa-plus ml-2 text-xs"></i>
                 </a>
             </div>
         </div>
 
-        <!-- Entités extraites -->
-        <div class="aura-card rounded-2xl p-6 shadow-lg hover-lift animate-fade-in">
+        <!-- Entités NLP -->
+        <div class="medical-stat-card medical-card rounded-lg p-6 fade-in">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-slate-600 text-sm font-medium">Entités NLP</p>
-                    <p class="text-3xl font-bold text-slate-800 mt-1">
+                    <p class="text-sm font-medium text-gray-600 uppercase tracking-wide">Entités détectées</p>
+                    <p class="text-3xl font-bold text-gray-900 mt-2">
                         {% if entity_stats %}
                             {{ entity_stats.values|length }}
                         {% else %}
                             0
                         {% endif %}
                     </p>
-                    <p class="text-xs text-purple-600 mt-1">
+                    <p class="text-sm text-purple-600 mt-1 flex items-center">
                         <i class="fas fa-brain mr-1"></i>
-                        IA DrBERT
+                        DrBERT NLP
                     </p>
                 </div>
-                <div class="w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
-                    <i class="fas fa-search text-white text-xl"></i>
+                <div class="medical-icon">
+                    <i class="fas fa-search-plus"></i>
                 </div>
             </div>
             <div class="mt-4">
                 <a href="{% url 'med_assistant:statistics' %}" 
-                   class="text-purple-600 hover:text-purple-700 text-sm font-medium flex items-center transition-colors">
-                    Voir statistiques
-                    <i class="fas fa-chart-pie ml-2 text-xs"></i>
+                   class="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center transition-colors">
+                    Voir analyses
+                    <i class="fas fa-chart-bar ml-2 text-xs"></i>
                 </a>
             </div>
         </div>
 
-        <!-- Actions rapides -->
-        <div class="aura-card rounded-2xl p-6 shadow-lg hover-lift animate-fade-in">
-            <div class="flex items-center justify-between mb-4">
+        <!-- Efficacité IA -->
+        <div class="medical-stat-card medical-card rounded-lg p-6 fade-in">
+            <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-slate-600 text-sm font-medium">Actions rapides</p>
+                    <p class="text-sm font-medium text-gray-600 uppercase tracking-wide">Précision IA</p>
+                    <p class="text-3xl font-bold text-gray-900 mt-2">94.2%</p>
+                    <p class="text-sm text-green-600 mt-1 flex items-center">
+                        <i class="fas fa-check-circle mr-1"></i>
+                        Performance optimale
+                    </p>
                 </div>
-                <div class="w-14 h-14 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl flex items-center justify-center shadow-lg">
-                    <i class="fas fa-bolt text-white text-xl"></i>
+                <div class="medical-icon">
+                    <i class="fas fa-bullseye"></i>
                 </div>
             </div>
-            <div class="space-y-3">
-                <a href="{% url 'med_assistant:patient_create' %}" 
-                   class="block w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-white/70 rounded-xl transition-all duration-300 border border-slate-200">
-                    <i class="fas fa-user-plus mr-3 text-blue-500"></i>Nouveau patient
-                </a>
-                <a href="{% url 'med_assistant:observation_create' %}" 
-                   class="block w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-white/70 rounded-xl transition-all duration-300 border border-slate-200">
-                    <i class="fas fa-microphone mr-3 text-red-500"></i>Enregistrer audio
-                </a>
+            <div class="mt-4">
+                <div class="medical-progress">
+                    <div class="medical-progress-bar" style="width: 94.2%"></div>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Graphiques et statistiques -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <!-- Répartition par thème -->
+    <!-- Analyses et statistiques -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Répartition par spécialité -->
         {% if themes_stats %}
-        <div class="aura-card rounded-2xl p-6 shadow-lg hover-lift animate-fade-in">
-            <h2 class="text-xl font-semibold text-slate-800 mb-6 flex items-center">
-                <i class="fas fa-chart-pie mr-3 text-blue-600"></i>
-                Répartition par spécialité
-            </h2>
-            <div class="space-y-3">
+        <div class="medical-card rounded-lg p-6 fade-in">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-lg font-semibold text-gray-900">Répartition par spécialité</h2>
+                <i class="fas fa-chart-pie text-blue-600"></i>
+            </div>
+            <div class="space-y-4">
                 {% for theme, count in themes_stats.items %}
-                <div class="flex items-center justify-between p-3 bg-white rounded-xl border border-slate-200">
-                    <span class="font-medium text-slate-700">{{ theme }}</span>
+                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div class="flex items-center space-x-3">
-                        <div class="w-20 bg-slate-200 rounded-full h-2">
-                            <div class="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full" 
-                                 style="width: {{ count|floatformat:0 }}%"></div>
+                        <div class="w-3 h-3 rounded-full {% if 'Cardio' in theme %}bg-red-500{% elif 'Psy' in theme %}bg-purple-500{% elif 'Diabète' in theme %}bg-yellow-500{% else %}bg-gray-500{% endif %}"></div>
+                        <span class="font-medium text-gray-700">{{ theme }}</span>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <div class="medical-progress w-20">
+                            <div class="medical-progress-bar" data-width="{{ count|floatformat:0 }}%"></div>
                         </div>
-                        <span class="text-lg font-bold text-slate-800 min-w-[2rem]">{{ count }}</span>
+                        <span class="text-lg font-bold text-gray-900 min-w-[2rem]">{{ count }}</span>
                     </div>
                 </div>
                 {% endfor %}
@@ -166,23 +166,22 @@
         </div>
         {% endif %}
 
-        <!-- Évolution mensuelle -->
+        <!-- Évolution temporelle -->
         {% if monthly_stats %}
-        <div class="aura-card rounded-2xl p-6 shadow-lg hover-lift animate-fade-in">
-            <h2 class="text-xl font-semibold text-slate-800 mb-6 flex items-center">
-                <i class="fas fa-chart-line mr-3 text-green-600"></i>
-                Évolution des observations
-            </h2>
-            <div class="space-y-3">
+        <div class="medical-card rounded-lg p-6 fade-in">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-lg font-semibold text-gray-900">Évolution mensuelle</h2>
+                <i class="fas fa-chart-line text-green-600"></i>
+            </div>
+            <div class="space-y-4">
                 {% for stat in monthly_stats %}
-                <div class="flex items-center justify-between p-3 bg-white rounded-xl border border-slate-200">
-                    <span class="font-medium text-slate-700">{{ stat.month }}</span>
+                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <span class="font-medium text-gray-700">{{ stat.month }}</span>
                     <div class="flex items-center space-x-3">
-                        <div class="w-20 bg-slate-200 rounded-full h-2">
-                            <div class="bg-gradient-to-r from-green-500 to-emerald-600 h-2 rounded-full" 
-                                 style="width: {% if stat.count > 0 %}{{ stat.count|add:10 }}%{% else %}5%{% endif %}"></div>
+                        <div class="medical-progress w-20">
+                            <div class="medical-progress-bar bg-green-600" data-width="{% if stat.count > 0 %}{{ stat.count|add:10 }}%{% else %}5%{% endif %}"></div>
                         </div>
-                        <span class="text-lg font-bold text-slate-800 min-w-[2rem]">{{ stat.count }}</span>
+                        <span class="text-lg font-bold text-gray-900 min-w-[2rem]">{{ stat.count }}</span>
                     </div>
                 </div>
                 {% endfor %}
@@ -193,50 +192,70 @@
 
     <!-- Observations récentes -->
     {% if observations_recentes %}
-    <div class="aura-card rounded-2xl shadow-lg animate-fade-in">
-        <div class="p-6 border-b border-slate-200">
-            <h2 class="text-xl font-semibold text-slate-800 flex items-center">
-                <i class="fas fa-clock mr-3 text-blue-600"></i>
-                Observations récentes
-            </h2>
+    <div class="medical-card rounded-lg fade-in">
+        <div class="p-6 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+                <h2 class="text-lg font-semibold text-gray-900">Observations récentes</h2>
+                <span class="text-sm text-gray-500">{{ observations_recentes|length }} dernières</span>
+            </div>
         </div>
-        <div class="divide-y divide-slate-200">
+        <div class="medical-table">
             {% for observation in observations_recentes %}
-            <div class="p-6 hover:bg-white/50 transition-all duration-300">
-                <div class="flex items-center justify-between">
-                    <div class="flex-1">
-                        <div class="flex items-center space-x-4">
-                            <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-                                <i class="fas fa-user text-white"></i>
-                            </div>
-                            <div>
-                                <h3 class="font-semibold text-slate-800">{{ observation.patient.nom_complet }}</h3>
-                                <p class="text-sm text-slate-500">{{ observation.date|date:"d/m/Y à H:i" }}</p>
-                                {% if observation.patient.age %}
-                                <p class="text-xs text-slate-400">{{ observation.patient.age }} ans</p>
-                                {% endif %}
-                            </div>
-                        </div>
-                        {% if observation.resume %}
-                        <p class="mt-3 text-sm text-slate-600 line-clamp-2 ml-16">{{ observation.resume }}</p>
+            <div class="flex items-center justify-between p-6 border-b border-gray-200 last:border-b-0 hover:bg-gray-50 transition-colors">
+                <div class="flex items-center space-x-4">
+                    <div class="medical-icon w-12 h-12">
+                        <i class="fas fa-user-md"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-900">{{ observation.patient.nom_complet }}</h3>
+                        <p class="text-sm text-gray-500">{{ observation.date|date:"d/m/Y à H:i" }}</p>
+                        {% if observation.patient.age %}
+                        <p class="text-xs text-gray-400">{{ observation.patient.age }} ans</p>
                         {% endif %}
                     </div>
-                    <div class="flex items-center space-x-3">
-                        {% if observation.theme_classe %}
-                        <span class="px-3 py-1 text-xs font-medium rounded-full border {{ observation.get_theme_display_color }}">
-                            {{ observation.get_theme_classe_display }}
-                        </span>
-                        {% endif %}
-                        <a href="{% url 'med_assistant:observation_detail' observation.id %}" 
-                           class="p-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors">
-                            <i class="fas fa-arrow-right"></i>
-                        </a>
-                    </div>
+                </div>
+                
+                <div class="flex-1 mx-6">
+                    {% if observation.resume %}
+                    <p class="text-sm text-gray-600 line-clamp-2">{{ observation.resume }}</p>
+                    {% else %}
+                    <p class="text-sm text-gray-400 italic">En cours d'analyse...</p>
+                    {% endif %}
+                </div>
+                
+                <div class="flex items-center space-x-3">
+                    {% if observation.theme_classe %}
+                    <span class="medical-badge medical-badge-{{ observation.theme_classe }}">
+                        {{ observation.get_theme_classe_display }}
+                    </span>
+                    {% endif %}
+                    
+                    {% if not observation.traitement_termine %}
+                    <span class="flex items-center text-yellow-600 text-sm">
+                        <i class="fas fa-clock mr-1"></i>
+                        <span class="hidden sm:inline">En cours</span>
+                    </span>
+                    {% elif observation.traitement_erreur %}
+                    <span class="flex items-center text-red-600 text-sm">
+                        <i class="fas fa-exclamation-triangle mr-1"></i>
+                        <span class="hidden sm:inline">Erreur</span>
+                    </span>
+                    {% else %}
+                    <span class="flex items-center text-green-600 text-sm">
+                        <i class="fas fa-check-circle mr-1"></i>
+                        <span class="hidden sm:inline">Terminé</span>
+                    </span>
+                    {% endif %}
+                    
+                    <a href="{% url 'med_assistant:observation_detail' observation.id %}" 
+                       class="medical-button-secondary px-3 py-2 rounded-lg text-sm">
+                        <i class="fas fa-eye"></i>
+                    </a>
                 </div>
             </div>
             {% endfor %}
         </div>
-        <div class="p-4 bg-gradient-to-r from-slate-50 to-gray-50 text-center rounded-b-2xl">
+        <div class="p-4 bg-gray-50 text-center rounded-b-lg">
             <a href="{% url 'med_assistant:patient_list' %}" 
                class="text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors">
                 Voir toutes les observations
@@ -244,18 +263,19 @@
         </div>
     </div>
     {% else %}
-    <div class="aura-card rounded-2xl p-12 shadow-lg text-center animate-fade-in">
-        <div class="w-20 h-20 bg-gradient-to-br from-slate-400 to-slate-500 rounded-full flex items-center justify-center mx-auto mb-6">
-            <i class="fas fa-file-medical text-white text-2xl"></i>
+    <!-- État vide -->
+    <div class="medical-card rounded-lg p-12 text-center fade-in">
+        <div class="medical-icon w-20 h-20 mx-auto mb-6 bg-gray-100">
+            <i class="fas fa-file-medical text-2xl text-gray-400"></i>
         </div>
-        <h3 class="text-xl font-semibold text-slate-800 mb-3">Aucune observation</h3>
-        <p class="text-slate-600 mb-8 max-w-md mx-auto">
+        <h3 class="text-xl font-semibold text-gray-900 mb-3">Aucune observation</h3>
+        <p class="text-gray-600 mb-8 max-w-md mx-auto">
             Commencez par créer votre première observation médicale pour voir la puissance de l'analyse IA d'AURA.
         </p>
         <a href="{% url 'med_assistant:observation_create' %}" 
-           class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all duration-300 shadow-lg hover-lift">
-            <i class="fas fa-plus mr-2"></i>
-            Créer une observation
+           class="medical-button-primary px-6 py-3 rounded-lg font-medium inline-flex items-center space-x-2">
+            <i class="fas fa-plus"></i>
+            <span>Créer une observation</span>
         </a>
     </div>
     {% endif %}

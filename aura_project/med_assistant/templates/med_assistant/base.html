@@ -7,150 +7,322 @@
     <title>{% block title %}AURA - Assistant Médical{% endblock %}</title>
     {% tailwind_css %}
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --aura-primary: #e7ecf2;
-            --aura-secondary: #eaeff3;
-            --aura-tertiary: #e2e7ed;
-            --aura-quaternary: #dee3e7;
-            --aura-quinary: #e0e5e9;
+            --medical-primary: #2563eb;
+            --medical-secondary: #1e40af;
+            --medical-accent: #3b82f6;
+            --medical-light: #eff6ff;
+            --medical-gray: #f8fafc;
+            --medical-dark: #1e293b;
+            --medical-border: #e2e8f0;
+            --medical-success: #059669;
+            --medical-warning: #d97706;
+            --medical-error: #dc2626;
+            --medical-text: #334155;
+            --medical-text-light: #64748b;
         }
         
-        .aura-gradient {
-            background: linear-gradient(135deg, var(--aura-primary) 0%, var(--aura-secondary) 50%, var(--aura-tertiary) 100%);
+        * {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
         }
         
-        .aura-card {
-            background: rgba(231, 236, 242, 0.8);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+        body {
+            background-color: var(--medical-gray);
+            color: var(--medical-text);
         }
         
-        .animate-fade-in {
-            animation: fadeIn 0.6s ease-in-out;
+        .medical-header {
+            background: linear-gradient(135deg, var(--medical-primary) 0%, var(--medical-secondary) 100%);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
         
-        .animate-slide-up {
-            animation: slideUp 0.8s ease-out;
+        .medical-card {
+            background: white;
+            border: 1px solid var(--medical-border);
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            transition: all 0.2s ease;
         }
         
-        .animate-pulse-soft {
-            animation: pulseSoft 2s infinite;
+        .medical-card:hover {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            transform: translateY(-1px);
+        }
+        
+        .medical-button-primary {
+            background: var(--medical-primary);
+            color: white;
+            border: 1px solid var(--medical-primary);
+            transition: all 0.2s ease;
+        }
+        
+        .medical-button-primary:hover {
+            background: var(--medical-secondary);
+            border-color: var(--medical-secondary);
+        }
+        
+        .medical-button-secondary {
+            background: white;
+            color: var(--medical-primary);
+            border: 1px solid var(--medical-border);
+            transition: all 0.2s ease;
+        }
+        
+        .medical-button-secondary:hover {
+            background: var(--medical-light);
+            border-color: var(--medical-primary);
+        }
+        
+        .medical-stat-card {
+            background: white;
+            border-left: 4px solid var(--medical-primary);
+            transition: all 0.2s ease;
+        }
+        
+        .medical-stat-card:hover {
+            border-left-color: var(--medical-secondary);
+            transform: translateX(2px);
+        }
+        
+        .medical-nav-item {
+            color: white;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+        
+        .medical-nav-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+        
+        .medical-nav-item.active {
+            background: rgba(255, 255, 255, 0.15);
+        }
+        
+        .medical-nav-item.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: white;
+        }
+        
+        .medical-badge {
+            font-size: 0.75rem;
+            font-weight: 500;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.375rem;
+        }
+        
+        .medical-badge-cardio {
+            background: #fef2f2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+        
+        .medical-badge-psy {
+            background: #f3e8ff;
+            color: #6b21a8;
+            border: 1px solid #d8b4fe;
+        }
+        
+        .medical-badge-diabete {
+            background: #fefce8;
+            color: #a16207;
+            border: 1px solid #fde047;
+        }
+        
+        .medical-badge-general {
+            background: #f1f5f9;
+            color: #475569;
+            border: 1px solid #cbd5e1;
+        }
+        
+        .medical-progress {
+            background: #e2e8f0;
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .medical-progress-bar {
+            background: var(--medical-primary);
+            height: 100%;
+            transition: width 1s ease;
+        }
+        
+        .medical-icon {
+            width: 2.5rem;
+            height: 2.5rem;
+            background: var(--medical-light);
+            color: var(--medical-primary);
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }
+        
+        .medical-table {
+            background: white;
+            border: 1px solid var(--medical-border);
+        }
+        
+        .medical-table th {
+            background: var(--medical-gray);
+            color: var(--medical-text);
+            font-weight: 600;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--medical-border);
+        }
+        
+        .medical-table td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--medical-border);
+        }
+        
+        .medical-table tr:hover {
+            background: var(--medical-light);
+        }
+        
+        .medical-form-input {
+            border: 1px solid var(--medical-border);
+            background: white;
+            color: var(--medical-text);
+            transition: all 0.2s ease;
+        }
+        
+        .medical-form-input:focus {
+            border-color: var(--medical-primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+            outline: none;
+        }
+        
+        .medical-sidebar {
+            background: white;
+            border-right: 1px solid var(--medical-border);
+            min-height: calc(100vh - 4rem);
+        }
+        
+        .medical-content {
+            background: var(--medical-gray);
+            min-height: calc(100vh - 4rem);
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
         }
         
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
+            from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
         
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(40px); }
-            to { opacity: 1; transform: translateY(0); }
+        .slide-in {
+            animation: slideIn 0.3s ease-out;
         }
         
-        @keyframes pulseSoft {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
-        }
-        
-        .hover-lift {
-            transition: all 0.3s ease;
-        }
-        
-        .hover-lift:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-        }
-        
-        .medical-pattern {
-            background-image: 
-                radial-gradient(circle at 20% 50%, rgba(120, 119, 198, 0.1) 0%, transparent 50%),
-                radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.1) 0%, transparent 50%),
-                radial-gradient(circle at 40% 80%, rgba(120, 219, 255, 0.1) 0%, transparent 50%);
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
         }
     </style>
 </head>
-<body class="min-h-screen medical-pattern">
-    <!-- Navigation -->
-    <nav class="aura-card shadow-lg border-b border-white/20 sticky top-0 z-50">
+<body>
+    <!-- Header médical professionnel -->
+    <header class="medical-header">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-16">
                 <!-- Logo et titre -->
-                <div class="flex items-center space-x-4 animate-fade-in">
+                <div class="flex items-center space-x-4">
                     <div class="flex items-center space-x-3">
-                        <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg animate-pulse-soft">
+                        <div class="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
                             <i class="fas fa-stethoscope text-white text-lg"></i>
                         </div>
                         <div>
-                            <h1 class="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">AURA</h1>
-                            <p class="text-xs text-slate-600">Assistant d'URgence & d'Analyse</p>
+                            <h1 class="text-xl font-bold text-white">AURA</h1>
+                            <p class="text-xs text-blue-100">Assistant d'URgence & d'Analyse</p>
                         </div>
                     </div>
                 </div>
                 
-                <!-- Menu principal -->
-                <div class="hidden md:flex items-center space-x-2">
+                <!-- Navigation principale -->
+                <nav class="hidden md:flex items-center space-x-1">
                     <a href="{% url 'med_assistant:dashboard' %}" 
-                       class="flex items-center space-x-2 px-4 py-2 rounded-xl text-slate-700 hover:bg-white/50 transition-all duration-300 hover-lift">
-                        <i class="fas fa-chart-line text-blue-500"></i>
-                        <span class="font-medium">Dashboard</span>
+                       class="medical-nav-item px-4 py-2 rounded-lg text-sm font-medium flex items-center space-x-2 {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                        <i class="fas fa-chart-line"></i>
+                        <span>Tableau de bord</span>
                     </a>
                     <a href="{% url 'med_assistant:patient_list' %}" 
-                       class="flex items-center space-x-2 px-4 py-2 rounded-xl text-slate-700 hover:bg-white/50 transition-all duration-300 hover-lift">
-                        <i class="fas fa-users text-green-500"></i>
-                        <span class="font-medium">Patients</span>
+                       class="medical-nav-item px-4 py-2 rounded-lg text-sm font-medium flex items-center space-x-2 {% if 'patient' in request.resolver_match.url_name %}active{% endif %}">
+                        <i class="fas fa-users"></i>
+                        <span>Patients</span>
                     </a>
                     <a href="{% url 'med_assistant:statistics' %}" 
-                       class="flex items-center space-x-2 px-4 py-2 rounded-xl text-slate-700 hover:bg-white/50 transition-all duration-300 hover-lift">
-                        <i class="fas fa-chart-pie text-purple-500"></i>
-                        <span class="font-medium">Statistiques</span>
+                       class="medical-nav-item px-4 py-2 rounded-lg text-sm font-medium flex items-center space-x-2 {% if request.resolver_match.url_name == 'statistics' %}active{% endif %}">
+                        <i class="fas fa-chart-pie"></i>
+                        <span>Statistiques</span>
                     </a>
+                </nav>
+                
+                <!-- Actions -->
+                <div class="flex items-center space-x-3">
                     <a href="{% url 'med_assistant:observation_create' %}" 
-                       class="flex items-center space-x-2 px-4 py-2 rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 transition-all duration-300 shadow-lg hover-lift">
+                       class="medical-button-secondary px-4 py-2 rounded-lg text-sm font-medium flex items-center space-x-2">
                         <i class="fas fa-plus"></i>
-                        <span class="font-medium">Nouvelle observation</span>
+                        <span class="hidden sm:inline">Nouvelle observation</span>
                     </a>
+                    
+                    <!-- Menu utilisateur -->
+                    <div class="relative">
+                        <button class="w-8 h-8 bg-white bg-opacity-20 rounded-full flex items-center justify-center text-white hover:bg-opacity-30 transition-colors">
+                            <i class="fas fa-user text-sm"></i>
+                        </button>
+                    </div>
                 </div>
                 
                 <!-- Menu mobile -->
                 <div class="md:hidden">
-                    <button id="mobile-menu-button" class="p-2 rounded-xl text-slate-600 hover:bg-white/50 transition-colors">
+                    <button id="mobile-menu-button" class="p-2 rounded-lg text-white hover:bg-white hover:bg-opacity-10 transition-colors">
                         <i class="fas fa-bars"></i>
                     </button>
                 </div>
             </div>
         </div>
         
-        <!-- Menu mobile (caché par défaut) -->
-        <div id="mobile-menu" class="hidden md:hidden border-t border-white/20 aura-card">
-            <div class="px-4 py-3 space-y-2">
+        <!-- Menu mobile -->
+        <div id="mobile-menu" class="hidden md:hidden border-t border-white border-opacity-20">
+            <div class="px-4 py-3 space-y-1">
                 <a href="{% url 'med_assistant:dashboard' %}" 
-                   class="block px-4 py-3 rounded-xl text-slate-700 hover:bg-white/50 transition-colors">
-                    <i class="fas fa-chart-line mr-3 text-blue-500"></i>Dashboard
+                   class="block px-4 py-3 rounded-lg text-white hover:bg-white hover:bg-opacity-10 transition-colors">
+                    <i class="fas fa-chart-line mr-3"></i>Tableau de bord
                 </a>
                 <a href="{% url 'med_assistant:patient_list' %}" 
-                   class="block px-4 py-3 rounded-xl text-slate-700 hover:bg-white/50 transition-colors">
-                    <i class="fas fa-users mr-3 text-green-500"></i>Patients
+                   class="block px-4 py-3 rounded-lg text-white hover:bg-white hover:bg-opacity-10 transition-colors">
+                    <i class="fas fa-users mr-3"></i>Patients
                 </a>
                 <a href="{% url 'med_assistant:statistics' %}" 
-                   class="block px-4 py-3 rounded-xl text-slate-700 hover:bg-white/50 transition-colors">
-                    <i class="fas fa-chart-pie mr-3 text-purple-500"></i>Statistiques
+                   class="block px-4 py-3 rounded-lg text-white hover:bg-white hover:bg-opacity-10 transition-colors">
+                    <i class="fas fa-chart-pie mr-3"></i>Statistiques
                 </a>
                 <a href="{% url 'med_assistant:observation_create' %}" 
-                   class="block px-4 py-3 rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 transition-colors">
+                   class="block px-4 py-3 rounded-lg text-white hover:bg-white hover:bg-opacity-10 transition-colors">
                     <i class="fas fa-plus mr-3"></i>Nouvelle observation
                 </a>
             </div>
         </div>
-    </nav>
+    </header>
 
-    <!-- Messages -->
+    <!-- Messages système -->
     {% if messages %}
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
             {% for message in messages %}
-                <div class="mb-4 p-4 rounded-xl animate-slide-up {% if message.tags == 'success' %}bg-green-50 text-green-800 border border-green-200{% elif message.tags == 'error' %}bg-red-50 text-red-800 border border-red-200{% elif message.tags == 'warning' %}bg-yellow-50 text-yellow-800 border border-yellow-200{% else %}bg-blue-50 text-blue-800 border border-blue-200{% endif %} shadow-lg">
+                <div class="mb-4 p-4 rounded-lg fade-in {% if message.tags == 'success' %}bg-green-50 text-green-800 border border-green-200{% elif message.tags == 'error' %}bg-red-50 text-red-800 border border-red-200{% elif message.tags == 'warning' %}bg-yellow-50 text-yellow-800 border border-yellow-200{% else %}bg-blue-50 text-blue-800 border border-blue-200{% endif %}">
                     <div class="flex items-center">
-                        <i class="fas {% if message.tags == 'success' %}fa-check-circle{% elif message.tags == 'error' %}fa-exclamation-circle{% elif message.tags == 'warning' %}fa-exclamation-triangle{% else %}fa-info-circle{% endif %} mr-3 text-lg"></i>
+                        <i class="fas {% if message.tags == 'success' %}fa-check-circle{% elif message.tags == 'error' %}fa-exclamation-circle{% elif message.tags == 'warning' %}fa-exclamation-triangle{% else %}fa-info-circle{% endif %} mr-3"></i>
                         {{ message }}
                     </div>
                 </div>
@@ -159,30 +331,44 @@
     {% endif %}
 
     <!-- Contenu principal -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {% block content %}
-        {% endblock %}
+    <main class="medical-content">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            {% block content %}
+            {% endblock %}
+        </div>
     </main>
 
-    <!-- Footer -->
-    <footer class="aura-card border-t border-white/20 mt-16">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div class="text-center">
-                <div class="flex justify-center items-center space-x-4 mb-4">
-                    <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+    <!-- Footer médical -->
+    <footer class="bg-white border-t border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="flex items-center space-x-4 mb-4 md:mb-0">
+                    <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
                         <i class="fas fa-stethoscope text-white text-sm"></i>
                     </div>
-                    <span class="text-lg font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">AURA</span>
+                    <div>
+                        <span class="text-lg font-bold text-gray-900">AURA</span>
+                        <p class="text-sm text-gray-600">Assistant d'URgence & d'Analyse</p>
+                    </div>
                 </div>
-                <p class="text-slate-600 text-sm">
-                    &copy; 2025 AURA - Assistant d'URgence & d'Analyse. 
-                    <br class="sm:hidden">
-                    Développé pour l'amélioration des soins médicaux.
-                </p>
-                <div class="mt-4 flex justify-center space-x-6 text-sm text-slate-500">
-                    <span><i class="fas fa-robot mr-1"></i>IA Médicale</span>
-                    <span><i class="fas fa-shield-alt mr-1"></i>Sécurisé</span>
-                    <span><i class="fas fa-clock mr-1"></i>24/7</span>
+                
+                <div class="flex items-center space-x-6 text-sm text-gray-500">
+                    <span class="flex items-center">
+                        <i class="fas fa-shield-alt mr-2 text-green-600"></i>
+                        Conforme RGPD
+                    </span>
+                    <span class="flex items-center">
+                        <i class="fas fa-lock mr-2 text-blue-600"></i>
+                        Données sécurisées
+                    </span>
+                    <span class="flex items-center">
+                        <i class="fas fa-certificate mr-2 text-purple-600"></i>
+                        Certifié médical
+                    </span>
+                </div>
+                
+                <div class="text-sm text-gray-500 mt-4 md:mt-0">
+                    &copy; 2025 AURA Medical AI. Tous droits réservés.
                 </div>
             </div>
         </div>
@@ -196,14 +382,14 @@
             menu.classList.toggle('hidden');
         });
 
-        // Auto-hide messages après 5 secondes avec animation
+        // Auto-hide messages
         setTimeout(function() {
             const messages = document.querySelectorAll('[class*="bg-green-50"], [class*="bg-red-50"], [class*="bg-yellow-50"], [class*="bg-blue-50"]');
             messages.forEach(function(message) {
                 if (message.parentElement) {
                     message.style.transition = 'all 0.5s ease-out';
-                    message.style.transform = 'translateX(100%)';
                     message.style.opacity = '0';
+                    message.style.transform = 'translateY(-10px)';
                     setTimeout(function() {
                         message.remove();
                     }, 500);
@@ -211,23 +397,32 @@
             });
         }, 5000);
 
-        // Animation au scroll
-        const observerOptions = {
-            threshold: 0.1,
-            rootMargin: '0px 0px -50px 0px'
-        };
-
-        const observer = new IntersectionObserver(function(entries) {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.classList.add('animate-fade-in');
+        // Animation des barres de progression
+        document.addEventListener('DOMContentLoaded', function() {
+            const progressBars = document.querySelectorAll('.medical-progress-bar');
+            progressBars.forEach(bar => {
+                const width = bar.style.width || bar.getAttribute('data-width');
+                if (width) {
+                    bar.style.width = '0%';
+                    setTimeout(() => {
+                        bar.style.width = width;
+                    }, 300);
                 }
             });
-        }, observerOptions);
+        });
 
-        // Observer tous les éléments avec la classe 'hover-lift'
-        document.querySelectorAll('.hover-lift').forEach(el => {
-            observer.observe(el);
+        // Smooth scroll pour les ancres
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
         });
     </script>
     
