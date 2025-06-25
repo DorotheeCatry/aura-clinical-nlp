@@ -42,7 +42,7 @@ INSTALLED_APPS = [
     'theme',
     'django_browser_reload',
     # AURA apps
-    'core',
+    #'core',
     'med_assistant',
 ]
 
@@ -125,8 +125,10 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATIC_URL = '/static/'
+STATICFILES_DIRS = [BASE_DIR / "theme" / "static"]
+STATIC_ROOT = BASE_DIR / "staticfiles"
+
 
 # Media files (uploads)
 MEDIA_URL = 'media/'
