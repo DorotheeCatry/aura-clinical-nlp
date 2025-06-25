@@ -43,6 +43,46 @@ except ImportError as e:
 logger = logging.getLogger(__name__)
 
 
+def regroup_entities(entities):
+    """
+    Regroupe les entités coupées en sous-tokens par DrBERT
+    
+    Args:
+        entities: Liste des entités brutes de DrBERT
+        
+    Returns:
+        Liste des entités regroupées
+    """
+    grouped = []
+    current = None
+
+    for ent in entities:
+        word = ent["word"]
+        score = ent["score"]
+        label = ent["entity_group"]
+
+        # Token collé au précédent (ex: '##uleur')
+        if word.startswith("##") and current:
+            current["word"] += word[2:]
+            current["end"] = ent["end"]
+            current["score"] = max(current["score"], score)  # ou moyenne si tu veux
+        else:
+            if current:
+                grouped.append(current)
+            current = {
+                "entity_group": label,
+                "word": word,
+                "score": score,
+                "start": ent["start"],
+                "end": ent["end"]
+            }
+
+    if current:
+        grouped.append(current)
+
+    return grouped
+
+
 class NLPPipeline:
     """
     Pipeline de traitement NLP pour les observations médicales
@@ -171,11 +211,12 @@ class NLPPipeline:
             )
             
             # Créer le pipeline NER avec optimisations
+            # IMPORTANT: Utiliser aggregation_strategy="none" pour avoir accès aux tokens individuels
             self.drbert_pipeline = pipeline(
                 "ner",
                 model=model,
                 tokenizer=tokenizer,
-                aggregation_strategy="simple",
+                aggregation_strategy="none",  # Pas d'agrégation automatique pour pouvoir regrouper manuellement
                 device=0 if torch.cuda.is_available() else -1,
                 torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32
             )
@@ -421,6 +462,7 @@ class NLPPipeline:
     def extract_entities_drbert(self, text: str) -> Dict[str, List[str]]:
         """
         Extrait les entités médicales avec DrBERT (chargé à la demande)
+        Utilise le regroupement d'entités pour reconstituer les mots coupés
         
         Args:
             text: Texte à analyser
@@ -436,8 +478,13 @@ class NLPPipeline:
             
             logger.info(f"🔍 Extraction d'entités DrBERT pour: {text[:50]}...")
             
-            # Utiliser le pipeline NER de DrBERT
-            entities = self.drbert_pipeline(text)
+            # Utiliser le pipeline NER de DrBERT (sans agrégation automatique)
+            raw_entities = self.drbert_pipeline(text)
+            
+            # Regrouper les entités coupées en sous-tokens
+            grouped_entities = regroup_entities(raw_entities)
+            
+            logger.info(f"🔧 Regroupement: {len(raw_entities)} entités brutes → {len(grouped_entities)} entités regroupées")
             
             # Organiser les entités par catégorie
             categorized_entities = {
@@ -447,25 +494,26 @@ class NLPPipeline:
                 'PROC': [],  # Procédures
             }
             
-            for entity in entities:
+            for entity in grouped_entities:
                 entity_label = entity['entity_group']
-                entity_text = entity['word']
+                entity_text = entity['word'].strip()
                 confidence = entity['score']
                 
                 # Mapper vers nos catégories
                 mapped_category = self.drbert_entity_mapping.get(entity_label, 'PROC')
                 
-                # Filtrer par confiance (seuil à 0.5)
-                if confidence > 0.5:
-                    # Éviter les doublons
-                    if entity_text not in categorized_entities[mapped_category]:
-                        categorized_entities[mapped_category].append(entity_text)
-                        logger.debug(f"  ✓ {mapped_category}: {entity_text} (conf: {confidence:.2f})")
+                # Filtrer par confiance (seuil à 0.5) et longueur minimale
+                if confidence > 0.5 and len(entity_text) > 2:
+                    # Éviter les doublons et nettoyer le texte
+                    cleaned_text = entity_text.replace('##', '').strip()
+                    if cleaned_text and cleaned_text not in categorized_entities[mapped_category]:
+                        categorized_entities[mapped_category].append(cleaned_text)
+                        logger.debug(f"  ✓ {mapped_category}: {cleaned_text} (conf: {confidence:.2f})")
             
             # Nettoyer les catégories vides
             categorized_entities = {k: v for k, v in categorized_entities.items() if v}
             
-            logger.info(f"✅ DrBERT: {sum(len(v) for v in categorized_entities.values())} entités extraites")
+            logger.info(f"✅ DrBERT: {sum(len(v) for v in categorized_entities.values())} entités extraites et regroupées")
             
             # Libérer DrBERT après utilisation pour économiser la mémoire
             if self.drbert_pipeline is not None:
@@ -625,7 +673,7 @@ class NLPPipeline:
                 results['model_prediction'] = prediction
                 logger.info(f"🏷️ Thème classifié: {theme} (prédiction: {prediction})")
             
-            # 4. Extraction d'entités (DrBERT local à la demande)
+            # 4. Extraction d'entités (DrBERT local à la demande avec regroupement)
             entities = self.extract_entities(text_source)
             results['entites'] = entities
             logger.info(f"🔍 Entités extraites: {len(entities)} catégories")
@@ -663,7 +711,8 @@ class NLPPipeline:
             'device': self.device,
             'pathology_mapping': self.pathology_mapping,
             'drbert_entity_mapping': self.drbert_entity_mapping,
-            'memory_optimized': True  # Nouveau : indique que la pipeline est optimisée pour la mémoire
+            'memory_optimized': True,  # Indique que la pipeline est optimisée pour la mémoire
+            'entity_regrouping': True  # Nouveau : indique que le regroupement d'entités est actif
         }
     
     # Méthodes de simulation pour le développement
