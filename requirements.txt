@@ -1,0 +1,24 @@
+# Django Core
+Django>=5.0.0
+python-decouple>=3.8
+django-tailwind[reload]>=4.0.1
+
+# NLP Dependencies
+torch>=2.0.0
+torchaudio>=2.0.0
+transformers>=4.35.0
+librosa>=0.10.0
+soundfile>=0.12.0
+
+# API Client
+requests>=2.31.0
+
+# Audio Processing (for transcription endpoint)
+faster-whisper>=0.10.0
+
+# Development
+black>=24.3.0
+flake8>=7.0.0
+isort>=5.13.2
+ipython>=8.24.0
+pytest-django>=4.8.0

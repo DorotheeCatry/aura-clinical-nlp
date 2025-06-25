@@ -6,6 +6,38 @@
 
 {% block content %}
 <div class="h-full flex flex-col">
+    <!-- NLP Status Info -->
+    {% if nlp_status %}
+    <div class="medical-card rounded-lg p-4 mb-4 {% if nlp_status.fastapi_available %}border-l-4 border-green-500{% else %}border-l-4 border-yellow-500{% endif %}">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-8 h-8 {% if nlp_status.fastapi_available %}bg-green-100{% else %}bg-yellow-100{% endif %} rounded-lg flex items-center justify-center">
+                    <i class="fas fa-robot {% if nlp_status.fastapi_available %}text-green-600{% else %}text-yellow-600{% endif %}"></i>
+                </div>
+                <div>
+                    <h3 class="text-sm font-semibold {% if nlp_status.fastapi_available %}text-green-800{% else %}text-yellow-800{% endif %}">
+                        {% if nlp_status.fastapi_available %}
+                            FastAPI connecté
+                        {% else %}
+                            Mode local actif
+                        {% endif %}
+                    </h3>
+                    <p class="text-xs {% if nlp_status.fastapi_available %}text-green-600{% else %}text-yellow-600{% endif %}">
+                        {% if nlp_status.fastapi_available %}
+                            Traitement via {{ nlp_status.available_models|length }} modèle{{ nlp_status.available_models|length|pluralize }} IA
+                        {% else %}
+                            Traitement local avec simulation
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+            <div class="text-xs {% if nlp_status.fastapi_available %}text-green-600{% else %}text-yellow-600{% endif %}">
+                Whisper: {% if nlp_status.whisper_available %}✓{% else %}✗{% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     <form method="post" enctype="multipart/form-data" class="flex-1 flex flex-col space-y-4">
         {% csrf_token %}
 
@@ -152,21 +184,38 @@ Structure suggérée :
             </div>
         </div>
 
-        <!-- AI Info - Compact avec les bonnes couleurs -->
+        <!-- AI Info - Compact avec les bonnes couleurs et info FastAPI -->
         <div class="stat-card rounded-lg p-4 text-white">
             <div class="flex items-center justify-between">
                 <div>
                     <h3 class="text-sm font-semibold mb-1 flex items-center">
                         <i class="fas fa-robot mr-2"></i>
                         Analyse automatique AURA
+                        {% if nlp_status.fastapi_available %}
+                            <span class="ml-2 px-2 py-1 bg-green-500 text-xs rounded-full">FastAPI</span>
+                        {% else %}
+                            <span class="ml-2 px-2 py-1 bg-yellow-500 text-xs rounded-full">Local</span>
+                        {% endif %}
                     </h3>
-                    <p class="text-xs text-white/90">L'IA analysera automatiquement votre observation</p>
+                    <p class="text-xs text-white/90">
+                        {% if nlp_status.fastapi_available %}
+                            L'IA analysera automatiquement votre observation via FastAPI
+                        {% else %}
+                            L'IA analysera automatiquement votre observation en mode local
+                        {% endif %}
+                    </p>
                 </div>
                 <div class="flex space-x-2">
                     <div class="bg-white/20 rounded px-2 py-1 text-xs">Whisper</div>
-                    <div class="bg-white/20 rounded px-2 py-1 text-xs">CamemBERT</div>
-                    <div class="bg-white/20 rounded px-2 py-1 text-xs">DrBERT</div>
-                    <div class="bg-white/20 rounded px-2 py-1 text-xs">T5</div>
+                    {% if nlp_status.fastapi_available %}
+                        {% for model in nlp_status.available_models %}
+                        <div class="bg-white/20 rounded px-2 py-1 text-xs">{{ model }}</div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="bg-white/20 rounded px-2 py-1 text-xs">CamemBERT</div>
+                        <div class="bg-white/20 rounded px-2 py-1 text-xs">DrBERT</div>
+                        <div class="bg-white/20 rounded px-2 py-1 text-xs">T5</div>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -193,6 +242,7 @@ Structure suggérée :
                 class="btn-primary px-8 py-2 rounded-lg text-sm font-medium shadow-md hover:shadow-lg">
                 <i class="fas fa-save mr-2"></i>
                 Créer et analyser
+                {% if nlp_status.fastapi_available %}(FastAPI){% else %}(Local){% endif %}
             </button>
         </div>
     </form>

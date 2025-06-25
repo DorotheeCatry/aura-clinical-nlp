@@ -162,3 +162,11 @@ LOGGING = {
         },
     },
 }
+
+# FastAPI Integration Settings
+FASTAPI_BASE_URL = config('FASTAPI_BASE_URL', default='http://127.0.0.1:8000')
+FASTAPI_TIMEOUT = config('FASTAPI_TIMEOUT', default=30, cast=int)
+
+# NLP Pipeline Settings
+NLP_USE_FASTAPI = config('NLP_USE_FASTAPI', default=True, cast=bool)
+NLP_FALLBACK_TO_LOCAL = config('NLP_FALLBACK_TO_LOCAL', default=True, cast=bool)

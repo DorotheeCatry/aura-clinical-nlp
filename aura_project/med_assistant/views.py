@@ -7,6 +7,7 @@ from django.core.paginator import Paginator
 from .models import Patient, Observation
 from .forms import PatientForm, ObservationForm, PatientSearchForm
 from .nlp_pipeline import nlp_pipeline
+from .api_client import fastapi_client
 import json
 from collections import defaultdict
 from faster_whisper import WhisperModel
@@ -66,6 +67,9 @@ def dashboard(request):
     
     monthly_stats.reverse()
     
+    # Statut de la pipeline NLP
+    nlp_status = nlp_pipeline.get_status()
+    
     context = {
         'total_patients': total_patients,
         'total_observations': total_observations,
@@ -74,6 +78,7 @@ def dashboard(request):
         'entity_stats': dict(entity_stats),
         'patients_recents': patients_recents,
         'monthly_stats': monthly_stats,
+        'nlp_status': nlp_status,  # Nouveau : statut de la pipeline
     }
     
     return render(request, 'med_assistant/dashboard.html', context)
@@ -161,14 +166,14 @@ def patient_edit(request, patient_id):
 
 
 def observation_create(request):
-    """Création d'une nouvelle observation"""
+    """Création d'une nouvelle observation avec traitement NLP via FastAPI"""
     if request.method == 'POST':
         form = ObservationForm(request.POST, request.FILES)
         if form.is_valid():
             observation = form.save(commit=False)
             observation.save()
             
-            # Traitement NLP immédiat (en production, utiliser une tâche asynchrone)
+            # Traitement NLP avec FastAPI intégré
             try:
                 results = nlp_pipeline.process_observation(observation)
                 
@@ -178,10 +183,15 @@ def observation_create(request):
                     observation.resume = results['resume']
                     observation.entites = results['entites']
                     observation.traitement_termine = True
-                    messages.success(request, 'Observation créée et traitée avec succès.')
+                    
+                    # Message de succès avec info sur la méthode utilisée
+                    if results.get('fastapi_used'):
+                        messages.success(request, 'Observation créée et traitée avec succès via FastAPI.')
+                    else:
+                        messages.success(request, 'Observation créée et traitée avec succès (mode local).')
                 else:
                     observation.traitement_erreur = results['error']
-                    messages.warning(request, 'Observation créée mais erreur lors du traitement NLP.')
+                    messages.warning(request, f'Observation créée mais erreur lors du traitement NLP: {results["error"]}')
                 
                 observation.save()
                 
@@ -200,36 +210,44 @@ def observation_create(request):
             except Patient.DoesNotExist:
                 pass
     
-    context = {'form': form}
+    # Ajouter le statut de la pipeline au contexte
+    nlp_status = nlp_pipeline.get_status()
+    context = {
+        'form': form,
+        'nlp_status': nlp_status
+    }
     return render(request, 'med_assistant/observation_form.html', context)
 
 
 @csrf_exempt
 def transcribe_audio(request):
+    """Endpoint pour la transcription audio via Whisper local"""
     if request.method != "POST" or "audio" not in request.FILES:
         return JsonResponse({"error": "no_audio"}, status=400)
 
     uploaded = request.FILES["audio"]
 
-    # Enregistre temporairement le WebM
-    with tempfile.NamedTemporaryFile(suffix=".webm") as src:
-        for chunk in uploaded.chunks():
-            src.write(chunk)
-        src.flush()
-
-        # Convertit en WAV 16 kHz mono (Whisper préfère)
-        with tempfile.NamedTemporaryFile(suffix=".wav") as wav:
-            cmd = [
-                "ffmpeg", "-y", "-i", src.name,
-                "-ar", "16000", "-ac", "1", wav.name
-            ]
-            subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-
-            # Transcription
-            segments, _ = model.transcribe(wav.name)
-            text = " ".join([seg.text for seg in segments])
-
-    return JsonResponse({"text": text})
+    try:
+        # Utiliser la pipeline NLP pour la transcription
+        with tempfile.NamedTemporaryFile(suffix=".webm", delete=False) as temp_file:
+            for chunk in uploaded.chunks():
+                temp_file.write(chunk)
+            temp_file.flush()
+            
+            # Utiliser la méthode de transcription de la pipeline
+            transcription = nlp_pipeline.transcribe_audio(temp_file.name)
+            
+            # Nettoyer le fichier temporaire
+            import os
+            os.unlink(temp_file.name)
+            
+            if transcription:
+                return JsonResponse({"text": transcription})
+            else:
+                return JsonResponse({"error": "transcription_failed"}, status=500)
+                
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
 
 
 def observation_detail(request, observation_id):
@@ -245,7 +263,7 @@ def observation_detail(request, observation_id):
 
 @require_http_methods(["POST"])
 def observation_reprocess(request, observation_id):
-    """Retraitement d'une observation"""
+    """Retraitement d'une observation avec FastAPI"""
     observation = get_object_or_404(Observation, id=observation_id)
     
     try:
@@ -257,7 +275,7 @@ def observation_reprocess(request, observation_id):
         observation.traitement_termine = False
         observation.traitement_erreur = None
         
-        # Nouveau traitement
+        # Nouveau traitement avec FastAPI
         results = nlp_pipeline.process_observation(observation)
         
         if results['success']:
@@ -266,7 +284,12 @@ def observation_reprocess(request, observation_id):
             observation.resume = results['resume']
             observation.entites = results['entites']
             observation.traitement_termine = True
-            messages.success(request, 'Observation retraitée avec succès.')
+            
+            # Message avec info sur la méthode utilisée
+            if results.get('fastapi_used'):
+                messages.success(request, 'Observation retraitée avec succès via FastAPI.')
+            else:
+                messages.success(request, 'Observation retraitée avec succès (mode local).')
         else:
             observation.traitement_erreur = results['error']
             messages.error(request, f'Erreur lors du retraitement: {results["error"]}')
@@ -280,7 +303,7 @@ def observation_reprocess(request, observation_id):
 
 
 def statistics(request):
-    """Vue des statistiques avancées"""
+    """Vue des statistiques avancées avec info FastAPI"""
     # Statistiques par thème
     theme_stats = {}
     theme_counts = Observation.objects.filter(theme_classe__isnull=False).values('theme_classe').annotate(count=Count('theme_classe'))
@@ -307,11 +330,15 @@ def statistics(request):
         sorted_entities = sorted(entities.items(), key=lambda x: x[1], reverse=True)[:5]
         top_entities[category] = sorted_entities
     
+    # Statut de la pipeline NLP
+    nlp_status = nlp_pipeline.get_status()
+    
     context = {
         'theme_stats': theme_stats,
         'entity_stats': dict(entity_stats),
         'top_entities': top_entities,
         'entity_categories': Observation.ENTITY_CATEGORIES,
+        'nlp_status': nlp_status,  # Nouveau : statut de la pipeline
     }
     
     return render(request, 'med_assistant/statistics.html', context)
@@ -338,3 +365,26 @@ def api_patient_search(request):
     ]
     
     return JsonResponse({'patients': patients_data})
+
+
+def api_nlp_status(request):
+    """API pour récupérer le statut de la pipeline NLP"""
+    status = nlp_pipeline.get_status()
+    return JsonResponse(status)
+
+
+def api_fastapi_models(request):
+    """API pour récupérer les modèles disponibles via FastAPI"""
+    try:
+        models = fastapi_client.get_available_models()
+        return JsonResponse({
+            'success': True,
+            'models': models,
+            'api_available': fastapi_client.is_api_available()
+        })
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e),
+            'api_available': False
+        })
