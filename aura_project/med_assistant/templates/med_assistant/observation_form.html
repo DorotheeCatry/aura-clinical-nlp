@@ -8,27 +8,28 @@
 <div class="h-full flex flex-col">
     <form method="post" enctype="multipart/form-data" class="flex-1 flex flex-col space-y-4">
         {% csrf_token %}
-        
+
         <!-- Patient Selection - Compact -->
         <div class="medical-card rounded-lg p-4">
             <div class="flex items-center justify-between">
                 <div class="flex-1 max-w-md">
-                    <label for="{{ form.patient.id_for_label }}" class="block text-sm font-medium text-primary-dark mb-2">
+                    <label for="{{ form.patient.id_for_label }}"
+                        class="block text-sm font-medium text-primary-dark mb-2">
                         <i class="fas fa-user mr-2 text-primary-steel"></i>
                         Patient
                     </label>
                     {{ form.patient }}
                     {% if form.patient.errors %}
-                        <div class="mt-1 text-xs text-red-600">
-                            {% for error in form.patient.errors %}
-                                <p><i class="fas fa-exclamation-circle mr-1"></i>{{ error }}</p>
-                            {% endfor %}
-                        </div>
+                    <div class="mt-1 text-xs text-red-600">
+                        {% for error in form.patient.errors %}
+                        <p><i class="fas fa-exclamation-circle mr-1"></i>{{ error }}</p>
+                        {% endfor %}
+                    </div>
                     {% endif %}
                 </div>
                 <div class="ml-4">
-                    <a href="{% url 'med_assistant:patient_create' %}" 
-                       class="btn-secondary px-4 py-2 rounded-lg text-sm font-medium inline-flex items-center space-x-2">
+                    <a href="{% url 'med_assistant:patient_create' %}"
+                        class="btn-secondary px-4 py-2 rounded-lg text-sm font-medium inline-flex items-center space-x-2">
                         <i class="fas fa-plus"></i>
                         <span>Nouveau patient</span>
                     </a>
@@ -38,7 +39,7 @@
 
         <!-- Main Content - Flexible Height -->
         <div class="medical-card rounded-lg flex-1 flex flex-col p-6">
-            
+
             <!-- Header with Recording Controls - Compact -->
             <div class="flex items-center justify-between mb-4 pb-4 border-b border-gray-200">
                 <div>
@@ -48,22 +49,22 @@
                     </h2>
                     <p class="text-sm text-gray-600">Dictez ou saisissez votre observation</p>
                 </div>
-                
+
                 <!-- Recording Controls -->
                 <div class="flex items-center space-x-3">
                     <!-- Bouton d'enregistrement -->
-                    <button type="button" id="recordBtn" 
-                            class="w-12 h-12 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center transition-all shadow-md hover:shadow-lg">
+                    <button type="button" id="recordBtn"
+                        class="w-12 h-12 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center transition-all shadow-md hover:shadow-lg">
                         <i class="fas fa-microphone text-lg"></i>
                     </button>
-                    
+
                     <!-- Bouton d'arrêt - TOUJOURS VISIBLE -->
-                    <button type="button" id="stopBtn" 
-                            class="w-12 h-12 bg-gray-400 text-white rounded-full flex items-center justify-center transition-all shadow-md cursor-not-allowed"
-                            disabled>
+                    <button type="button" id="stopBtn"
+                        class="w-12 h-12 bg-gray-400 text-white rounded-full flex items-center justify-center transition-all shadow-md cursor-not-allowed"
+                        disabled>
                         <i class="fas fa-stop text-lg"></i>
                     </button>
-                    
+
                     <!-- Informations d'enregistrement -->
                     <div id="recordingInfo" class="hidden text-center">
                         <div id="timer" class="text-lg font-mono font-bold text-red-600">00:00</div>
@@ -79,8 +80,7 @@
                         <i class="fas fa-volume-up mr-2"></i>
                         Enregistrement terminé
                     </h3>
-                    <button type="button" id="transcribeBtn" 
-                            class="btn-primary px-3 py-1 rounded text-sm font-medium">
+                    <button type="button" id="transcribeBtn" class="btn-primary px-3 py-1 rounded text-sm font-medium">
                         <i class="fas fa-magic mr-1"></i>
                         Transcrire
                     </button>
@@ -99,13 +99,12 @@
                         <span id="charCount">0 caractères</span>
                     </div>
                 </div>
-                
+
                 <!-- TEXTAREA QUI PREND TOUT L'ESPACE DISPONIBLE -->
-                <textarea name="{{ form.texte_saisi.name }}" 
-                          id="{{ form.texte_saisi.id_for_label }}"
-                          class="flex-1 w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-steel focus:border-primary-steel transition-colors resize-none"
-                          style="min-height: 300px; font-family: 'Inter', sans-serif; font-size: 14px; line-height: 1.5;"
-                          placeholder="Saisissez ou dictez votre observation médicale ici...
+                <textarea name="{{ form.texte_saisi.name }}" id="{{ form.texte_saisi.id_for_label }}"
+                    class="flex-1 w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-steel focus:border-primary-steel transition-colors resize-none"
+                    style="min-height: 300px; font-family: 'Inter', sans-serif; font-size: 14px; line-height: 1.5;"
+                    placeholder="Saisissez ou dictez votre observation médicale ici...
 
 Vous pouvez :
 • Utiliser l'enregistrement vocal (bouton microphone)
@@ -119,13 +118,13 @@ Structure suggérée :
 • Diagnostic
 • Traitement prescrit
 • Suivi recommandé">{{ form.texte_saisi.value|default_if_none:"" }}</textarea>
-                
+
                 {% if form.texte_saisi.errors %}
-                    <div class="mt-2 text-xs text-red-600">
-                        {% for error in form.texte_saisi.errors %}
-                            <p><i class="fas fa-exclamation-circle mr-1"></i>{{ error }}</p>
-                        {% endfor %}
-                    </div>
+                <div class="mt-2 text-xs text-red-600">
+                    {% for error in form.texte_saisi.errors %}
+                    <p><i class="fas fa-exclamation-circle mr-1"></i>{{ error }}</p>
+                    {% endfor %}
+                </div>
                 {% endif %}
             </div>
         </div>
@@ -143,11 +142,11 @@ Structure suggérée :
                         <span class="text-xs text-gray-500">MP3, WAV, OGG, M4A, WebM</span>
                     </div>
                     {% if form.audio_file.errors %}
-                        <div class="mt-1 text-xs text-red-600">
-                            {% for error in form.audio_file.errors %}
-                                <p><i class="fas fa-exclamation-circle mr-1"></i>{{ error }}</p>
-                            {% endfor %}
-                        </div>
+                    <div class="mt-1 text-xs text-red-600">
+                        {% for error in form.audio_file.errors %}
+                        <p><i class="fas fa-exclamation-circle mr-1"></i>{{ error }}</p>
+                        {% endfor %}
+                    </div>
                     {% endif %}
                 </div>
             </div>
@@ -174,24 +173,24 @@ Structure suggérée :
 
         <!-- Form Errors -->
         {% if form.non_field_errors %}
-            <div class="p-3 bg-red-50 border border-red-200 rounded-lg">
-                {% for error in form.non_field_errors %}
-                    <p class="text-sm text-red-600">
-                        <i class="fas fa-exclamation-circle mr-1"></i>{{ error }}
-                    </p>
-                {% endfor %}
-            </div>
+        <div class="p-3 bg-red-50 border border-red-200 rounded-lg">
+            {% for error in form.non_field_errors %}
+            <p class="text-sm text-red-600">
+                <i class="fas fa-exclamation-circle mr-1"></i>{{ error }}
+            </p>
+            {% endfor %}
+        </div>
         {% endif %}
 
         <!-- Action Buttons - Fixed at bottom -->
         <div class="flex justify-between items-center pt-4 border-t border-gray-200">
-            <a href="{% url 'med_assistant:dashboard' %}" 
-               class="btn-secondary px-6 py-2 rounded-lg text-sm font-medium">
+            <a href="{% url 'med_assistant:dashboard' %}"
+                class="btn-secondary px-6 py-2 rounded-lg text-sm font-medium">
                 <i class="fas fa-times mr-2"></i>
                 Annuler
             </a>
-            <button type="submit" 
-                    class="btn-primary px-8 py-2 rounded-lg text-sm font-medium shadow-md hover:shadow-lg">
+            <button type="submit"
+                class="btn-primary px-8 py-2 rounded-lg text-sm font-medium shadow-md hover:shadow-lg">
                 <i class="fas fa-save mr-2"></i>
                 Créer et analyser
             </button>
