@@ -1,6 +1,6 @@
 """
 Pipeline NLP pour AURA - Assistant Médical
-Traitement automatique des observations médicales avec intégration FastAPI et DrBERT
+Traitement automatique des observations médicales avec intégration FastAPI, DrBERT et T5
 """
 
 import logging
@@ -31,20 +31,29 @@ except ImportError as e:
     DRBERT_AVAILABLE = False
     print(f"⚠️ DrBERT non disponible: {e}")
 
+# Imports pour T5 (résumés)
+try:
+    from transformers import T5Tokenizer, T5ForConditionalGeneration
+    T5_AVAILABLE = True
+except ImportError as e:
+    T5_AVAILABLE = False
+    print(f"⚠️ T5 non disponible: {e}")
+
 logger = logging.getLogger(__name__)
 
 
 class NLPPipeline:
     """
     Pipeline de traitement NLP pour les observations médicales
-    Intègre : transcription Whisper, classification via FastAPI, extraction d'entités DrBERT, résumé
+    Intègre : transcription Whisper, classification via FastAPI, extraction d'entités DrBERT, résumé T5
     """
     
     def __init__(self):
-        """Initialise la pipeline NLP avec FastAPI, Whisper et DrBERT"""
+        """Initialise la pipeline NLP avec FastAPI, Whisper, DrBERT et T5"""
         self.models_loaded = False
         self.whisper_available = WHISPER_AVAILABLE
         self.drbert_available = DRBERT_AVAILABLE
+        self.t5_available = T5_AVAILABLE
         self.device = "cuda" if torch.cuda.is_available() else "cpu" if WHISPER_AVAILABLE else "cpu"
         self.fastapi_available = False
         self.available_models = []
@@ -74,7 +83,7 @@ class NLPPipeline:
     
     def _load_models(self):
         """
-        Charge les modèles NLP incluant Whisper, DrBERT et vérifie FastAPI
+        Charge les modèles NLP incluant Whisper, DrBERT, T5 et vérifie FastAPI
         """
         try:
             # Vérifier la disponibilité de FastAPI
@@ -122,6 +131,31 @@ class NLPPipeline:
             else:
                 logger.warning("⚠️ DrBERT non disponible, utilisation de la simulation")
             
+            # Charger T5 pour les résumés (local)
+            if self.t5_available:
+                logger.info("📝 Chargement du modèle T5 pour résumés...")
+                
+                try:
+                    # Utiliser le modèle T5 français spécialisé pour les résumés
+                    self.t5_tokenizer = T5Tokenizer.from_pretrained("plguillou/t5-base-fr-sum-cnndm")
+                    self.t5_model = T5ForConditionalGeneration.from_pretrained("plguillou/t5-base-fr-sum-cnndm")
+                    
+                    # Créer le pipeline de résumé
+                    self.t5_pipeline = pipeline(
+                        "summarization",
+                        model=self.t5_model,
+                        tokenizer=self.t5_tokenizer,
+                        device=0 if torch.cuda.is_available() else -1
+                    )
+                    
+                    logger.info(f"✅ T5 résumé chargé sur {self.device}")
+                    
+                except Exception as e:
+                    logger.error(f"❌ Erreur chargement T5: {e}")
+                    self.t5_available = False
+            else:
+                logger.warning("⚠️ T5 non disponible, utilisation de la simulation")
+            
             self.models_loaded = True
             logger.info("✅ Pipeline NLP initialisée avec succès")
             
@@ -130,6 +164,7 @@ class NLPPipeline:
             self.models_loaded = False
             self.whisper_available = False
             self.drbert_available = False
+            self.t5_available = False
             self.fastapi_available = False
     
     def transcribe_audio(self, audio_file_path: str) -> Optional[str]:
@@ -345,9 +380,9 @@ class NLPPipeline:
         """
         return self.extract_entities_drbert(text)
     
-    def generate_summary(self, text: str) -> Optional[str]:
+    def generate_summary_t5(self, text: str) -> Optional[str]:
         """
-        Génère un résumé via FastAPI ou fallback local
+        Génère un résumé avec T5 français
         
         Args:
             text: Texte à résumer
@@ -356,6 +391,44 @@ class NLPPipeline:
             Résumé généré ou None en cas d'erreur
         """
         try:
+            if not self.t5_available or not self.models_loaded:
+                logger.warning("⚠️ T5 non disponible, utilisation de la simulation")
+                return self._mock_summary(text)
+            
+            logger.info(f"📝 Génération résumé T5 pour: {text[:50]}...")
+            
+            # Utiliser le pipeline de résumé T5
+            summary = self.t5_pipeline(
+                text, 
+                max_length=100, 
+                min_length=20, 
+                do_sample=False
+            )[0]['summary_text']
+            
+            logger.info(f"✅ T5: Résumé généré ({len(summary)} caractères)")
+            
+            return summary.strip()
+            
+        except Exception as e:
+            logger.error(f"❌ Erreur lors de la génération T5: {e}")
+            return self._mock_summary(text)
+    
+    def generate_summary(self, text: str) -> Optional[str]:
+        """
+        Génère un résumé via T5 local ou FastAPI ou fallback local
+        
+        Args:
+            text: Texte à résumer
+            
+        Returns:
+            Résumé généré ou None en cas d'erreur
+        """
+        try:
+            # Priorité 1: T5 local (plus spécialisé pour les résumés)
+            if self.t5_available:
+                return self.generate_summary_t5(text)
+            
+            # Priorité 2: FastAPI (si T5 non disponible)
             if self.fastapi_available and self.available_models:
                 # Utiliser le premier modèle disponible pour le résumé
                 model_name = self.available_models[0]
@@ -398,7 +471,8 @@ class NLPPipeline:
             'success': False,
             'error': None,
             'fastapi_used': self.fastapi_available,
-            'drbert_used': self.drbert_available
+            'drbert_used': self.drbert_available,
+            't5_used': self.t5_available
         }
         
         try:
@@ -436,7 +510,7 @@ class NLPPipeline:
             results['entites'] = entities
             logger.info(f"🔍 Entités extraites: {len(entities)} catégories")
             
-            # 5. Génération du résumé (FastAPI ou local)
+            # 5. Génération du résumé (T5 local ou FastAPI ou simulation)
             summary = self.generate_summary(text_source)
             if summary:
                 results['resume'] = summary
@@ -462,6 +536,7 @@ class NLPPipeline:
         return {
             'whisper_available': self.whisper_available,
             'drbert_available': self.drbert_available,
+            't5_available': self.t5_available,
             'fastapi_available': self.fastapi_available,
             'available_models': self.available_models,
             'models_loaded': self.models_loaded,

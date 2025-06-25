@@ -8,23 +8,31 @@
 <div class="space-y-6">
     <!-- NLP Status Banner -->
     {% if nlp_status %}
-    <div class="medical-card rounded-lg p-4 fade-in {% if nlp_status.fastapi_available and nlp_status.drbert_available %}border-l-4 border-green-500{% elif nlp_status.fastapi_available or nlp_status.drbert_available %}border-l-4 border-yellow-500{% else %}border-l-4 border-red-500{% endif %}">
+    <div class="medical-card rounded-lg p-4 fade-in {% if nlp_status.fastapi_available and nlp_status.drbert_available and nlp_status.t5_available %}border-l-4 border-green-500{% elif nlp_status.fastapi_available or nlp_status.drbert_available or nlp_status.t5_available %}border-l-4 border-yellow-500{% else %}border-l-4 border-red-500{% endif %}">
         <div class="flex items-center justify-between">
             <div class="flex items-center space-x-3">
-                <div class="w-10 h-10 {% if nlp_status.fastapi_available and nlp_status.drbert_available %}bg-green-100{% elif nlp_status.fastapi_available or nlp_status.drbert_available %}bg-yellow-100{% else %}bg-red-100{% endif %} rounded-lg flex items-center justify-center">
-                    <i class="fas fa-robot {% if nlp_status.fastapi_available and nlp_status.drbert_available %}text-green-600{% elif nlp_status.fastapi_available or nlp_status.drbert_available %}text-yellow-600{% else %}text-red-600{% endif %}"></i>
+                <div class="w-10 h-10 {% if nlp_status.fastapi_available and nlp_status.drbert_available and nlp_status.t5_available %}bg-green-100{% elif nlp_status.fastapi_available or nlp_status.drbert_available or nlp_status.t5_available %}bg-yellow-100{% else %}bg-red-100{% endif %} rounded-lg flex items-center justify-center">
+                    <i class="fas fa-robot {% if nlp_status.fastapi_available and nlp_status.drbert_available and nlp_status.t5_available %}text-green-600{% elif nlp_status.fastapi_available or nlp_status.drbert_available or nlp_status.t5_available %}text-yellow-600{% else %}text-red-600{% endif %}"></i>
                 </div>
                 <div>
-                    <h3 class="font-semibold {% if nlp_status.fastapi_available and nlp_status.drbert_available %}text-green-800{% elif nlp_status.fastapi_available or nlp_status.drbert_available %}text-yellow-800{% else %}text-red-800{% endif %}">
+                    <h3 class="font-semibold {% if nlp_status.fastapi_available and nlp_status.drbert_available and nlp_status.t5_available %}text-green-800{% elif nlp_status.fastapi_available or nlp_status.drbert_available or nlp_status.t5_available %}text-yellow-800{% else %}text-red-800{% endif %}">
                         Statut Pipeline NLP
                     </h3>
-                    <p class="text-sm {% if nlp_status.fastapi_available and nlp_status.drbert_available %}text-green-600{% elif nlp_status.fastapi_available or nlp_status.drbert_available %}text-yellow-600{% else %}text-red-600{% endif %}">
-                        {% if nlp_status.fastapi_available and nlp_status.drbert_available %}
-                            FastAPI + DrBERT connectés - {{ nlp_status.available_models|length }} modèle{{ nlp_status.available_models|length|pluralize }} disponible{{ nlp_status.available_models|length|pluralize }}
+                    <p class="text-sm {% if nlp_status.fastapi_available and nlp_status.drbert_available and nlp_status.t5_available %}text-green-600{% elif nlp_status.fastapi_available or nlp_status.drbert_available or nlp_status.t5_available %}text-yellow-600{% else %}text-red-600{% endif %}">
+                        {% if nlp_status.fastapi_available and nlp_status.drbert_available and nlp_status.t5_available %}
+                            FastAPI + DrBERT + T5 connectés - Pipeline complète active
+                        {% elif nlp_status.fastapi_available and nlp_status.drbert_available %}
+                            FastAPI + DrBERT connectés, T5 en simulation
+                        {% elif nlp_status.fastapi_available and nlp_status.t5_available %}
+                            FastAPI + T5 connectés, DrBERT en simulation
+                        {% elif nlp_status.drbert_available and nlp_status.t5_available %}
+                            DrBERT + T5 connectés, FastAPI non disponible
                         {% elif nlp_status.fastapi_available %}
-                            FastAPI connecté, DrBERT en mode simulation
+                            FastAPI connecté, DrBERT et T5 en simulation
                         {% elif nlp_status.drbert_available %}
-                            DrBERT connecté, FastAPI non disponible
+                            DrBERT connecté, FastAPI et T5 en simulation
+                        {% elif nlp_status.t5_available %}
+                            T5 connecté, FastAPI et DrBERT en simulation
                         {% else %}
                             Mode simulation complet
                         {% endif %}
@@ -32,9 +40,10 @@
                 </div>
             </div>
             <div class="text-right">
-                <div class="text-xs {% if nlp_status.fastapi_available and nlp_status.drbert_available %}text-green-600{% elif nlp_status.fastapi_available or nlp_status.drbert_available %}text-yellow-600{% else %}text-red-600{% endif %}">
+                <div class="text-xs {% if nlp_status.fastapi_available and nlp_status.drbert_available and nlp_status.t5_available %}text-green-600{% elif nlp_status.fastapi_available or nlp_status.drbert_available or nlp_status.t5_available %}text-yellow-600{% else %}text-red-600{% endif %}">
                     Whisper: {% if nlp_status.whisper_available %}✓{% else %}✗{% endif %} | 
                     DrBERT: {% if nlp_status.drbert_available %}✓{% else %}✗{% endif %} | 
+                    T5: {% if nlp_status.t5_available %}✓{% else %}✗{% endif %} | 
                     Device: {{ nlp_status.device|upper }}
                 </div>
                 {% if nlp_status.available_models %}
@@ -110,11 +119,11 @@
                 <div>
                     <p class="text-white/80 text-sm font-medium uppercase tracking-wide">Statut système</p>
                     <p class="text-3xl font-bold mt-2">
-                        {% if nlp_status.fastapi_available and nlp_status.drbert_available %}99.9%{% elif nlp_status.fastapi_available or nlp_status.drbert_available %}95.0%{% else %}85.0%{% endif %}
+                        {% if nlp_status.fastapi_available and nlp_status.drbert_available and nlp_status.t5_available %}99.9%{% elif nlp_status.fastapi_available or nlp_status.drbert_available or nlp_status.t5_available %}92.0%{% else %}80.0%{% endif %}
                     </p>
                     <p class="text-white/90 text-sm mt-1 flex items-center">
-                        <i class="fas fa-{% if nlp_status.fastapi_available and nlp_status.drbert_available %}check-circle{% elif nlp_status.fastapi_available or nlp_status.drbert_available %}exclamation-triangle{% else %}times-circle{% endif %} mr-1"></i>
-                        {% if nlp_status.fastapi_available and nlp_status.drbert_available %}Optimal{% elif nlp_status.fastapi_available or nlp_status.drbert_available %}Partiel{% else %}Simulation{% endif %}
+                        <i class="fas fa-{% if nlp_status.fastapi_available and nlp_status.drbert_available and nlp_status.t5_available %}check-circle{% elif nlp_status.fastapi_available or nlp_status.drbert_available or nlp_status.t5_available %}exclamation-triangle{% else %}times-circle{% endif %} mr-1"></i>
+                        {% if nlp_status.fastapi_available and nlp_status.drbert_available and nlp_status.t5_available %}Optimal{% elif nlp_status.fastapi_available or nlp_status.drbert_available or nlp_status.t5_available %}Partiel{% else %}Simulation{% endif %}
                     </p>
                 </div>
                 <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
@@ -123,7 +132,7 @@
             </div>
             <div class="mt-4">
                 <div class="w-full bg-white/20 rounded-full h-2">
-                    <div class="progress-bar bg-white h-2 rounded-full" data-width="{% if nlp_status.fastapi_available and nlp_status.drbert_available %}99.9%{% elif nlp_status.fastapi_available or nlp_status.drbert_available %}95.0%{% else %}85.0%{% endif %}"></div>
+                    <div class="progress-bar bg-white h-2 rounded-full" data-width="{% if nlp_status.fastapi_available and nlp_status.drbert_available and nlp_status.t5_available %}99.9%{% elif nlp_status.fastapi_available or nlp_status.drbert_available or nlp_status.t5_available %}92.0%{% else %}80.0%{% endif %}"></div>
                 </div>
             </div>
         </div>
@@ -261,7 +270,7 @@
         </div>
         <h3 class="text-xl font-semibold text-primary-dark mb-4">Aucune observation</h3>
         <p class="text-gray-600 mb-8 max-w-md mx-auto">
-            Commencez par créer votre première observation médicale pour voir la puissance de l'analyse IA d'AURA avec DrBERT.
+            Commencez par créer votre première observation médicale pour voir la puissance de l'analyse IA d'AURA avec DrBERT et T5.
         </p>
         <a href="{% url 'med_assistant:observation_create' %}" 
            class="btn-primary px-8 py-3 rounded-lg font-medium inline-flex items-center space-x-2">

@@ -174,14 +174,14 @@ def patient_edit(request, patient_id):
 
 
 def observation_create(request):
-    """Création d'une nouvelle observation avec traitement NLP via FastAPI et DrBERT"""
+    """Création d'une nouvelle observation avec traitement NLP via FastAPI, DrBERT et T5"""
     if request.method == 'POST':
         form = ObservationForm(request.POST, request.FILES)
         if form.is_valid():
             observation = form.save(commit=False)
             observation.save()
             
-            # Traitement NLP avec FastAPI + DrBERT intégré
+            # Traitement NLP avec FastAPI + DrBERT + T5 intégré
             try:
                 results = nlp_pipeline.process_observation(observation)
                 
@@ -199,6 +199,8 @@ def observation_create(request):
                         methods_used.append("FastAPI")
                     if results.get('drbert_used'):
                         methods_used.append("DrBERT")
+                    if results.get('t5_used'):
+                        methods_used.append("T5")
                     if not methods_used:
                         methods_used.append("Local")
                     
@@ -302,7 +304,7 @@ def observation_detail(request, observation_id):
 
 @require_http_methods(["POST"])
 def observation_reprocess(request, observation_id):
-    """Retraitement d'une observation avec FastAPI et DrBERT"""
+    """Retraitement d'une observation avec FastAPI, DrBERT et T5"""
     observation = get_object_or_404(Observation, id=observation_id)
     
     try:
@@ -315,7 +317,7 @@ def observation_reprocess(request, observation_id):
         observation.traitement_termine = False
         observation.traitement_erreur = None
         
-        # Nouveau traitement avec FastAPI + DrBERT
+        # Nouveau traitement avec FastAPI + DrBERT + T5
         results = nlp_pipeline.process_observation(observation)
         
         if results['success']:
@@ -332,6 +334,8 @@ def observation_reprocess(request, observation_id):
                 methods_used.append("FastAPI")
             if results.get('drbert_used'):
                 methods_used.append("DrBERT")
+            if results.get('t5_used'):
+                methods_used.append("T5")
             if not methods_used:
                 methods_used.append("Local")
             
@@ -352,7 +356,7 @@ def observation_reprocess(request, observation_id):
 
 
 def statistics(request):
-    """Vue des statistiques avancées avec info FastAPI, DrBERT et prédictions"""
+    """Vue des statistiques avancées avec info FastAPI, DrBERT, T5 et prédictions"""
     # Statistiques par thème avec mapping des pathologies
     theme_stats = {}
     theme_counts = Observation.objects.filter(theme_classe__isnull=False).values('theme_classe').annotate(count=Count('theme_classe'))
