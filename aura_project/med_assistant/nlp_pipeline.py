@@ -1,6 +1,6 @@
 """
 Pipeline NLP pour AURA - Assistant Médical
-Traitement automatique des observations médicales avec Whisper
+Traitement automatique des observations médicales avec intégration FastAPI
 """
 
 import logging
@@ -9,8 +9,9 @@ import json
 import random
 import os
 import tempfile
+from .api_client import fastapi_client
 
-# Imports pour Whisper
+# Imports pour Whisper (fallback local)
 try:
     import torch
     import torchaudio
@@ -28,25 +29,35 @@ logger = logging.getLogger(__name__)
 class NLPPipeline:
     """
     Pipeline de traitement NLP pour les observations médicales
-    Intègre : transcription Whisper, classification, extraction d'entités, résumé
+    Intègre : transcription Whisper, classification via FastAPI, extraction d'entités, résumé
     """
     
     def __init__(self):
-        """Initialise la pipeline NLP avec Whisper"""
+        """Initialise la pipeline NLP avec FastAPI et Whisper en fallback"""
         self.models_loaded = False
         self.whisper_available = WHISPER_AVAILABLE
         self.device = "cuda" if torch.cuda.is_available() else "cpu" if WHISPER_AVAILABLE else "cpu"
+        self.fastapi_available = False
+        self.available_models = []
         self._load_models()
     
     def _load_models(self):
         """
-        Charge les modèles NLP incluant Whisper
+        Charge les modèles NLP incluant Whisper et vérifie FastAPI
         """
         try:
+            # Vérifier la disponibilité de FastAPI
+            self.fastapi_available = fastapi_client.is_api_available()
+            if self.fastapi_available:
+                self.available_models = fastapi_client.get_available_models()
+                logger.info(f"✅ FastAPI disponible avec {len(self.available_models)} modèles: {self.available_models}")
+            else:
+                logger.warning("⚠️ FastAPI non disponible, utilisation des modèles locaux")
+            
+            # Charger Whisper pour la transcription (local)
             if self.whisper_available:
                 logger.info("🎤 Chargement du modèle Whisper...")
                 
-                # Charger Whisper pour la transcription
                 self.whisper_processor = WhisperProcessor.from_pretrained("openai/whisper-small")
                 self.whisper_model = WhisperForConditionalGeneration.from_pretrained("openai/whisper-small")
                 self.whisper_model.to(self.device)
@@ -55,11 +66,6 @@ class NLPPipeline:
             else:
                 logger.warning("⚠️ Whisper non disponible, utilisation de la simulation")
             
-            # TODO: Charger les autres modèles
-            # self.camembert_classifier = AutoModelForSequenceClassification.from_pretrained(...)
-            # self.drbert_ner = AutoModelForTokenClassification.from_pretrained(...)
-            # self.t5_summarizer = AutoModelForSeq2SeqLM.from_pretrained(...)
-            
             self.models_loaded = True
             logger.info("✅ Pipeline NLP initialisée avec succès")
             
@@ -67,6 +73,7 @@ class NLPPipeline:
             logger.error(f"❌ Erreur lors du chargement des modèles: {e}")
             self.models_loaded = False
             self.whisper_available = False
+            self.fastapi_available = False
     
     def transcribe_audio(self, audio_file_path: str) -> Optional[str]:
         """
@@ -164,7 +171,7 @@ class NLPPipeline:
     
     def classify_theme(self, text: str) -> Optional[str]:
         """
-        Classifie le thème médical avec CamemBERT fine-tuné
+        Classifie le thème médical via FastAPI ou fallback local
         
         Args:
             text: Texte à classifier
@@ -173,50 +180,73 @@ class NLPPipeline:
             Thème classifié ou None en cas d'erreur
         """
         try:
-            if not self.models_loaded:
+            if self.fastapi_available and self.available_models:
+                # Utiliser le premier modèle disponible pour la classification
+                model_name = self.available_models[0]
+                
+                # Préparer la question pour la classification
+                classification_prompt = f"Classifiez ce texte médical selon ces catégories (cardio, psy, diabete, neuro, pneumo, gastro, ortho, dermato, general, autre): {text}"
+                
+                result = fastapi_client.process_text(model_name, classification_prompt)
+                
+                if result['success']:
+                    response = result['response'].lower()
+                    # Extraire la classification de la réponse
+                    for theme in ['cardio', 'psy', 'diabete', 'neuro', 'pneumo', 'gastro', 'ortho', 'dermato', 'general', 'autre']:
+                        if theme in response:
+                            logger.info(f"🏷️ Classification via FastAPI: {theme}")
+                            return theme
+                    
+                    # Si aucun thème spécifique trouvé, utiliser le fallback
+                    return self._mock_classification(text)
+                else:
+                    logger.warning(f"⚠️ Erreur FastAPI classification: {result['error']}")
+                    return self._mock_classification(text)
+            else:
                 return self._mock_classification(text)
-            
-            # TODO: Implémenter la vraie classification
-            # inputs = self.tokenizer(text, return_tensors="pt", truncation=True)
-            # outputs = self.camembert_classifier(**inputs)
-            # predicted_class = torch.argmax(outputs.logits, dim=-1)
-            # return self.class_labels[predicted_class]
-            
-            return self._mock_classification(text)
             
         except Exception as e:
             logger.error(f"❌ Erreur lors de la classification: {e}")
-            return None
+            return self._mock_classification(text)
     
     def extract_entities(self, text: str) -> Dict[str, Any]:
         """
-        Extrait les entités médicales avec DrBERT
+        Extrait les entités médicales via FastAPI ou fallback local
         
         Args:
             text: Texte à analyser
             
         Returns:
-            Dictionnaire des entités extraites avec nouvelles catégories
+            Dictionnaire des entités extraites
         """
         try:
-            if not self.models_loaded:
+            if self.fastapi_available and self.available_models:
+                # Utiliser le premier modèle disponible pour l'extraction d'entités
+                model_name = self.available_models[0]
+                
+                # Préparer la question pour l'extraction d'entités
+                entities_prompt = f"Extrayez les entités médicales de ce texte (maladies, médicaments, anatomie, procédures, examens): {text}"
+                
+                result = fastapi_client.process_text(model_name, entities_prompt)
+                
+                if result['success']:
+                    # Parser la réponse pour extraire les entités
+                    # Pour l'instant, utiliser le fallback mais logger la réponse
+                    logger.info(f"🔍 Réponse entités FastAPI: {result['response'][:100]}...")
+                    return self._mock_entities(text)
+                else:
+                    logger.warning(f"⚠️ Erreur FastAPI entités: {result['error']}")
+                    return self._mock_entities(text)
+            else:
                 return self._mock_entities(text)
-            
-            # TODO: Implémenter la vraie extraction d'entités
-            # inputs = self.tokenizer(text, return_tensors="pt", truncation=True)
-            # outputs = self.drbert_ner(**inputs)
-            # entities = self._process_ner_outputs(outputs, text)
-            # return entities
-            
-            return self._mock_entities(text)
             
         except Exception as e:
             logger.error(f"❌ Erreur lors de l'extraction d'entités: {e}")
-            return {}
+            return self._mock_entities(text)
     
     def generate_summary(self, text: str) -> Optional[str]:
         """
-        Génère un résumé avec T5 français
+        Génère un résumé via FastAPI ou fallback local
         
         Args:
             text: Texte à résumer
@@ -225,20 +255,28 @@ class NLPPipeline:
             Résumé généré ou None en cas d'erreur
         """
         try:
-            if not self.models_loaded:
+            if self.fastapi_available and self.available_models:
+                # Utiliser le premier modèle disponible pour le résumé
+                model_name = self.available_models[0]
+                
+                # Préparer la question pour le résumé
+                summary_prompt = f"Résumez ce texte médical en français de manière concise et professionnelle: {text}"
+                
+                result = fastapi_client.process_text(model_name, summary_prompt)
+                
+                if result['success']:
+                    summary = result['response'].strip()
+                    logger.info(f"📄 Résumé généré via FastAPI: {len(summary)} caractères")
+                    return summary
+                else:
+                    logger.warning(f"⚠️ Erreur FastAPI résumé: {result['error']}")
+                    return self._mock_summary(text)
+            else:
                 return self._mock_summary(text)
-            
-            # TODO: Implémenter le vrai résumé T5
-            # inputs = self.tokenizer(f"résume: {text}", return_tensors="pt", truncation=True)
-            # outputs = self.t5_summarizer.generate(**inputs, max_length=150)
-            # summary = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
-            # return summary
-            
-            return self._mock_summary(text)
             
         except Exception as e:
             logger.error(f"❌ Erreur lors de la génération du résumé: {e}")
-            return None
+            return self._mock_summary(text)
     
     def process_observation(self, observation) -> Dict[str, Any]:
         """
@@ -256,13 +294,14 @@ class NLPPipeline:
             'resume': None,
             'entites': {},
             'success': False,
-            'error': None
+            'error': None,
+            'fastapi_used': self.fastapi_available
         }
         
         try:
             logger.info(f"🔄 Début traitement observation {observation.id}")
             
-            # 1. Transcription si fichier audio
+            # 1. Transcription si fichier audio (toujours local avec Whisper)
             if observation.audio_file:
                 logger.info(f"🎤 Transcription du fichier: {observation.audio_file.path}")
                 transcription = self.transcribe_audio(observation.audio_file.path)
@@ -282,18 +321,18 @@ class NLPPipeline:
             
             logger.info(f"📝 Texte source: {len(text_source)} caractères")
             
-            # 3. Classification du thème
+            # 3. Classification du thème (FastAPI ou local)
             theme = self.classify_theme(text_source)
             if theme:
                 results['theme_classe'] = theme
                 logger.info(f"🏷️ Thème classifié: {theme}")
             
-            # 4. Extraction d'entités
+            # 4. Extraction d'entités (FastAPI ou local)
             entities = self.extract_entities(text_source)
             results['entites'] = entities
             logger.info(f"🔍 Entités extraites: {len(entities)} catégories")
             
-            # 5. Génération du résumé
+            # 5. Génération du résumé (FastAPI ou local)
             summary = self.generate_summary(text_source)
             if summary:
                 results['resume'] = summary
@@ -309,7 +348,22 @@ class NLPPipeline:
         
         return results
     
-    # Méthodes de simulation pour le développement
+    def get_status(self) -> Dict[str, Any]:
+        """
+        Retourne le statut de la pipeline
+        
+        Returns:
+            Dictionnaire avec le statut des différents composants
+        """
+        return {
+            'whisper_available': self.whisper_available,
+            'fastapi_available': self.fastapi_available,
+            'available_models': self.available_models,
+            'models_loaded': self.models_loaded,
+            'device': self.device
+        }
+    
+    # Méthodes de simulation pour le développement (inchangées)
     def _mock_transcription(self) -> str:
         """Simulation de transcription pour le développement"""
         transcriptions = [

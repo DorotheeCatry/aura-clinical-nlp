@@ -24,4 +24,6 @@ urlpatterns = [
     
     # API
     path('api/patients/search/', views.api_patient_search, name='api_patient_search'),
+    path('api/nlp/status/', views.api_nlp_status, name='api_nlp_status'),
+    path('api/fastapi/models/', views.api_fastapi_models, name='api_fastapi_models'),
 ]
