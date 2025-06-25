@@ -33,10 +33,18 @@ class Patient(models.Model):
 class Observation(models.Model):
     """Modèle représentant une observation médicale avec traitement NLP"""
     
+    # Mapping des pathologies du modèle IA
+    PATHOLOGY_MAPPING = {
+        0: 'cardiovasculaire',
+        1: 'psy',
+        2: 'diabete'
+    }
+    
+    # Choix de thèmes étendus (incluant les pathologies du modèle + autres)
     THEME_CHOICES = [
-        ('cardio', 'Cardiologie'),
-        ('psy', 'Psychiatrie'),
-        ('diabete', 'Diabète'),
+        ('cardiovasculaire', 'Cardiovasculaire'),
+        ('psy', 'Psychique/Neuropsychiatrique'),
+        ('diabete', 'Métabolique/Diabète'),
         ('neuro', 'Neurologie'),
         ('pneumo', 'Pneumologie'),
         ('gastro', 'Gastroentérologie'),
@@ -96,6 +104,15 @@ class Observation(models.Model):
         verbose_name="Thème classé",
         help_text="Classification automatique du thème médical"
     )
+    
+    # Nouveau champ pour stocker la prédiction numérique du modèle
+    model_prediction = models.IntegerField(
+        blank=True,
+        null=True,
+        verbose_name="Prédiction du modèle",
+        help_text="Classe numérique prédite par le modèle IA (0, 1, 2)"
+    )
+    
     resume = models.TextField(
         blank=True, 
         null=True, 
@@ -143,10 +160,27 @@ class Observation(models.Model):
             return {}
         return self.entites
 
+    @classmethod
+    def get_pathology_from_prediction(cls, prediction):
+        """Convertit une prédiction numérique en thème de pathologie"""
+        return cls.PATHOLOGY_MAPPING.get(prediction, 'autre')
+
+    @classmethod
+    def get_pathology_display_name(cls, prediction):
+        """Retourne le nom d'affichage de la pathologie"""
+        theme_code = cls.get_pathology_from_prediction(prediction)
+        theme_dict = dict(cls.THEME_CHOICES)
+        return theme_dict.get(theme_code, 'Autre')
+
+    def set_prediction_result(self, prediction):
+        """Définit le résultat de prédiction et met à jour le thème"""
+        self.model_prediction = prediction
+        self.theme_classe = self.get_pathology_from_prediction(prediction)
+
     def get_theme_display_color(self):
         """Retourne la couleur associée au thème"""
         colors = {
-            'cardio': 'bg-red-50 text-red-700 border-red-200',
+            'cardiovasculaire': 'bg-red-50 text-red-700 border-red-200',
             'psy': 'bg-purple-50 text-purple-700 border-purple-200',
             'diabete': 'bg-yellow-50 text-yellow-700 border-yellow-200',
             'neuro': 'bg-indigo-50 text-indigo-700 border-indigo-200',

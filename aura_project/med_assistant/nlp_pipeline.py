@@ -39,6 +39,14 @@ class NLPPipeline:
         self.device = "cuda" if torch.cuda.is_available() else "cpu" if WHISPER_AVAILABLE else "cpu"
         self.fastapi_available = False
         self.available_models = []
+        
+        # Mapping des pathologies du modèle
+        self.pathology_mapping = {
+            0: 'cardiovasculaire',
+            1: 'psy', 
+            2: 'diabete'
+        }
+        
         self._load_models()
     
     def _load_models(self):
@@ -169,45 +177,58 @@ class NLPPipeline:
             # Fallback vers simulation en cas d'erreur
             return self._mock_transcription()
     
-    def classify_theme(self, text: str) -> Optional[str]:
+    def classify_theme(self, text: str) -> tuple[Optional[str], Optional[int]]:
         """
-        Classifie le thème médical via FastAPI ou fallback local
+        Classifie le thème médical via FastAPI et retourne le thème + prédiction numérique
         
         Args:
             text: Texte à classifier
             
         Returns:
-            Thème classifié ou None en cas d'erreur
+            Tuple (thème_classifié, prédiction_numérique) ou (None, None) en cas d'erreur
         """
         try:
             if self.fastapi_available and self.available_models:
-                # Utiliser le premier modèle disponible pour la classification
-                model_name = self.available_models[0]
+                # Utiliser le modèle de classification fine-tuné
+                model_name = "FinetunedMedicalModel"  # Votre modèle spécialisé
                 
-                # Préparer la question pour la classification
-                classification_prompt = f"Classifiez ce texte médical selon ces catégories (cardio, psy, diabete, neuro, pneumo, gastro, ortho, dermato, general, autre): {text}"
-                
-                result = fastapi_client.process_text(model_name, classification_prompt)
-                
-                if result['success']:
-                    response = result['response'].lower()
-                    # Extraire la classification de la réponse
-                    for theme in ['cardio', 'psy', 'diabete', 'neuro', 'pneumo', 'gastro', 'ortho', 'dermato', 'general', 'autre']:
-                        if theme in response:
-                            logger.info(f"🏷️ Classification via FastAPI: {theme}")
-                            return theme
+                if model_name in self.available_models:
+                    result = fastapi_client.process_text(model_name, text)
                     
-                    # Si aucun thème spécifique trouvé, utiliser le fallback
-                    return self._mock_classification(text)
+                    if result['success']:
+                        response = result['response']
+                        
+                        # Parser la réponse pour extraire la classe prédite
+                        # Format attendu: "Classe prédite : X"
+                        try:
+                            if "Classe prédite :" in response:
+                                prediction_str = response.split("Classe prédite :")[1].strip()
+                                prediction = int(prediction_str)
+                                
+                                # Convertir la prédiction en thème
+                                theme = self.pathology_mapping.get(prediction, 'autre')
+                                
+                                logger.info(f"🏷️ Classification via FastAPI: prédiction={prediction}, thème={theme}")
+                                return theme, prediction
+                            else:
+                                logger.warning(f"⚠️ Format de réponse inattendu: {response}")
+                                return self._mock_classification_with_prediction(text)
+                                
+                        except (ValueError, IndexError) as e:
+                            logger.warning(f"⚠️ Erreur parsing prédiction: {e}")
+                            return self._mock_classification_with_prediction(text)
+                    else:
+                        logger.warning(f"⚠️ Erreur FastAPI classification: {result['error']}")
+                        return self._mock_classification_with_prediction(text)
                 else:
-                    logger.warning(f"⚠️ Erreur FastAPI classification: {result['error']}")
-                    return self._mock_classification(text)
+                    logger.warning(f"⚠️ Modèle {model_name} non disponible")
+                    return self._mock_classification_with_prediction(text)
             else:
-                return self._mock_classification(text)
+                return self._mock_classification_with_prediction(text)
             
         except Exception as e:
             logger.error(f"❌ Erreur lors de la classification: {e}")
-            return self._mock_classification(text)
+            return self._mock_classification_with_prediction(text)
     
     def extract_entities(self, text: str) -> Dict[str, Any]:
         """
@@ -291,6 +312,7 @@ class NLPPipeline:
         results = {
             'transcription': None,
             'theme_classe': None,
+            'model_prediction': None,
             'resume': None,
             'entites': {},
             'success': False,
@@ -321,11 +343,12 @@ class NLPPipeline:
             
             logger.info(f"📝 Texte source: {len(text_source)} caractères")
             
-            # 3. Classification du thème (FastAPI ou local)
-            theme = self.classify_theme(text_source)
+            # 3. Classification du thème (FastAPI ou local) avec prédiction numérique
+            theme, prediction = self.classify_theme(text_source)
             if theme:
                 results['theme_classe'] = theme
-                logger.info(f"🏷️ Thème classifié: {theme}")
+                results['model_prediction'] = prediction
+                logger.info(f"🏷️ Thème classifié: {theme} (prédiction: {prediction})")
             
             # 4. Extraction d'entités (FastAPI ou local)
             entities = self.extract_entities(text_source)
@@ -360,10 +383,11 @@ class NLPPipeline:
             'fastapi_available': self.fastapi_available,
             'available_models': self.available_models,
             'models_loaded': self.models_loaded,
-            'device': self.device
+            'device': self.device,
+            'pathology_mapping': self.pathology_mapping
         }
     
-    # Méthodes de simulation pour le développement (inchangées)
+    # Méthodes de simulation pour le développement
     def _mock_transcription(self) -> str:
         """Simulation de transcription pour le développement"""
         transcriptions = [
@@ -374,19 +398,26 @@ class NLPPipeline:
         ]
         return random.choice(transcriptions)
     
-    def _mock_classification(self, text: str) -> str:
-        """Simulation de classification pour le développement"""
+    def _mock_classification_with_prediction(self, text: str) -> tuple[str, int]:
+        """Simulation de classification avec prédiction numérique"""
         text_lower = text.lower()
-        if any(word in text_lower for word in ['cœur', 'cardiaque', 'tension', 'ecg', 'thoracique']):
-            return 'cardio'
-        elif any(word in text_lower for word in ['anxiété', 'dépression', 'stress', 'anxieux', 'sommeil']):
-            return 'psy'
-        elif any(word in text_lower for word in ['diabète', 'glycémie', 'insuline', 'metformine']):
-            return 'diabete'
-        elif any(word in text_lower for word in ['abdomen', 'gastrite', 'estomac', 'digestif']):
-            return 'gastro'
+        
+        if any(word in text_lower for word in ['cœur', 'cardiaque', 'tension', 'ecg', 'thoracique', 'cardiovasculaire']):
+            return 'cardiovasculaire', 0
+        elif any(word in text_lower for word in ['anxiété', 'dépression', 'stress', 'anxieux', 'sommeil', 'psychiatrie', 'psychique']):
+            return 'psy', 1
+        elif any(word in text_lower for word in ['diabète', 'glycémie', 'insuline', 'metformine', 'métabolique']):
+            return 'diabete', 2
         else:
-            return 'general'
+            # Choisir aléatoirement parmi les 3 classes principales
+            prediction = random.choice([0, 1, 2])
+            theme = self.pathology_mapping[prediction]
+            return theme, prediction
+    
+    def _mock_classification(self, text: str) -> str:
+        """Simulation de classification pour compatibilité"""
+        theme, _ = self._mock_classification_with_prediction(text)
+        return theme
     
     def _mock_entities(self, text: str) -> Dict[str, Any]:
         """Simulation d'extraction d'entités avec nouvelles catégories"""
@@ -440,7 +471,7 @@ class NLPPipeline:
     def _mock_summary(self, text: str) -> str:
         """Simulation de résumé pour le développement"""
         summaries = {
-            'cardio': "Consultation cardiologique : douleurs thoraciques avec HTA. Examens complémentaires prescrits.",
+            'cardiovasculaire': "Consultation cardiologique : douleurs thoraciques avec HTA. Examens complémentaires prescrits.",
             'diabete': "Suivi diabétologique : ajustement thérapeutique suite à déséquilibre glycémique.",
             'psy': "Consultation psychiatrique : troubles anxieux avec retentissement sur le sommeil. Traitement initié.",
             'gastro': "Consultation gastroentérologique : douleurs abdominales chroniques. Explorations à poursuivre.",
@@ -450,7 +481,7 @@ class NLPPipeline:
         # Déterminer le type basé sur le texte
         text_lower = text.lower()
         if any(word in text_lower for word in ['cœur', 'cardiaque', 'tension', 'ecg']):
-            return summaries['cardio']
+            return summaries['cardiovasculaire']
         elif any(word in text_lower for word in ['diabète', 'glycémie', 'metformine']):
             return summaries['diabete']
         elif any(word in text_lower for word in ['anxiété', 'anxieux', 'sommeil']):
@@ -480,6 +511,7 @@ def process_observation_async(observation_id: int):
         if results['success']:
             observation.transcription = results['transcription']
             observation.theme_classe = results['theme_classe']
+            observation.model_prediction = results['model_prediction']
             observation.resume = results['resume']
             observation.entites = results['entites']
             observation.traitement_termine = True
