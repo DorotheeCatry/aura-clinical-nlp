@@ -1,0 +1,11 @@
+fastapi>=0.95.0
+uvicorn>=0.21.0
+pydantic>=1.10.0
+
+# Modèle HuggingFace + tokenizer
+transformers>=4.21.0
+torch>=2.0.0
+sentencepiece>=0.1.96  # nécessaire pour CamemBERT, MT5, etc.
+
+# (optionnel si tu veux du json plus propre)
+python-dotenv>=0.20.0
