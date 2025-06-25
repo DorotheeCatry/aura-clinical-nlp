@@ -30,14 +30,21 @@ def dashboard(request):
         theme_display = dict(Observation.THEME_CHOICES).get(item['theme_classe'], item['theme_classe'])
         themes_stats[theme_display] = item['count']
     
-    # Statistiques des entités
+    # Statistiques des entités RÉELLES (seulement si on a des vraies entités)
     entity_stats = defaultdict(int)
     observations_with_entities = Observation.objects.exclude(entites={})
     
+    # Compter seulement les vraies entités DrBERT
+    real_entities_count = 0
     for obs in observations_with_entities:
         if obs.entites:
             for entity_type, entities in obs.entites.items():
-                entity_stats[entity_type] += len(entities) if isinstance(entities, list) else 1
+                if isinstance(entities, list) and entities:  # Vérifier que la liste n'est pas vide
+                    entity_stats[entity_type] += len(entities)
+                    real_entities_count += len(entities)
+                elif entities:  # Si c'est une string non vide
+                    entity_stats[entity_type] += 1
+                    real_entities_count += 1
     
     # Patients récents
     patients_recents = Patient.objects.order_by('-created_at')[:5]
@@ -75,10 +82,11 @@ def dashboard(request):
         'total_observations': total_observations,
         'observations_recentes': observations_recentes,
         'themes_stats': themes_stats,
-        'entity_stats': dict(entity_stats),
+        'entity_stats': dict(entity_stats) if real_entities_count > 0 else {},  # Vide si pas de vraies entités
+        'real_entities_count': real_entities_count,  # Nouveau : nombre total d'entités réelles
         'patients_recents': patients_recents,
         'monthly_stats': monthly_stats,
-        'nlp_status': nlp_status,  # Nouveau : statut de la pipeline
+        'nlp_status': nlp_status,
     }
     
     return render(request, 'med_assistant/dashboard.html', context)
@@ -166,14 +174,14 @@ def patient_edit(request, patient_id):
 
 
 def observation_create(request):
-    """Création d'une nouvelle observation avec traitement NLP via FastAPI"""
+    """Création d'une nouvelle observation avec traitement NLP via FastAPI et DrBERT"""
     if request.method == 'POST':
         form = ObservationForm(request.POST, request.FILES)
         if form.is_valid():
             observation = form.save(commit=False)
             observation.save()
             
-            # Traitement NLP avec FastAPI intégré
+            # Traitement NLP avec FastAPI + DrBERT intégré
             try:
                 results = nlp_pipeline.process_observation(observation)
                 
@@ -185,12 +193,19 @@ def observation_create(request):
                     observation.entites = results['entites']
                     observation.traitement_termine = True
                     
-                    # Message de succès avec info sur la méthode utilisée et prédiction
+                    # Message de succès avec info sur les méthodes utilisées
+                    methods_used = []
                     if results.get('fastapi_used'):
-                        pred_info = f" (Prédiction: {results['model_prediction']})" if results['model_prediction'] is not None else ""
-                        messages.success(request, f'Observation créée et traitée avec succès via FastAPI{pred_info}.')
-                    else:
-                        messages.success(request, 'Observation créée et traitée avec succès (mode local).')
+                        methods_used.append("FastAPI")
+                    if results.get('drbert_used'):
+                        methods_used.append("DrBERT")
+                    if not methods_used:
+                        methods_used.append("Local")
+                    
+                    pred_info = f" (Prédiction: {results['model_prediction']})" if results['model_prediction'] is not None else ""
+                    entities_info = f" - {sum(len(v) for v in results['entites'].values())} entités extraites" if results['entites'] else ""
+                    
+                    messages.success(request, f'Observation créée et traitée avec succès via {", ".join(methods_used)}{pred_info}{entities_info}.')
                 else:
                     observation.traitement_erreur = results['error']
                     messages.warning(request, f'Observation créée mais erreur lors du traitement NLP: {results["error"]}')
@@ -253,7 +268,7 @@ def transcribe_audio(request):
 
 
 def observation_detail(request, observation_id):
-    """Détail d'une observation avec affichage de la prédiction"""
+    """Détail d'une observation avec affichage de la prédiction et entités DrBERT"""
     observation = get_object_or_404(
         Observation.objects.select_related('patient'), 
         id=observation_id
@@ -268,16 +283,26 @@ def observation_detail(request, observation_id):
             'confidence': 'Élevée' if observation.model_prediction in [0, 1, 2] else 'Faible'
         }
     
+    # Compter les entités réelles
+    entities_count = 0
+    if observation.entites:
+        for entity_type, entities in observation.entites.items():
+            if isinstance(entities, list):
+                entities_count += len(entities)
+            elif entities:
+                entities_count += 1
+    
     context = {
         'observation': observation,
-        'prediction_info': prediction_info
+        'prediction_info': prediction_info,
+        'entities_count': entities_count
     }
     return render(request, 'med_assistant/observation_detail.html', context)
 
 
 @require_http_methods(["POST"])
 def observation_reprocess(request, observation_id):
-    """Retraitement d'une observation avec FastAPI"""
+    """Retraitement d'une observation avec FastAPI et DrBERT"""
     observation = get_object_or_404(Observation, id=observation_id)
     
     try:
@@ -290,7 +315,7 @@ def observation_reprocess(request, observation_id):
         observation.traitement_termine = False
         observation.traitement_erreur = None
         
-        # Nouveau traitement avec FastAPI
+        # Nouveau traitement avec FastAPI + DrBERT
         results = nlp_pipeline.process_observation(observation)
         
         if results['success']:
@@ -301,12 +326,19 @@ def observation_reprocess(request, observation_id):
             observation.entites = results['entites']
             observation.traitement_termine = True
             
-            # Message avec info sur la méthode utilisée et prédiction
+            # Message avec info sur les méthodes utilisées
+            methods_used = []
             if results.get('fastapi_used'):
-                pred_info = f" (Prédiction: {results['model_prediction']})" if results['model_prediction'] is not None else ""
-                messages.success(request, f'Observation retraitée avec succès via FastAPI{pred_info}.')
-            else:
-                messages.success(request, 'Observation retraitée avec succès (mode local).')
+                methods_used.append("FastAPI")
+            if results.get('drbert_used'):
+                methods_used.append("DrBERT")
+            if not methods_used:
+                methods_used.append("Local")
+            
+            pred_info = f" (Prédiction: {results['model_prediction']})" if results['model_prediction'] is not None else ""
+            entities_info = f" - {sum(len(v) for v in results['entites'].values())} entités extraites" if results['entites'] else ""
+            
+            messages.success(request, f'Observation retraitée avec succès via {", ".join(methods_used)}{pred_info}{entities_info}.')
         else:
             observation.traitement_erreur = results['error']
             messages.error(request, f'Erreur lors du retraitement: {results["error"]}')
@@ -320,7 +352,7 @@ def observation_reprocess(request, observation_id):
 
 
 def statistics(request):
-    """Vue des statistiques avancées avec info FastAPI et prédictions"""
+    """Vue des statistiques avancées avec info FastAPI, DrBERT et prédictions"""
     # Statistiques par thème avec mapping des pathologies
     theme_stats = {}
     theme_counts = Observation.objects.filter(theme_classe__isnull=False).values('theme_classe').annotate(count=Count('theme_classe'))
@@ -335,34 +367,47 @@ def statistics(request):
         pathology_name = Observation.get_pathology_display_name(item['model_prediction'])
         prediction_stats[f"Classe {item['model_prediction']} - {pathology_name}"] = item['count']
     
-    # Statistiques des entités par catégorie
+    # Statistiques des entités RÉELLES par catégorie DrBERT
     entity_stats = defaultdict(lambda: defaultdict(int))
     observations_with_entities = Observation.objects.exclude(entites={})
     
+    total_real_entities = 0
     for obs in observations_with_entities:
         if obs.entites:
             for entity_type, entities in obs.entites.items():
-                if isinstance(entities, list):
+                if isinstance(entities, list) and entities:
                     for entity in entities:
                         entity_stats[entity_type][entity] += 1
-                else:
+                        total_real_entities += 1
+                elif entities:  # String non vide
                     entity_stats[entity_type][entities] += 1
+                    total_real_entities += 1
     
-    # Top entités par catégorie
+    # Top entités par catégorie (seulement si on a des vraies entités)
     top_entities = {}
-    for category, entities in entity_stats.items():
-        sorted_entities = sorted(entities.items(), key=lambda x: x[1], reverse=True)[:5]
-        top_entities[category] = sorted_entities
+    if total_real_entities > 0:
+        for category, entities in entity_stats.items():
+            sorted_entities = sorted(entities.items(), key=lambda x: x[1], reverse=True)[:5]
+            top_entities[category] = sorted_entities
     
     # Statut de la pipeline NLP
     nlp_status = nlp_pipeline.get_status()
     
+    # Catégories d'entités DrBERT
+    drbert_categories = [
+        ('DISO', 'Disorders - Maladies/Symptômes'),
+        ('CHEM', 'Chemical/Drug - Médicaments'),
+        ('ANAT', 'Anatomie - Parties du corps'),
+        ('PROC', 'Procédure médicale'),
+    ]
+    
     context = {
         'theme_stats': theme_stats,
-        'prediction_stats': prediction_stats,  # Nouveau : stats des prédictions
-        'entity_stats': dict(entity_stats),
+        'prediction_stats': prediction_stats,
+        'entity_stats': dict(entity_stats) if total_real_entities > 0 else {},
         'top_entities': top_entities,
-        'entity_categories': Observation.ENTITY_CATEGORIES,
+        'total_real_entities': total_real_entities,
+        'entity_categories': drbert_categories,
         'nlp_status': nlp_status,
     }
     
