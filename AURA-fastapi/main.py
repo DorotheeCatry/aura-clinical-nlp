@@ -3,8 +3,8 @@ from json_format_requests_and_responses import AuraRequest, AuraResponse, Availa
 from pre_trained_models.MyFinetunedModelManager import MyFinetunedModelManager
 
 
-# run with : uvicorn main:app --reload 
-# then open http://127.0.0.1:8000 
+# run with : uvicorn main:app --reload --port 8001
+# then open http://127.0.0.1:8001 
 app = FastAPI()
 
 

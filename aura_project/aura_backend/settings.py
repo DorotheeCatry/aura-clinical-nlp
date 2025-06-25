@@ -164,7 +164,7 @@ LOGGING = {
 }
 
 # FastAPI Integration Settings
-FASTAPI_BASE_URL = config('FASTAPI_BASE_URL', default='http://127.0.0.1:8000')
+FASTAPI_BASE_URL = config('FASTAPI_BASE_URL', default='http://127.0.0.1:8001')
 FASTAPI_TIMEOUT = config('FASTAPI_TIMEOUT', default=30, cast=int)
 
 # NLP Pipeline Settings
