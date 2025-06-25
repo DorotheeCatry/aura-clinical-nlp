@@ -21,12 +21,13 @@ include = "aura_project"
 python = "^3.10"
 django = "^5.0.0"
 python-decouple = "^3.8"
-# Ajouts potentiels :
-# psycopg2-binary = "^2.9"     # PostgreSQL
-# channels = "^4.0"            # WebSockets
-# transformers = "*"           # NLP
-# torch = "*"                  # Si modèle local BERT
 django-tailwind = {extras = ["reload"], version = "^4.0.1"}
+# NLP Dependencies
+torch = "^2.0.0"
+torchaudio = "^2.0.0"
+transformers = "^4.35.0"
+librosa = "^0.10.0"
+soundfile = "^0.12.0"
 
 [tool.poetry.group.dev.dependencies]
 black = "^24.3.0"
