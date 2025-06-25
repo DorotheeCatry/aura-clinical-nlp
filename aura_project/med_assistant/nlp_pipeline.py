@@ -1,10 +1,10 @@
 """
 Pipeline NLP pour AURA - Assistant Médical
-Traitement automatique des observations médicales avec intégration FastAPI
+Traitement automatique des observations médicales avec intégration FastAPI et DrBERT
 """
 
 import logging
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List, Tuple
 import json
 import random
 import os
@@ -23,19 +23,28 @@ except ImportError as e:
     WHISPER_AVAILABLE = False
     print(f"⚠️ Whisper non disponible: {e}")
 
+# Imports pour DrBERT (extraction d'entités)
+try:
+    from transformers import AutoTokenizer, AutoModelForTokenClassification, pipeline
+    DRBERT_AVAILABLE = True
+except ImportError as e:
+    DRBERT_AVAILABLE = False
+    print(f"⚠️ DrBERT non disponible: {e}")
+
 logger = logging.getLogger(__name__)
 
 
 class NLPPipeline:
     """
     Pipeline de traitement NLP pour les observations médicales
-    Intègre : transcription Whisper, classification via FastAPI, extraction d'entités, résumé
+    Intègre : transcription Whisper, classification via FastAPI, extraction d'entités DrBERT, résumé
     """
     
     def __init__(self):
-        """Initialise la pipeline NLP avec FastAPI et Whisper en fallback"""
+        """Initialise la pipeline NLP avec FastAPI, Whisper et DrBERT"""
         self.models_loaded = False
         self.whisper_available = WHISPER_AVAILABLE
+        self.drbert_available = DRBERT_AVAILABLE
         self.device = "cuda" if torch.cuda.is_available() else "cpu" if WHISPER_AVAILABLE else "cpu"
         self.fastapi_available = False
         self.available_models = []
@@ -47,11 +56,25 @@ class NLPPipeline:
             2: 'diabete'
         }
         
+        # Mapping des entités DrBERT vers nos catégories
+        self.drbert_entity_mapping = {
+            'DISO': 'DISO',  # Disorders/Maladies
+            'CHEM': 'CHEM',  # Chemicals/Médicaments
+            'ANAT': 'ANAT',  # Anatomie
+            'PROC': 'PROC',  # Procédures
+            'LIVB': 'ANAT',  # Living beings -> Anatomie
+            'OBJC': 'PROC',  # Objects -> Procédures
+            'PHEN': 'DISO',  # Phenomena -> Disorders
+            'PHYS': 'DISO',  # Physiology -> Disorders
+            'GEOG': 'PROC',  # Geography -> Procédures
+            'CONC': 'PROC',  # Concepts -> Procédures
+        }
+        
         self._load_models()
     
     def _load_models(self):
         """
-        Charge les modèles NLP incluant Whisper et vérifie FastAPI
+        Charge les modèles NLP incluant Whisper, DrBERT et vérifie FastAPI
         """
         try:
             # Vérifier la disponibilité de FastAPI
@@ -74,6 +97,31 @@ class NLPPipeline:
             else:
                 logger.warning("⚠️ Whisper non disponible, utilisation de la simulation")
             
+            # Charger DrBERT pour l'extraction d'entités (local)
+            if self.drbert_available:
+                logger.info("🧠 Chargement du modèle DrBERT...")
+                
+                try:
+                    self.drbert_tokenizer = AutoTokenizer.from_pretrained("Thibeb/DrBert_generalized")
+                    self.drbert_model = AutoModelForTokenClassification.from_pretrained("Thibeb/DrBert_generalized")
+                    
+                    # Créer le pipeline NER
+                    self.drbert_pipeline = pipeline(
+                        "ner",
+                        model=self.drbert_model,
+                        tokenizer=self.drbert_tokenizer,
+                        aggregation_strategy="simple",
+                        device=0 if torch.cuda.is_available() else -1
+                    )
+                    
+                    logger.info(f"✅ DrBERT chargé sur {self.device}")
+                    
+                except Exception as e:
+                    logger.error(f"❌ Erreur chargement DrBERT: {e}")
+                    self.drbert_available = False
+            else:
+                logger.warning("⚠️ DrBERT non disponible, utilisation de la simulation")
+            
             self.models_loaded = True
             logger.info("✅ Pipeline NLP initialisée avec succès")
             
@@ -81,6 +129,7 @@ class NLPPipeline:
             logger.error(f"❌ Erreur lors du chargement des modèles: {e}")
             self.models_loaded = False
             self.whisper_available = False
+            self.drbert_available = False
             self.fastapi_available = False
     
     def transcribe_audio(self, audio_file_path: str) -> Optional[str]:
@@ -230,9 +279,63 @@ class NLPPipeline:
             logger.error(f"❌ Erreur lors de la classification: {e}")
             return self._mock_classification_with_prediction(text)
     
+    def extract_entities_drbert(self, text: str) -> Dict[str, List[str]]:
+        """
+        Extrait les entités médicales avec DrBERT
+        
+        Args:
+            text: Texte à analyser
+            
+        Returns:
+            Dictionnaire des entités extraites par catégorie
+        """
+        try:
+            if not self.drbert_available or not self.models_loaded:
+                logger.warning("⚠️ DrBERT non disponible, utilisation de la simulation")
+                return self._mock_entities(text)
+            
+            logger.info(f"🔍 Extraction d'entités DrBERT pour: {text[:50]}...")
+            
+            # Utiliser le pipeline NER de DrBERT
+            entities = self.drbert_pipeline(text)
+            
+            # Organiser les entités par catégorie
+            categorized_entities = {
+                'DISO': [],  # Disorders/Maladies
+                'CHEM': [],  # Chemicals/Médicaments
+                'ANAT': [],  # Anatomie
+                'PROC': [],  # Procédures
+            }
+            
+            for entity in entities:
+                entity_label = entity['entity_group']
+                entity_text = entity['word']
+                confidence = entity['score']
+                
+                # Mapper vers nos catégories
+                mapped_category = self.drbert_entity_mapping.get(entity_label, 'PROC')
+                
+                # Filtrer par confiance (seuil à 0.5)
+                if confidence > 0.5:
+                    # Éviter les doublons
+                    if entity_text not in categorized_entities[mapped_category]:
+                        categorized_entities[mapped_category].append(entity_text)
+                        logger.debug(f"  ✓ {mapped_category}: {entity_text} (conf: {confidence:.2f})")
+            
+            # Nettoyer les catégories vides
+            categorized_entities = {k: v for k, v in categorized_entities.items() if v}
+            
+            logger.info(f"✅ DrBERT: {sum(len(v) for v in categorized_entities.values())} entités extraites")
+            
+            return categorized_entities
+            
+        except Exception as e:
+            logger.error(f"❌ Erreur lors de l'extraction DrBERT: {e}")
+            return self._mock_entities(text)
+    
     def extract_entities(self, text: str) -> Dict[str, Any]:
         """
-        Extrait les entités médicales via FastAPI ou fallback local
+        Extrait les entités médicales (utilise DrBERT maintenant)
         
         Args:
             text: Texte à analyser
@@ -240,30 +343,7 @@ class NLPPipeline:
         Returns:
             Dictionnaire des entités extraites
         """
-        try:
-            if self.fastapi_available and self.available_models:
-                # Utiliser le premier modèle disponible pour l'extraction d'entités
-                model_name = self.available_models[0]
-                
-                # Préparer la question pour l'extraction d'entités
-                entities_prompt = f"Extrayez les entités médicales de ce texte (maladies, médicaments, anatomie, procédures, examens): {text}"
-                
-                result = fastapi_client.process_text(model_name, entities_prompt)
-                
-                if result['success']:
-                    # Parser la réponse pour extraire les entités
-                    # Pour l'instant, utiliser le fallback mais logger la réponse
-                    logger.info(f"🔍 Réponse entités FastAPI: {result['response'][:100]}...")
-                    return self._mock_entities(text)
-                else:
-                    logger.warning(f"⚠️ Erreur FastAPI entités: {result['error']}")
-                    return self._mock_entities(text)
-            else:
-                return self._mock_entities(text)
-            
-        except Exception as e:
-            logger.error(f"❌ Erreur lors de l'extraction d'entités: {e}")
-            return self._mock_entities(text)
+        return self.extract_entities_drbert(text)
     
     def generate_summary(self, text: str) -> Optional[str]:
         """
@@ -317,7 +397,8 @@ class NLPPipeline:
             'entites': {},
             'success': False,
             'error': None,
-            'fastapi_used': self.fastapi_available
+            'fastapi_used': self.fastapi_available,
+            'drbert_used': self.drbert_available
         }
         
         try:
@@ -350,7 +431,7 @@ class NLPPipeline:
                 results['model_prediction'] = prediction
                 logger.info(f"🏷️ Thème classifié: {theme} (prédiction: {prediction})")
             
-            # 4. Extraction d'entités (FastAPI ou local)
+            # 4. Extraction d'entités (DrBERT local)
             entities = self.extract_entities(text_source)
             results['entites'] = entities
             logger.info(f"🔍 Entités extraites: {len(entities)} catégories")
@@ -380,11 +461,13 @@ class NLPPipeline:
         """
         return {
             'whisper_available': self.whisper_available,
+            'drbert_available': self.drbert_available,
             'fastapi_available': self.fastapi_available,
             'available_models': self.available_models,
             'models_loaded': self.models_loaded,
             'device': self.device,
-            'pathology_mapping': self.pathology_mapping
+            'pathology_mapping': self.pathology_mapping,
+            'drbert_entity_mapping': self.drbert_entity_mapping
         }
     
     # Méthodes de simulation pour le développement
@@ -419,17 +502,14 @@ class NLPPipeline:
         theme, _ = self._mock_classification_with_prediction(text)
         return theme
     
-    def _mock_entities(self, text: str) -> Dict[str, Any]:
-        """Simulation d'extraction d'entités avec nouvelles catégories"""
+    def _mock_entities(self, text: str) -> Dict[str, List[str]]:
+        """Simulation d'extraction d'entités avec catégories DrBERT"""
         text_lower = text.lower()
         entities = {
             'DISO': [],  # Disorders
             'CHEM': [],  # Chemicals/Drugs
             'ANAT': [],  # Anatomy
             'PROC': [],  # Procedures
-            'TEST': [],  # Tests
-            'MED': [],   # Medications
-            'BODY': []   # Body parts
         }
         
         # Simulation basée sur le contenu
@@ -441,13 +521,17 @@ class NLPPipeline:
             entities['DISO'].append('troubles anxieux')
         if 'gastrite' in text_lower:
             entities['DISO'].append('gastrite chronique')
+        if 'hypertension' in text_lower:
+            entities['DISO'].append('hypertension artérielle')
             
         if 'metformine' in text_lower:
-            entities['MED'].append('metformine 1000mg')
+            entities['CHEM'].append('metformine')
         if 'anxiolytique' in text_lower:
-            entities['MED'].append('anxiolytique')
+            entities['CHEM'].append('anxiolytique')
         if 'ipp' in text_lower:
-            entities['MED'].append('inhibiteur de pompe à protons')
+            entities['CHEM'].append('inhibiteur de pompe à protons')
+        if 'insuline' in text_lower:
+            entities['CHEM'].append('insuline')
             
         if 'thorax' in text_lower or 'thoracique' in text_lower:
             entities['ANAT'].append('thorax')
@@ -455,15 +539,17 @@ class NLPPipeline:
             entities['ANAT'].append('cœur')
         if 'abdomen' in text_lower:
             entities['ANAT'].append('abdomen')
+        if 'pancréas' in text_lower:
+            entities['ANAT'].append('pancréas')
             
         if 'ecg' in text_lower:
-            entities['TEST'].append('électrocardiogramme')
-        if 'glycémie' in text_lower:
-            entities['TEST'].append('glycémie à jeun')
-        if 'analyses sanguines' in text_lower:
-            entities['TEST'].append('bilan sanguin')
+            entities['PROC'].append('électrocardiogramme')
         if 'fibroscopie' in text_lower:
             entities['PROC'].append('fibroscopie gastrique')
+        if 'analyses' in text_lower:
+            entities['PROC'].append('analyses sanguines')
+        if 'glycémie' in text_lower:
+            entities['PROC'].append('dosage glycémie')
             
         # Nettoyer les listes vides
         return {k: v for k, v in entities.items() if v}
