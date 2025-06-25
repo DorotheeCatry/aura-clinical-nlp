@@ -6,6 +6,7 @@ Traitement automatique des observations médicales
 import logging
 from typing import Dict, Any, Optional
 import json
+import random
 
 logger = logging.getLogger(__name__)
 
@@ -98,7 +99,7 @@ class NLPPipeline:
             text: Texte à analyser
             
         Returns:
-            Dictionnaire des entités extraites
+            Dictionnaire des entités extraites avec nouvelles catégories
         """
         try:
             if not self.models_loaded:
@@ -202,35 +203,99 @@ class NLPPipeline:
     # Méthodes de simulation pour le développement
     def _mock_transcription(self) -> str:
         """Simulation de transcription pour le développement"""
-        return "Patient présente des douleurs thoraciques depuis ce matin. Tension artérielle élevée à 160/95. Prescrit un ECG et analyses sanguines."
+        transcriptions = [
+            "Patient présente des douleurs thoraciques depuis ce matin. Tension artérielle élevée à 160/95. Prescrit un ECG et analyses sanguines.",
+            "Consultation de suivi pour diabète de type 2. Glycémie à jeun à 1,45 g/L. Ajustement de la metformine à 1000mg matin et soir.",
+            "Patient anxieux, troubles du sommeil depuis 3 semaines. Prescrit anxiolytique léger et suivi psychologique.",
+            "Douleur abdominale chronique, suspicion de gastrite. Prescription d'IPP et fibroscopie à programmer."
+        ]
+        return random.choice(transcriptions)
     
     def _mock_classification(self, text: str) -> str:
         """Simulation de classification pour le développement"""
         text_lower = text.lower()
-        if any(word in text_lower for word in ['cœur', 'cardiaque', 'tension', 'ecg']):
+        if any(word in text_lower for word in ['cœur', 'cardiaque', 'tension', 'ecg', 'thoracique']):
             return 'cardio'
-        elif any(word in text_lower for word in ['anxiété', 'dépression', 'stress']):
+        elif any(word in text_lower for word in ['anxiété', 'dépression', 'stress', 'anxieux', 'sommeil']):
             return 'psy'
-        elif any(word in text_lower for word in ['diabète', 'glycémie', 'insuline']):
+        elif any(word in text_lower for word in ['diabète', 'glycémie', 'insuline', 'metformine']):
             return 'diabete'
+        elif any(word in text_lower for word in ['abdomen', 'gastrite', 'estomac', 'digestif']):
+            return 'gastro'
         else:
             return 'general'
     
     def _mock_entities(self, text: str) -> Dict[str, Any]:
-        """Simulation d'extraction d'entités pour le développement"""
-        return {
-            'symptomes': ['douleurs thoraciques'],
-            'medicaments': [],
-            'examens': ['ECG', 'analyses sanguines'],
-            'valeurs_biologiques': [
-                {'type': 'tension_arterielle', 'valeur': '160/95', 'unite': 'mmHg'}
-            ],
-            'anatomie': ['thorax']
+        """Simulation d'extraction d'entités avec nouvelles catégories"""
+        text_lower = text.lower()
+        entities = {
+            'DISO': [],  # Disorders
+            'CHEM': [],  # Chemicals/Drugs
+            'ANAT': [],  # Anatomy
+            'PROC': [],  # Procedures
+            'TEST': [],  # Tests
+            'MED': [],   # Medications
+            'BODY': []   # Body parts
         }
+        
+        # Simulation basée sur le contenu
+        if 'douleur' in text_lower:
+            entities['DISO'].append('douleur thoracique')
+        if 'diabète' in text_lower:
+            entities['DISO'].append('diabète de type 2')
+        if 'anxiété' in text_lower or 'anxieux' in text_lower:
+            entities['DISO'].append('troubles anxieux')
+        if 'gastrite' in text_lower:
+            entities['DISO'].append('gastrite chronique')
+            
+        if 'metformine' in text_lower:
+            entities['MED'].append('metformine 1000mg')
+        if 'anxiolytique' in text_lower:
+            entities['MED'].append('anxiolytique')
+        if 'ipp' in text_lower:
+            entities['MED'].append('inhibiteur de pompe à protons')
+            
+        if 'thorax' in text_lower or 'thoracique' in text_lower:
+            entities['ANAT'].append('thorax')
+        if 'cœur' in text_lower:
+            entities['ANAT'].append('cœur')
+        if 'abdomen' in text_lower:
+            entities['ANAT'].append('abdomen')
+            
+        if 'ecg' in text_lower:
+            entities['TEST'].append('électrocardiogramme')
+        if 'glycémie' in text_lower:
+            entities['TEST'].append('glycémie à jeun')
+        if 'analyses sanguines' in text_lower:
+            entities['TEST'].append('bilan sanguin')
+        if 'fibroscopie' in text_lower:
+            entities['PROC'].append('fibroscopie gastrique')
+            
+        # Nettoyer les listes vides
+        return {k: v for k, v in entities.items() if v}
     
     def _mock_summary(self, text: str) -> str:
         """Simulation de résumé pour le développement"""
-        return "Patient consulte pour douleurs thoraciques avec HTA. Examens complémentaires prescrits."
+        summaries = {
+            'cardio': "Consultation cardiologique : douleurs thoraciques avec HTA. Examens complémentaires prescrits.",
+            'diabete': "Suivi diabétologique : ajustement thérapeutique suite à déséquilibre glycémique.",
+            'psy': "Consultation psychiatrique : troubles anxieux avec retentissement sur le sommeil. Traitement initié.",
+            'gastro': "Consultation gastroentérologique : douleurs abdominales chroniques. Explorations à poursuivre.",
+            'general': "Consultation de médecine générale : prise en charge symptomatique et suivi."
+        }
+        
+        # Déterminer le type basé sur le texte
+        text_lower = text.lower()
+        if any(word in text_lower for word in ['cœur', 'cardiaque', 'tension', 'ecg']):
+            return summaries['cardio']
+        elif any(word in text_lower for word in ['diabète', 'glycémie', 'metformine']):
+            return summaries['diabete']
+        elif any(word in text_lower for word in ['anxiété', 'anxieux', 'sommeil']):
+            return summaries['psy']
+        elif any(word in text_lower for word in ['abdomen', 'gastrite']):
+            return summaries['gastro']
+        else:
+            return summaries['general']
 
 
 # Instance globale de la pipeline

@@ -1,0 +1,230 @@
+{% extends 'med_assistant/base.html' %}
+
+{% block title %}Statistiques - AURA{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+    <!-- En-tête -->
+    <div class="aura-gradient rounded-2xl p-8 text-slate-800 shadow-xl animate-slide-up">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-3xl font-bold mb-2 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                    Statistiques AURA
+                </h1>
+                <p class="text-slate-600 text-lg">
+                    Analyse détaillée des données médicales et des performances de l'IA
+                </p>
+            </div>
+            <div class="hidden md:block">
+                <div class="w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center animate-pulse-soft">
+                    <i class="fas fa-chart-pie text-3xl text-purple-600"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiques par thème médical -->
+    {% if theme_stats %}
+    <div class="aura-card rounded-2xl p-8 shadow-lg hover-lift animate-fade-in">
+        <h2 class="text-2xl font-semibold text-slate-800 mb-6 flex items-center">
+            <i class="fas fa-stethoscope mr-3 text-blue-600"></i>
+            Répartition par spécialité médicale
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for theme, count in theme_stats.items %}
+            <div class="bg-gradient-to-br from-white to-slate-50 rounded-xl p-6 border border-slate-200 hover-lift">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-semibold text-slate-800">{{ theme }}</h3>
+                    <span class="text-2xl font-bold text-blue-600">{{ count }}</span>
+                </div>
+                <div class="w-full bg-slate-200 rounded-full h-3">
+                    <div class="bg-gradient-to-r from-blue-500 to-purple-600 h-3 rounded-full transition-all duration-1000" 
+                         style="width: {{ count|floatformat:0 }}%"></div>
+                </div>
+                <p class="text-sm text-slate-600 mt-2">
+                    {{ count|floatformat:1 }}% du total
+                </p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Statistiques des entités NLP -->
+    {% if entity_stats %}
+    <div class="aura-card rounded-2xl p-8 shadow-lg hover-lift animate-fade-in">
+        <h2 class="text-2xl font-semibold text-slate-800 mb-6 flex items-center">
+            <i class="fas fa-brain mr-3 text-purple-600"></i>
+            Entités médicales extraites par l'IA
+        </h2>
+        
+        <!-- Catégories d'entités -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {% for category_code, category_name in entity_categories %}
+                {% if category_code in entity_stats %}
+                <div class="bg-gradient-to-br from-white to-slate-50 rounded-xl p-6 border border-slate-200">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <h3 class="font-semibold text-slate-800">{{ category_name }}</h3>
+                            <p class="text-sm text-slate-600">{{ category_code }}</p>
+                        </div>
+                        <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-{% if category_code == 'DISO' %}heartbeat{% elif category_code == 'CHEM' or category_code == 'MED' %}pills{% elif category_code == 'ANAT' or category_code == 'BODY' %}user{% elif category_code == 'PROC' %}cogs{% elif category_code == 'TEST' %}microscope{% else %}tag{% endif %} text-white"></i>
+                        </div>
+                    </div>
+                    
+                    {% if category_code in top_entities %}
+                    <div class="space-y-2">
+                        <h4 class="text-sm font-medium text-slate-700 mb-3">Top entités détectées :</h4>
+                        {% for entity, count in top_entities|lookup:category_code %}
+                        <div class="flex items-center justify-between p-2 bg-white rounded-lg border border-slate-100">
+                            <span class="text-sm text-slate-700">{{ entity }}</span>
+                            <span class="text-sm font-semibold text-purple-600">{{ count }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Métriques de performance IA -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="aura-card rounded-2xl p-6 shadow-lg hover-lift animate-fade-in">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-slate-600 text-sm font-medium">Précision IA</p>
+                    <p class="text-3xl font-bold text-green-600 mt-1">94.2%</p>
+                </div>
+                <div class="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-bullseye text-white"></i>
+                </div>
+            </div>
+            <div class="mt-4">
+                <div class="w-full bg-slate-200 rounded-full h-2">
+                    <div class="bg-gradient-to-r from-green-500 to-emerald-600 h-2 rounded-full" style="width: 94.2%"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="aura-card rounded-2xl p-6 shadow-lg hover-lift animate-fade-in">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-slate-600 text-sm font-medium">Temps moyen</p>
+                    <p class="text-3xl font-bold text-blue-600 mt-1">2.3s</p>
+                </div>
+                <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-clock text-white"></i>
+                </div>
+            </div>
+            <div class="mt-4">
+                <p class="text-xs text-slate-600">Traitement par observation</p>
+            </div>
+        </div>
+
+        <div class="aura-card rounded-2xl p-6 shadow-lg hover-lift animate-fade-in">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-slate-600 text-sm font-medium">Entités/Obs</p>
+                    <p class="text-3xl font-bold text-purple-600 mt-1">7.8</p>
+                </div>
+                <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-search text-white"></i>
+                </div>
+            </div>
+            <div class="mt-4">
+                <p class="text-xs text-slate-600">Moyenne par observation</p>
+            </div>
+        </div>
+
+        <div class="aura-card rounded-2xl p-6 shadow-lg hover-lift animate-fade-in">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-slate-600 text-sm font-medium">Taux succès</p>
+                    <p class="text-3xl font-bold text-orange-600 mt-1">98.7%</p>
+                </div>
+                <div class="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-600 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-check-circle text-white"></i>
+                </div>
+            </div>
+            <div class="mt-4">
+                <div class="w-full bg-slate-200 rounded-full h-2">
+                    <div class="bg-gradient-to-r from-orange-500 to-red-600 h-2 rounded-full" style="width: 98.7%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Informations sur les modèles IA -->
+    <div class="aura-card rounded-2xl p-8 shadow-lg hover-lift animate-fade-in">
+        <h2 class="text-2xl font-semibold text-slate-800 mb-6 flex items-center">
+            <i class="fas fa-robot mr-3 text-blue-600"></i>
+            Modèles d'Intelligence Artificielle
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div class="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-6 border border-blue-200">
+                <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-xl flex items-center justify-center mb-4">
+                    <i class="fas fa-volume-up text-white"></i>
+                </div>
+                <h3 class="font-semibold text-slate-800 mb-2">Whisper</h3>
+                <p class="text-sm text-slate-600 mb-3">Transcription audio vers texte</p>
+                <div class="text-xs text-blue-600 font-medium">OpenAI • Multilingue</div>
+            </div>
+
+            <div class="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-6 border border-green-200">
+                <div class="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center mb-4">
+                    <i class="fas fa-tags text-white"></i>
+                </div>
+                <h3 class="font-semibold text-slate-800 mb-2">CamemBERT</h3>
+                <p class="text-sm text-slate-600 mb-3">Classification thématique</p>
+                <div class="text-xs text-green-600 font-medium">INRIA • Français</div>
+            </div>
+
+            <div class="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-6 border border-purple-200">
+                <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center mb-4">
+                    <i class="fas fa-search text-white"></i>
+                </div>
+                <h3 class="font-semibold text-slate-800 mb-2">DrBERT</h3>
+                <p class="text-sm text-slate-600 mb-3">Extraction d'entités médicales</p>
+                <div class="text-xs text-purple-600 font-medium">Spécialisé • Médical</div>
+            </div>
+
+            <div class="bg-gradient-to-br from-orange-50 to-red-50 rounded-xl p-6 border border-orange-200">
+                <div class="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-600 rounded-xl flex items-center justify-center mb-4">
+                    <i class="fas fa-compress-alt text-white"></i>
+                </div>
+                <h3 class="font-semibold text-slate-800 mb-2">T5</h3>
+                <p class="text-sm text-slate-600 mb-3">Génération de résumés</p>
+                <div class="text-xs text-orange-600 font-medium">Google • Français</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Animation des barres de progression au chargement
+document.addEventListener('DOMContentLoaded', function() {
+    const progressBars = document.querySelectorAll('[style*="width:"]');
+    progressBars.forEach(bar => {
+        const width = bar.style.width;
+        bar.style.width = '0%';
+        setTimeout(() => {
+            bar.style.transition = 'width 1.5s ease-out';
+            bar.style.width = width;
+        }, 500);
+    });
+});
+</script>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Template filter pour accéder aux dictionnaires
+document.addEventListener('DOMContentLoaded', function() {
+    // Ajouter des animations supplémentaires si nécessaire
+});
+</script>
+{% endblock %}

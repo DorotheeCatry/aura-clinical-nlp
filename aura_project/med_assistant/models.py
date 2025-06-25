@@ -23,6 +23,12 @@ class Patient(models.Model):
     def nom_complet(self):
         return f"{self.prenom} {self.nom}"
 
+    @property
+    def age(self):
+        from datetime import date
+        today = date.today()
+        return today.year - self.date_naissance.year - ((today.month, today.day) < (self.date_naissance.month, self.date_naissance.day))
+
 
 class Observation(models.Model):
     """Modèle représentant une observation médicale avec traitement NLP"""
@@ -38,6 +44,17 @@ class Observation(models.Model):
         ('dermato', 'Dermatologie'),
         ('general', 'Médecine générale'),
         ('autre', 'Autre'),
+    ]
+
+    # Nouvelles catégories d'entités médicales
+    ENTITY_CATEGORIES = [
+        ('DISO', 'Disorder - Maladies/Symptômes'),
+        ('CHEM', 'Chemical/Drug - Médicaments'),
+        ('ANAT', 'Anatomie - Parties du corps'),
+        ('PROC', 'Procédure médicale'),
+        ('TEST', 'Examen médical'),
+        ('MED', 'Médicament'),
+        ('BODY', 'Partie du corps'),
     ]
 
     patient = models.ForeignKey(
@@ -59,7 +76,7 @@ class Observation(models.Model):
         upload_to='observations/audio/',
         blank=True,
         null=True,
-        validators=[FileExtensionValidator(allowed_extensions=['mp3', 'wav', 'ogg', 'm4a'])],
+        validators=[FileExtensionValidator(allowed_extensions=['mp3', 'wav', 'ogg', 'm4a', 'webm'])],
         verbose_name="Fichier audio",
         help_text="Fichier audio de la note médicale"
     )
@@ -129,15 +146,28 @@ class Observation(models.Model):
     def get_theme_display_color(self):
         """Retourne la couleur associée au thème"""
         colors = {
-            'cardio': 'bg-red-100 text-red-800',
-            'psy': 'bg-purple-100 text-purple-800',
-            'diabete': 'bg-yellow-100 text-yellow-800',
-            'neuro': 'bg-indigo-100 text-indigo-800',
-            'pneumo': 'bg-blue-100 text-blue-800',
-            'gastro': 'bg-green-100 text-green-800',
-            'ortho': 'bg-gray-100 text-gray-800',
-            'dermato': 'bg-pink-100 text-pink-800',
-            'general': 'bg-slate-100 text-slate-800',
-            'autre': 'bg-neutral-100 text-neutral-800',
+            'cardio': 'bg-red-50 text-red-700 border-red-200',
+            'psy': 'bg-purple-50 text-purple-700 border-purple-200',
+            'diabete': 'bg-yellow-50 text-yellow-700 border-yellow-200',
+            'neuro': 'bg-indigo-50 text-indigo-700 border-indigo-200',
+            'pneumo': 'bg-blue-50 text-blue-700 border-blue-200',
+            'gastro': 'bg-green-50 text-green-700 border-green-200',
+            'ortho': 'bg-gray-50 text-gray-700 border-gray-200',
+            'dermato': 'bg-pink-50 text-pink-700 border-pink-200',
+            'general': 'bg-slate-50 text-slate-700 border-slate-200',
+            'autre': 'bg-neutral-50 text-neutral-700 border-neutral-200',
         }
-        return colors.get(self.theme_classe, 'bg-gray-100 text-gray-800')
+        return colors.get(self.theme_classe, 'bg-gray-50 text-gray-700 border-gray-200')
+
+    def get_entity_color(self, entity_type):
+        """Retourne la couleur pour un type d'entité"""
+        colors = {
+            'DISO': 'bg-red-50 text-red-700 border-red-200',
+            'CHEM': 'bg-blue-50 text-blue-700 border-blue-200',
+            'ANAT': 'bg-green-50 text-green-700 border-green-200',
+            'PROC': 'bg-purple-50 text-purple-700 border-purple-200',
+            'TEST': 'bg-orange-50 text-orange-700 border-orange-200',
+            'MED': 'bg-cyan-50 text-cyan-700 border-cyan-200',
+            'BODY': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+        }
+        return colors.get(entity_type, 'bg-gray-50 text-gray-700 border-gray-200')

@@ -1,6 +1,6 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
-from django.db.models import Q
+from django.db.models import Q, Count
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.core.paginator import Paginator
@@ -8,10 +8,11 @@ from .models import Patient, Observation
 from .forms import PatientForm, ObservationForm, PatientSearchForm
 from .nlp_pipeline import nlp_pipeline
 import json
+from collections import defaultdict
 
 
 def dashboard(request):
-    """Vue principale du dashboard AURA"""
+    """Vue principale du dashboard AURA avec statistiques avancées"""
     # Statistiques générales
     total_patients = Patient.objects.count()
     total_observations = Observation.objects.count()
@@ -19,16 +20,56 @@ def dashboard(request):
     
     # Répartition par thème
     themes_stats = {}
-    for choice in Observation.THEME_CHOICES:
-        count = Observation.objects.filter(theme_classe=choice[0]).count()
-        if count > 0:
-            themes_stats[choice[1]] = count
+    theme_counts = Observation.objects.filter(theme_classe__isnull=False).values('theme_classe').annotate(count=Count('theme_classe'))
+    for item in theme_counts:
+        theme_display = dict(Observation.THEME_CHOICES).get(item['theme_classe'], item['theme_classe'])
+        themes_stats[theme_display] = item['count']
+    
+    # Statistiques des entités
+    entity_stats = defaultdict(int)
+    observations_with_entities = Observation.objects.exclude(entites={})
+    
+    for obs in observations_with_entities:
+        if obs.entites:
+            for entity_type, entities in obs.entites.items():
+                entity_stats[entity_type] += len(entities) if isinstance(entities, list) else 1
+    
+    # Patients récents
+    patients_recents = Patient.objects.order_by('-created_at')[:5]
+    
+    # Statistiques par mois (derniers 6 mois)
+    from django.utils import timezone
+    from datetime import timedelta
+    import calendar
+    
+    six_months_ago = timezone.now() - timedelta(days=180)
+    monthly_stats = []
+    
+    for i in range(6):
+        month_start = timezone.now().replace(day=1) - timedelta(days=30*i)
+        month_end = month_start.replace(day=1) + timedelta(days=32)
+        month_end = month_end.replace(day=1) - timedelta(days=1)
+        
+        count = Observation.objects.filter(
+            date__gte=month_start,
+            date__lte=month_end
+        ).count()
+        
+        monthly_stats.append({
+            'month': calendar.month_name[month_start.month],
+            'count': count
+        })
+    
+    monthly_stats.reverse()
     
     context = {
         'total_patients': total_patients,
         'total_observations': total_observations,
         'observations_recentes': observations_recentes,
         'themes_stats': themes_stats,
+        'entity_stats': dict(entity_stats),
+        'patients_recents': patients_recents,
+        'monthly_stats': monthly_stats,
     }
     
     return render(request, 'med_assistant/dashboard.html', context)
@@ -143,7 +184,7 @@ def observation_create(request):
             except Exception as e:
                 messages.error(request, f'Erreur lors du traitement: {e}')
             
-            return redirect('med_assistant:patient_detail', patient_id=observation.patient.id)
+            return redirect('med_assistant:observation_detail', observation_id=observation.id)
     else:
         form = ObservationForm()
         # Pré-sélectionner un patient si fourni en paramètre
@@ -204,6 +245,44 @@ def observation_reprocess(request, observation_id):
         messages.error(request, f'Erreur lors du retraitement: {e}')
     
     return redirect('med_assistant:observation_detail', observation_id=observation.id)
+
+
+def statistics(request):
+    """Vue des statistiques avancées"""
+    # Statistiques par thème
+    theme_stats = {}
+    theme_counts = Observation.objects.filter(theme_classe__isnull=False).values('theme_classe').annotate(count=Count('theme_classe'))
+    for item in theme_counts:
+        theme_display = dict(Observation.THEME_CHOICES).get(item['theme_classe'], item['theme_classe'])
+        theme_stats[theme_display] = item['count']
+    
+    # Statistiques des entités par catégorie
+    entity_stats = defaultdict(lambda: defaultdict(int))
+    observations_with_entities = Observation.objects.exclude(entites={})
+    
+    for obs in observations_with_entities:
+        if obs.entites:
+            for entity_type, entities in obs.entites.items():
+                if isinstance(entities, list):
+                    for entity in entities:
+                        entity_stats[entity_type][entity] += 1
+                else:
+                    entity_stats[entity_type][entities] += 1
+    
+    # Top entités par catégorie
+    top_entities = {}
+    for category, entities in entity_stats.items():
+        sorted_entities = sorted(entities.items(), key=lambda x: x[1], reverse=True)[:5]
+        top_entities[category] = sorted_entities
+    
+    context = {
+        'theme_stats': theme_stats,
+        'entity_stats': dict(entity_stats),
+        'top_entities': top_entities,
+        'entity_categories': Observation.ENTITY_CATEGORIES,
+    }
+    
+    return render(request, 'med_assistant/statistics.html', context)
 
 
 def api_patient_search(request):
