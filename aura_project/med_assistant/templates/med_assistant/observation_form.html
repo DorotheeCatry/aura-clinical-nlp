@@ -202,6 +202,7 @@ let audioChunks = [];
 let isRecording = false;
 let startTime = 0;
 let timerInterval = null;
+let currentStream = null;
 
 document.addEventListener('DOMContentLoaded', function() {
     // Éléments DOM
@@ -253,10 +254,58 @@ document.addEventListener('DOMContentLoaded', function() {
         timer.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
     }
     
+    // Fonction pour arrêter complètement l'enregistrement
+    function stopRecording() {
+        console.log('🛑 Arrêt de l\'enregistrement...');
+        
+        // Arrêter le MediaRecorder
+        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+            console.log('📹 Arrêt du MediaRecorder (état:', mediaRecorder.state, ')');
+            mediaRecorder.stop();
+        }
+        
+        // Arrêter toutes les pistes du stream
+        if (currentStream) {
+            console.log('🎤 Arrêt des pistes audio...');
+            currentStream.getTracks().forEach(track => {
+                track.stop();
+                console.log('✅ Piste arrêtée:', track.kind);
+            });
+            currentStream = null;
+        }
+        
+        // Réinitialiser l'interface
+        resetRecordingUI();
+        
+        console.log('✅ Enregistrement complètement arrêté');
+    }
+    
+    // Réinitialiser l'interface d'enregistrement
+    function resetRecordingUI() {
+        isRecording = false;
+        recordBtn.style.display = 'block';
+        stopBtn.style.display = 'none';
+        recordingInfo.style.display = 'none';
+        
+        if (timerInterval) {
+            clearInterval(timerInterval);
+            timerInterval = null;
+        }
+        
+        // Réinitialiser le timer
+        timer.textContent = '00:00';
+    }
+    
     // Démarrer l'enregistrement
     recordBtn.addEventListener('click', async function() {
         try {
-            console.log('Demande d\'accès au microphone...');
+            console.log('🎤 Demande d\'accès au microphone...');
+            
+            // Arrêter tout enregistrement en cours
+            if (isRecording) {
+                stopRecording();
+                return;
+            }
             
             const stream = await navigator.mediaDevices.getUserMedia({ 
                 audio: {
@@ -266,7 +315,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 } 
             });
             
-            console.log('Microphone accessible, création du MediaRecorder...');
+            currentStream = stream;
+            console.log('✅ Microphone accessible, création du MediaRecorder...');
             
             // Créer le MediaRecorder
             const options = {};
@@ -282,20 +332,25 @@ document.addEventListener('DOMContentLoaded', function() {
             audioChunks = [];
             
             mediaRecorder.ondataavailable = function(event) {
-                console.log('Données audio reçues:', event.data.size, 'bytes');
+                console.log('📊 Données audio reçues:', event.data.size, 'bytes');
                 if (event.data.size > 0) {
                     audioChunks.push(event.data);
                 }
             };
             
             mediaRecorder.onstop = function() {
-                console.log('Enregistrement arrêté, création du blob...');
+                console.log('🔴 MediaRecorder arrêté, création du blob...');
+                
+                if (audioChunks.length === 0) {
+                    console.warn('⚠️ Aucune donnée audio collectée');
+                    return;
+                }
                 
                 const audioBlob = new Blob(audioChunks, { 
                     type: mediaRecorder.mimeType || 'audio/wav' 
                 });
                 
-                console.log('Blob créé:', audioBlob.size, 'bytes');
+                console.log('✅ Blob créé:', audioBlob.size, 'bytes');
                 
                 const audioUrl = URL.createObjectURL(audioBlob);
                 audioPlayer.src = audioUrl;
@@ -309,22 +364,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 dataTransfer.items.add(file);
                 audioField.files = dataTransfer.files;
                 
-                // Arrêter toutes les pistes audio
-                stream.getTracks().forEach(track => {
-                    track.stop();
-                    console.log('Piste audio arrêtée');
-                });
+                console.log('✅ Fichier ajouté au formulaire');
             };
             
             mediaRecorder.onerror = function(event) {
-                console.error('Erreur MediaRecorder:', event.error);
+                console.error('❌ Erreur MediaRecorder:', event.error);
                 alert('Erreur lors de l\'enregistrement: ' + event.error);
-                resetRecording();
+                stopRecording();
             };
             
             // Démarrer l'enregistrement
             mediaRecorder.start(1000); // Collecter les données toutes les secondes
-            console.log('Enregistrement démarré');
+            console.log('🔴 Enregistrement démarré');
             
             // Mettre à jour l'interface
             isRecording = true;
@@ -337,7 +388,7 @@ document.addEventListener('DOMContentLoaded', function() {
             timerInterval = setInterval(updateTimer, 1000);
             
         } catch (error) {
-            console.error('Erreur d\'accès au microphone:', error);
+            console.error('❌ Erreur d\'accès au microphone:', error);
             
             let message = 'Impossible d\'accéder au microphone. ';
             if (error.name === 'NotAllowedError') {
@@ -349,34 +400,17 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             alert(message);
-            resetRecording();
+            resetRecordingUI();
         }
     });
     
     // Arrêter l'enregistrement
-    stopBtn.addEventListener('click', function() {
-        console.log('Arrêt de l\'enregistrement demandé');
-        
-        if (mediaRecorder && mediaRecorder.state === 'recording') {
-            mediaRecorder.stop();
-            console.log('MediaRecorder.stop() appelé');
-        }
-        
-        resetRecording();
+    stopBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('🛑 Clic sur le bouton d\'arrêt');
+        stopRecording();
     });
-    
-    // Réinitialiser l'interface d'enregistrement
-    function resetRecording() {
-        isRecording = false;
-        recordBtn.style.display = 'block';
-        stopBtn.style.display = 'none';
-        recordingInfo.style.display = 'none';
-        
-        if (timerInterval) {
-            clearInterval(timerInterval);
-            timerInterval = null;
-        }
-    }
     
     // Transcrire l'enregistrement
     transcribeBtn.addEventListener('click', function() {
@@ -406,7 +440,7 @@ document.addEventListener('DOMContentLoaded', function() {
     audioField.addEventListener('change', function(e) {
         if (e.target.files.length > 0) {
             const file = e.target.files[0];
-            console.log('Fichier sélectionné:', file.name, file.size, 'bytes');
+            console.log('📁 Fichier sélectionné:', file.name, file.size, 'bytes');
             
             // Simulation de transcription pour les fichiers uploadés
             setTimeout(() => {
@@ -424,6 +458,13 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Validation du formulaire
     form.addEventListener('submit', function(e) {
+        // Arrêter l'enregistrement si en cours
+        if (isRecording) {
+            e.preventDefault();
+            alert('Veuillez arrêter l\'enregistrement avant de soumettre le formulaire.');
+            return false;
+        }
+        
         const hasText = texteField.value.trim().length > 0;
         const hasAudio = audioField.files.length > 0;
         const hasRecording = audioPlayer.src && audioPlayer.src !== window.location.href;
@@ -443,12 +484,31 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Nettoyage à la fermeture de la page
     window.addEventListener('beforeunload', function() {
-        if (isRecording && mediaRecorder) {
-            mediaRecorder.stop();
+        if (isRecording) {
+            stopRecording();
         }
     });
     
-    console.log('Script d\'enregistrement initialisé');
+    // Gestion des raccourcis clavier
+    document.addEventListener('keydown', function(e) {
+        // Espace pour démarrer/arrêter l'enregistrement (si pas dans un champ de texte)
+        if (e.code === 'Space' && !e.target.matches('input, textarea, select')) {
+            e.preventDefault();
+            if (isRecording) {
+                stopRecording();
+            } else {
+                recordBtn.click();
+            }
+        }
+        
+        // Échap pour arrêter l'enregistrement
+        if (e.code === 'Escape' && isRecording) {
+            e.preventDefault();
+            stopRecording();
+        }
+    });
+    
+    console.log('✅ Script d\'enregistrement initialisé');
 });
 </script>
 {% endblock %}
