@@ -23,7 +23,7 @@ def dashboard(request):
     total_observations = Observation.objects.count()
     observations_recentes = Observation.objects.select_related('patient')[:5]
     
-    # Répartition par thème
+    # Répartition par thème avec mapping des pathologies
     themes_stats = {}
     theme_counts = Observation.objects.filter(theme_classe__isnull=False).values('theme_classe').annotate(count=Count('theme_classe'))
     for item in theme_counts:
@@ -180,13 +180,15 @@ def observation_create(request):
                 if results['success']:
                     observation.transcription = results['transcription']
                     observation.theme_classe = results['theme_classe']
+                    observation.model_prediction = results['model_prediction']
                     observation.resume = results['resume']
                     observation.entites = results['entites']
                     observation.traitement_termine = True
                     
-                    # Message de succès avec info sur la méthode utilisée
+                    # Message de succès avec info sur la méthode utilisée et prédiction
                     if results.get('fastapi_used'):
-                        messages.success(request, 'Observation créée et traitée avec succès via FastAPI.')
+                        pred_info = f" (Prédiction: {results['model_prediction']})" if results['model_prediction'] is not None else ""
+                        messages.success(request, f'Observation créée et traitée avec succès via FastAPI{pred_info}.')
                     else:
                         messages.success(request, 'Observation créée et traitée avec succès (mode local).')
                 else:
@@ -251,13 +253,25 @@ def transcribe_audio(request):
 
 
 def observation_detail(request, observation_id):
-    """Détail d'une observation"""
+    """Détail d'une observation avec affichage de la prédiction"""
     observation = get_object_or_404(
         Observation.objects.select_related('patient'), 
         id=observation_id
     )
     
-    context = {'observation': observation}
+    # Ajouter des informations sur la prédiction du modèle
+    prediction_info = None
+    if observation.model_prediction is not None:
+        prediction_info = {
+            'prediction': observation.model_prediction,
+            'pathology_name': Observation.get_pathology_display_name(observation.model_prediction),
+            'confidence': 'Élevée' if observation.model_prediction in [0, 1, 2] else 'Faible'
+        }
+    
+    context = {
+        'observation': observation,
+        'prediction_info': prediction_info
+    }
     return render(request, 'med_assistant/observation_detail.html', context)
 
 
@@ -270,6 +284,7 @@ def observation_reprocess(request, observation_id):
         # Réinitialiser les résultats précédents
         observation.transcription = None
         observation.theme_classe = None
+        observation.model_prediction = None
         observation.resume = None
         observation.entites = {}
         observation.traitement_termine = False
@@ -281,13 +296,15 @@ def observation_reprocess(request, observation_id):
         if results['success']:
             observation.transcription = results['transcription']
             observation.theme_classe = results['theme_classe']
+            observation.model_prediction = results['model_prediction']
             observation.resume = results['resume']
             observation.entites = results['entites']
             observation.traitement_termine = True
             
-            # Message avec info sur la méthode utilisée
+            # Message avec info sur la méthode utilisée et prédiction
             if results.get('fastapi_used'):
-                messages.success(request, 'Observation retraitée avec succès via FastAPI.')
+                pred_info = f" (Prédiction: {results['model_prediction']})" if results['model_prediction'] is not None else ""
+                messages.success(request, f'Observation retraitée avec succès via FastAPI{pred_info}.')
             else:
                 messages.success(request, 'Observation retraitée avec succès (mode local).')
         else:
@@ -303,13 +320,20 @@ def observation_reprocess(request, observation_id):
 
 
 def statistics(request):
-    """Vue des statistiques avancées avec info FastAPI"""
-    # Statistiques par thème
+    """Vue des statistiques avancées avec info FastAPI et prédictions"""
+    # Statistiques par thème avec mapping des pathologies
     theme_stats = {}
     theme_counts = Observation.objects.filter(theme_classe__isnull=False).values('theme_classe').annotate(count=Count('theme_classe'))
     for item in theme_counts:
         theme_display = dict(Observation.THEME_CHOICES).get(item['theme_classe'], item['theme_classe'])
         theme_stats[theme_display] = item['count']
+    
+    # Statistiques des prédictions du modèle
+    prediction_stats = {}
+    prediction_counts = Observation.objects.filter(model_prediction__isnull=False).values('model_prediction').annotate(count=Count('model_prediction'))
+    for item in prediction_counts:
+        pathology_name = Observation.get_pathology_display_name(item['model_prediction'])
+        prediction_stats[f"Classe {item['model_prediction']} - {pathology_name}"] = item['count']
     
     # Statistiques des entités par catégorie
     entity_stats = defaultdict(lambda: defaultdict(int))
@@ -335,10 +359,11 @@ def statistics(request):
     
     context = {
         'theme_stats': theme_stats,
+        'prediction_stats': prediction_stats,  # Nouveau : stats des prédictions
         'entity_stats': dict(entity_stats),
         'top_entities': top_entities,
         'entity_categories': Observation.ENTITY_CATEGORIES,
-        'nlp_status': nlp_status,  # Nouveau : statut de la pipeline
+        'nlp_status': nlp_status,
     }
     
     return render(request, 'med_assistant/statistics.html', context)
