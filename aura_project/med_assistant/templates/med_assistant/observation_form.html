@@ -5,225 +5,167 @@
 {% block page_subtitle %}Créer une nouvelle observation médicale{% endblock %}
 
 {% block content %}
-<div class="min-h-screen bg-gray-50 p-4">
-    <div class="max-w-7xl mx-auto">
-        <form method="post" enctype="multipart/form-data" class="space-y-6">
+<div class="min-h-screen bg-gray-50 p-6">
+    <div class="max-w-6xl mx-auto">
+        <form method="post" enctype="multipart/form-data" class="space-y-8">
             {% csrf_token %}
             
-            <!-- Patient Selection Header -->
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <!-- Patient Selection -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                 <div class="flex items-center justify-between">
-                    <div class="flex-1 max-w-md">
-                        <label for="{{ form.patient.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-3">
-                            <i class="fas fa-user mr-2 text-primary-steel text-sm"></i>Sélectionner le patient
+                    <div class="flex-1 max-w-lg">
+                        <label for="{{ form.patient.id_for_label }}" class="block text-lg font-semibold text-gray-800 mb-4">
+                            👤 Sélectionner le patient
                         </label>
                         {{ form.patient }}
                         {% if form.patient.errors %}
-                            <div class="mt-2 text-sm text-red-600">
+                            <div class="mt-3 text-sm text-red-600">
                                 {% for error in form.patient.errors %}
-                                    <p><i class="fas fa-exclamation-circle mr-1 text-xs"></i>{{ error }}</p>
+                                    <p>⚠️ {{ error }}</p>
                                 {% endfor %}
                             </div>
                         {% endif %}
                     </div>
                     <a href="{% url 'med_assistant:patient_create' %}" 
-                       class="ml-4 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors">
-                        <i class="fas fa-plus mr-2 text-xs"></i>Nouveau patient
+                       class="ml-6 px-6 py-3 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-xl font-medium transition-colors">
+                        ➕ Nouveau patient
                     </a>
                 </div>
             </div>
 
-            <!-- Main Content Area -->
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <!-- Main Content -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
                 
-                <!-- Header with Audio Controls -->
-                <div class="flex items-center justify-between mb-6 pb-4 border-b border-gray-200">
-                    <div class="flex items-center">
-                        <div class="w-10 h-10 bg-primary-steel rounded-lg flex items-center justify-center mr-3">
-                            <i class="fas fa-file-medical text-white text-sm"></i>
-                        </div>
-                        <div>
-                            <h2 class="text-xl font-semibold text-gray-800">Observation médicale</h2>
-                            <p class="text-sm text-gray-600">Dictez ou saisissez votre observation</p>
-                        </div>
+                <!-- Header with Recording Controls -->
+                <div class="flex items-center justify-between mb-8 pb-6 border-b-2 border-gray-100">
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-800 mb-2">📝 Observation médicale</h2>
+                        <p class="text-gray-600">Dictez ou saisissez votre observation</p>
                     </div>
                     
-                    <!-- Audio Recording Controls -->
+                    <!-- Recording Controls -->
                     <div class="flex items-center space-x-4">
-                        <div class="flex items-center space-x-3">
-                            <button type="button" id="startRecord" 
-                                    class="w-12 h-12 bg-green-500 hover:bg-green-600 text-white rounded-full flex items-center justify-center transition-all duration-200 shadow-md hover:shadow-lg">
-                                <i class="fas fa-microphone text-sm"></i>
-                            </button>
-                            
-                            <button type="button" id="stopRecord" disabled
-                                    class="w-12 h-12 bg-red-400 text-white rounded-full flex items-center justify-center transition-all duration-200 shadow-md disabled:opacity-50 disabled:cursor-not-allowed">
-                                <i class="fas fa-stop text-sm"></i>
-                            </button>
-                            
-                            <button type="button" id="playRecord" disabled
-                                    class="w-12 h-12 bg-primary-steel hover:bg-primary-deep text-white rounded-full flex items-center justify-center transition-all duration-200 shadow-md disabled:opacity-50 disabled:cursor-not-allowed">
-                                <i class="fas fa-play text-sm"></i>
-                            </button>
-                        </div>
+                        <button type="button" id="recordBtn" 
+                                class="w-16 h-16 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xl font-bold transition-all shadow-lg hover:shadow-xl">
+                            🎤
+                        </button>
                         
-                        <!-- Recording Status -->
-                        <div class="text-right">
-                            <div id="recordingStatus" class="text-sm font-medium text-gray-700">
-                                Prêt à enregistrer
-                            </div>
-                            <div id="recordingTimer" class="text-lg font-mono font-bold text-primary-steel" style="display: none;">
-                                00:00
-                            </div>
+                        <button type="button" id="stopBtn" style="display: none;"
+                                class="w-16 h-16 bg-gray-600 hover:bg-gray-700 text-white rounded-full flex items-center justify-center text-xl font-bold transition-all shadow-lg">
+                            ⏹️
+                        </button>
+                        
+                        <div id="recordingInfo" style="display: none;" class="text-center">
+                            <div id="timer" class="text-2xl font-mono font-bold text-red-600">00:00</div>
+                            <div class="text-sm text-gray-600">Enregistrement...</div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Audio Visualizer -->
-                <div id="visualizerContainer" class="mb-6" style="display: none;">
-                    <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                        <canvas id="audioVisualizer" width="800" height="80" class="w-full h-16 rounded-lg bg-white border border-gray-200"></canvas>
+                <!-- Audio Player (when recording is done) -->
+                <div id="audioSection" style="display: none;" class="mb-8 p-6 bg-blue-50 rounded-xl border border-blue-200">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-blue-800">🔊 Enregistrement terminé</h3>
+                        <button type="button" id="transcribeBtn" 
+                                class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors">
+                            ✨ Transcrire dans la note
+                        </button>
                     </div>
+                    <audio id="audioPlayer" controls class="w-full"></audio>
                 </div>
 
-                <!-- Audio Player -->
-                <div id="audioPlayerContainer" style="display: none;" class="mb-6">
-                    <div class="bg-blue-50 rounded-lg p-4 border border-blue-200">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="text-sm font-medium text-blue-800">
-                                <i class="fas fa-volume-up mr-2"></i>Enregistrement terminé
-                            </span>
-                            <button type="button" id="transcribeBtn" 
-                                    class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors">
-                                <i class="fas fa-magic mr-1"></i>Transcrire dans la note
-                            </button>
-                        </div>
-                        <audio id="audioPlayer" controls class="w-full"></audio>
-                    </div>
-                </div>
-
-                <!-- Main Text Area - AGRANDIE -->
-                <div class="mb-6">
-                    <div class="flex items-center justify-between mb-3">
-                        <label for="{{ form.texte_saisi.id_for_label }}" class="block text-lg font-medium text-gray-700">
-                            <i class="fas fa-edit mr-2 text-primary-steel"></i>Note médicale
+                <!-- GRANDE ZONE DE TEXTE -->
+                <div class="mb-8">
+                    <div class="flex items-center justify-between mb-4">
+                        <label for="{{ form.texte_saisi.id_for_label }}" class="text-xl font-semibold text-gray-800">
+                            📋 Note médicale
                         </label>
-                        <div class="flex items-center space-x-3 text-sm text-gray-500">
+                        <div class="text-sm text-gray-500">
                             <span id="charCount">0 caractères</span>
-                            <span id="transcriptionStatus" style="display: none;" class="text-blue-600 font-medium">
-                                <i class="fas fa-sync fa-spin mr-1"></i>Transcription en cours...
-                            </span>
                         </div>
                     </div>
                     
-                    <div class="relative">
-                        <textarea name="{{ form.texte_saisi.name }}" 
-                                  id="{{ form.texte_saisi.id_for_label }}"
-                                  class="w-full h-[600px] px-6 py-4 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-steel focus:border-primary-steel transition-all resize-none text-base leading-relaxed font-mono"
-                                  placeholder="📝 Saisissez ou dictez votre observation médicale ici...
+                    <!-- TEXTAREA TRÈS GRANDE (environ 7cm de hauteur) -->
+                    <textarea name="{{ form.texte_saisi.name }}" 
+                              id="{{ form.texte_saisi.id_for_label }}"
+                              class="w-full h-[700px] px-8 py-6 border-2 border-gray-300 rounded-xl focus:ring-4 focus:ring-blue-500 focus:border-blue-500 transition-all resize-none text-lg leading-relaxed"
+                              style="min-height: 700px; font-family: 'Inter', sans-serif;"
+                              placeholder="💭 Saisissez ou dictez votre observation médicale ici...
 
-💡 Conseils d'utilisation :
-• Utilisez l'enregistrement vocal (bouton microphone en haut à droite)
-• Saisissez directement au clavier
-• Importez un fichier audio (section ci-dessous)
-• Modifiez la transcription automatique si nécessaire
+📌 Vous pouvez :
+• Utiliser l'enregistrement vocal (bouton rouge 🎤)
+• Saisir directement au clavier
+• Importer un fichier audio ci-dessous
 
 📋 Structure suggérée :
 • Motif de consultation
-• Antécédents médicaux pertinents
+• Antécédents médicaux
 • Examen clinique
-• Diagnostic retenu
+• Diagnostic
 • Traitement prescrit
-• Suivi recommandé
-• Observations particulières">{{ form.texte_saisi.value|default_if_none:"" }}</textarea>
-                        
-                        <!-- Floating transcription indicator -->
-                        <div id="transcriptionIndicator" style="display: none;" 
-                             class="absolute top-4 right-4 bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-medium">
-                            <i class="fas fa-magic mr-1"></i>Transcription ajoutée
-                        </div>
-                    </div>
+• Suivi recommandé">{{ form.texte_saisi.value|default_if_none:"" }}</textarea>
+                    
                     {% if form.texte_saisi.errors %}
-                        <div class="mt-2 text-sm text-red-600">
+                        <div class="mt-3 text-sm text-red-600">
                             {% for error in form.texte_saisi.errors %}
-                                <p><i class="fas fa-exclamation-circle mr-1 text-xs"></i>{{ error }}</p>
+                                <p>⚠️ {{ error }}</p>
                             {% endfor %}
                         </div>
                     {% endif %}
                 </div>
 
-                <!-- File Upload Section -->
-                <div class="border-t border-gray-200 pt-6">
-                    <h3 class="text-lg font-medium text-gray-700 mb-4 flex items-center">
-                        <i class="fas fa-upload mr-2 text-primary-steel"></i>
-                        Importer un fichier audio
-                        <span class="ml-2 text-sm text-gray-500">(transcription automatique dans la note)</span>
-                    </h3>
+                <!-- File Upload -->
+                <div class="border-t-2 border-gray-100 pt-8">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-6">📁 Importer un fichier audio</h3>
                     
-                    <div id="dropZone" class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-primary-steel transition-colors cursor-pointer">
+                    <div class="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-blue-400 transition-colors">
                         <div class="mb-4">
-                            <i class="fas fa-file-audio text-4xl text-gray-400 mb-3"></i>
-                            <p class="text-base text-gray-600 mb-2">Glissez un fichier audio ici ou cliquez pour sélectionner</p>
+                            <div class="text-6xl mb-4">🎵</div>
+                            <p class="text-lg text-gray-600 mb-4">Glissez un fichier audio ici ou cliquez pour sélectionner</p>
                         </div>
                         
                         {{ form.audio_file }}
                         
-                        <div id="uploadProgress" style="display: none;" class="mt-4">
-                            <div class="bg-gray-200 rounded-full h-3">
-                                <div id="progressBar" class="bg-primary-steel h-3 rounded-full transition-all duration-300" style="width: 0%"></div>
-                            </div>
-                            <p class="text-sm text-gray-600 mt-2">
-                                <i class="fas fa-sync fa-spin mr-1"></i>Transcription en cours...
-                            </p>
-                        </div>
-                        
                         {% if form.audio_file.errors %}
-                            <div class="mt-2 text-sm text-red-600">
+                            <div class="mt-3 text-sm text-red-600">
                                 {% for error in form.audio_file.errors %}
-                                    <p><i class="fas fa-exclamation-circle mr-1 text-xs"></i>{{ error }}</p>
+                                    <p>⚠️ {{ error }}</p>
                                 {% endfor %}
                             </div>
                         {% endif %}
                         
-                        <p class="mt-3 text-sm text-gray-500">
-                            Formats supportés: MP3, WAV, OGG, M4A, WebM (max 50MB)
+                        <p class="mt-4 text-sm text-gray-500">
+                            Formats supportés: MP3, WAV, OGG, M4A, WebM
                         </p>
                     </div>
                 </div>
             </div>
 
-            <!-- AI Processing Info -->
-            <div class="bg-gradient-to-r from-primary-deep to-primary-steel rounded-lg p-6 text-white">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center">
-                        <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center mr-4">
-                            <i class="fas fa-robot text-white"></i>
+            <!-- AI Info -->
+            <div class="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-8 text-white">
+                <div class="text-center">
+                    <h3 class="text-2xl font-bold mb-4">🤖 Analyse automatique AURA</h3>
+                    <p class="text-lg mb-6">L'IA analysera automatiquement votre observation pour extraire les informations médicales</p>
+                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div class="bg-white/20 rounded-lg p-4">
+                            <div class="text-2xl mb-2">🎤</div>
+                            <div class="font-semibold">Whisper</div>
+                            <div class="text-sm opacity-80">Transcription</div>
                         </div>
-                        <div>
-                            <h3 class="text-xl font-semibold">Analyse automatique AURA</h3>
-                            <p class="text-white/90">L'IA analysera automatiquement votre observation</p>
+                        <div class="bg-white/20 rounded-lg p-4">
+                            <div class="text-2xl mb-2">🏷️</div>
+                            <div class="font-semibold">CamemBERT</div>
+                            <div class="text-sm opacity-80">Classification</div>
                         </div>
-                    </div>
-                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
-                        <div class="text-center bg-white/10 rounded-lg p-4">
-                            <i class="fas fa-volume-up text-lg mb-2"></i>
-                            <div class="font-medium">Whisper</div>
-                            <div class="text-xs opacity-80">Transcription</div>
+                        <div class="bg-white/20 rounded-lg p-4">
+                            <div class="text-2xl mb-2">🔍</div>
+                            <div class="font-semibold">DrBERT</div>
+                            <div class="text-sm opacity-80">Extraction</div>
                         </div>
-                        <div class="text-center bg-white/10 rounded-lg p-4">
-                            <i class="fas fa-tags text-lg mb-2"></i>
-                            <div class="font-medium">CamemBERT</div>
-                            <div class="text-xs opacity-80">Classification</div>
-                        </div>
-                        <div class="text-center bg-white/10 rounded-lg p-4">
-                            <i class="fas fa-search text-lg mb-2"></i>
-                            <div class="font-medium">DrBERT</div>
-                            <div class="text-xs opacity-80">Extraction</div>
-                        </div>
-                        <div class="text-center bg-white/10 rounded-lg p-4">
-                            <i class="fas fa-compress-alt text-lg mb-2"></i>
-                            <div class="font-medium">T5</div>
-                            <div class="text-xs opacity-80">Résumé</div>
+                        <div class="bg-white/20 rounded-lg p-4">
+                            <div class="text-2xl mb-2">📄</div>
+                            <div class="font-semibold">T5</div>
+                            <div class="text-sm opacity-80">Résumé</div>
                         </div>
                     </div>
                 </div>
@@ -231,26 +173,22 @@
 
             <!-- Form Errors -->
             {% if form.non_field_errors %}
-                <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                <div class="bg-red-50 border border-red-200 rounded-xl p-6">
                     {% for error in form.non_field_errors %}
-                        <p class="text-sm text-red-600">
-                            <i class="fas fa-exclamation-circle mr-1 text-xs"></i>{{ error }}
-                        </p>
+                        <p class="text-red-600">⚠️ {{ error }}</p>
                     {% endfor %}
                 </div>
             {% endif %}
 
             <!-- Action Buttons -->
-            <div class="flex justify-between items-center pt-6">
+            <div class="flex justify-between items-center pt-8">
                 <a href="{% url 'med_assistant:dashboard' %}" 
-                   class="px-8 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors">
-                    <i class="fas fa-times mr-2"></i>
-                    Annuler
+                   class="px-8 py-4 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-xl font-semibold text-lg transition-colors">
+                    ❌ Annuler
                 </a>
                 <button type="submit" 
-                        class="px-10 py-3 bg-primary-steel hover:bg-primary-deep text-white rounded-lg font-medium transition-colors shadow-md hover:shadow-lg">
-                    <i class="fas fa-save mr-2"></i>
-                    Créer et analyser
+                        class="px-12 py-4 bg-green-600 hover:bg-green-700 text-white rounded-xl font-semibold text-lg transition-colors shadow-lg hover:shadow-xl">
+                    💾 Créer et analyser
                 </button>
             </div>
         </form>
@@ -258,124 +196,37 @@
 </div>
 
 <script>
-let mediaRecorder;
+// Variables globales
+let mediaRecorder = null;
 let audioChunks = [];
-let audioContext;
-let analyser;
-let microphone;
-let dataArray;
-let canvas;
-let canvasContext;
-let animationId;
-let recordingStartTime;
-let timerInterval;
 let isRecording = false;
+let startTime = 0;
+let timerInterval = null;
 
 document.addEventListener('DOMContentLoaded', function() {
-    const form = document.querySelector('form');
+    // Éléments DOM
     const texteField = document.querySelector('#{{ form.texte_saisi.id_for_label }}');
     const audioField = document.querySelector('#{{ form.audio_file.id_for_label }}');
-    const startBtn = document.getElementById('startRecord');
-    const stopBtn = document.getElementById('stopRecord');
-    const playBtn = document.getElementById('playRecord');
+    const recordBtn = document.getElementById('recordBtn');
+    const stopBtn = document.getElementById('stopBtn');
     const transcribeBtn = document.getElementById('transcribeBtn');
     const audioPlayer = document.getElementById('audioPlayer');
-    const audioPlayerContainer = document.getElementById('audioPlayerContainer');
-    const visualizerContainer = document.getElementById('visualizerContainer');
-    const status = document.getElementById('recordingStatus');
-    const timer = document.getElementById('recordingTimer');
+    const audioSection = document.getElementById('audioSection');
+    const recordingInfo = document.getElementById('recordingInfo');
+    const timer = document.getElementById('timer');
     const charCount = document.getElementById('charCount');
-    const transcriptionStatus = document.getElementById('transcriptionStatus');
-    const transcriptionIndicator = document.getElementById('transcriptionIndicator');
-    const uploadProgress = document.getElementById('uploadProgress');
-    const progressBar = document.getElementById('progressBar');
-    const dropZone = document.getElementById('dropZone');
+    const form = document.querySelector('form');
     
-    canvas = document.getElementById('audioVisualizer');
-    canvasContext = canvas.getContext('2d');
-    
-    // Character counter
+    // Compteur de caractères
     function updateCharCount() {
         const count = texteField.value.length;
         charCount.textContent = count + ' caractères';
-        if (count > 5000) {
-            charCount.className = 'text-red-600 font-medium';
-        } else if (count > 3000) {
-            charCount.className = 'text-yellow-600 font-medium';
-        } else {
-            charCount.className = 'text-gray-500';
-        }
     }
     
     texteField.addEventListener('input', updateCharCount);
     updateCharCount();
     
-    // Drag and drop functionality
-    dropZone.addEventListener('dragover', function(e) {
-        e.preventDefault();
-        dropZone.classList.add('border-primary-steel', 'bg-blue-50');
-    });
-    
-    dropZone.addEventListener('dragleave', function(e) {
-        e.preventDefault();
-        dropZone.classList.remove('border-primary-steel', 'bg-blue-50');
-    });
-    
-    dropZone.addEventListener('drop', function(e) {
-        e.preventDefault();
-        dropZone.classList.remove('border-primary-steel', 'bg-blue-50');
-        
-        const files = e.dataTransfer.files;
-        if (files.length > 0) {
-            const file = files[0];
-            if (file.type.startsWith('audio/')) {
-                audioField.files = files;
-                simulateTranscription(file.name);
-            } else {
-                alert('Veuillez sélectionner un fichier audio valide.');
-            }
-        }
-    });
-    
-    // File upload handling
-    audioField.addEventListener('change', function(e) {
-        if (e.target.files.length > 0) {
-            const file = e.target.files[0];
-            simulateTranscription(file.name);
-        }
-    });
-    
-    // Simulate transcription for uploaded files
-    function simulateTranscription(fileName) {
-        uploadProgress.style.display = 'block';
-        let progress = 0;
-        
-        const interval = setInterval(() => {
-            progress += Math.random() * 15 + 5;
-            if (progress > 100) progress = 100;
-            
-            progressBar.style.width = progress + '%';
-            
-            if (progress >= 100) {
-                clearInterval(interval);
-                setTimeout(() => {
-                    const mockTranscriptions = [
-                        "Patient présente des douleurs thoraciques depuis ce matin. Tension artérielle élevée à 160/95. Prescrit un ECG et analyses sanguines.",
-                        "Consultation de suivi pour diabète de type 2. Glycémie à jeun à 1,45 g/L. Ajustement de la metformine à 1000mg matin et soir.",
-                        "Patient anxieux, troubles du sommeil depuis 3 semaines. Prescrit anxiolytique léger et suivi psychologique.",
-                        "Douleur abdominale chronique, suspicion de gastrite. Prescription d'IPP et fibroscopie à programmer."
-                    ];
-                    
-                    const transcription = mockTranscriptions[Math.floor(Math.random() * mockTranscriptions.length)];
-                    appendToTextArea(transcription, 'Fichier ' + fileName + ' transcrit');
-                    uploadProgress.style.display = 'none';
-                    progressBar.style.width = '0%';
-                }, 500);
-            }
-        }, 200);
-    }
-    
-    // Append text to textarea (for transcription)
+    // Fonction pour ajouter du texte dans la textarea
     function appendToTextArea(text, source = 'Transcription') {
         const currentText = texteField.value.trim();
         const separator = currentText ? '\n\n--- ' + source + ' ---\n' : '--- ' + source + ' ---\n';
@@ -384,91 +235,73 @@ document.addEventListener('DOMContentLoaded', function() {
         texteField.value = newText;
         updateCharCount();
         
-        // Smooth scroll to end
+        // Scroll vers la fin
         texteField.scrollTop = texteField.scrollHeight;
         
-        // Show transcription indicator
-        transcriptionIndicator.style.display = 'block';
-        setTimeout(() => {
-            transcriptionIndicator.style.display = 'none';
-        }, 3000);
-        
-        // Brief highlight effect
+        // Animation de highlight
         texteField.style.backgroundColor = '#dbeafe';
         setTimeout(() => {
             texteField.style.backgroundColor = '';
-        }, 1500);
+        }, 2000);
     }
     
-    // Form validation
-    form.addEventListener('submit', function(e) {
-        const hasText = texteField.value.trim().length > 0;
-        const hasAudio = audioField.files.length > 0;
-        const hasRecording = audioPlayer.src && audioPlayer.src !== window.location.href;
-        
-        if (!hasText && !hasAudio && !hasRecording) {
-            e.preventDefault();
-            alert('Veuillez fournir soit un texte, soit un fichier audio, soit un enregistrement.');
-            return false;
-        }
-    });
+    // Timer d'enregistrement
+    function updateTimer() {
+        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+        const minutes = Math.floor(elapsed / 60);
+        const seconds = elapsed % 60;
+        timer.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }
     
-    // Audio recording functions
-    startBtn.addEventListener('click', startRecording);
-    stopBtn.addEventListener('click', stopRecording);
-    playBtn.addEventListener('click', playRecording);
-    transcribeBtn.addEventListener('click', transcribeRecording);
-    
-    async function startRecording() {
+    // Démarrer l'enregistrement
+    recordBtn.addEventListener('click', async function() {
         try {
-            // Check for microphone permission
+            console.log('Demande d\'accès au microphone...');
+            
             const stream = await navigator.mediaDevices.getUserMedia({ 
                 audio: {
                     echoCancellation: true,
                     noiseSuppression: true,
-                    sampleRate: 44100
+                    autoGainControl: true
                 } 
             });
             
-            // Check if MediaRecorder is supported
-            if (!MediaRecorder.isTypeSupported('audio/webm')) {
-                console.warn('audio/webm not supported, falling back to default');
+            console.log('Microphone accessible, création du MediaRecorder...');
+            
+            // Créer le MediaRecorder
+            const options = {};
+            if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+                options.mimeType = 'audio/webm;codecs=opus';
+            } else if (MediaRecorder.isTypeSupported('audio/webm')) {
+                options.mimeType = 'audio/webm';
+            } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+                options.mimeType = 'audio/mp4';
             }
             
-            mediaRecorder = new MediaRecorder(stream, {
-                mimeType: MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : undefined
-            });
-            
+            mediaRecorder = new MediaRecorder(stream, options);
             audioChunks = [];
-            recordingStartTime = Date.now();
-            isRecording = true;
             
-            // Audio visualization setup
-            audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            analyser = audioContext.createAnalyser();
-            microphone = audioContext.createMediaStreamSource(stream);
-            microphone.connect(analyser);
-            
-            analyser.fftSize = 256;
-            const bufferLength = analyser.frequencyBinCount;
-            dataArray = new Uint8Array(bufferLength);
-            
-            mediaRecorder.ondataavailable = event => {
+            mediaRecorder.ondataavailable = function(event) {
+                console.log('Données audio reçues:', event.data.size, 'bytes');
                 if (event.data.size > 0) {
                     audioChunks.push(event.data);
                 }
             };
             
-            mediaRecorder.onstop = () => {
+            mediaRecorder.onstop = function() {
+                console.log('Enregistrement arrêté, création du blob...');
+                
                 const audioBlob = new Blob(audioChunks, { 
                     type: mediaRecorder.mimeType || 'audio/wav' 
                 });
+                
+                console.log('Blob créé:', audioBlob.size, 'bytes');
+                
                 const audioUrl = URL.createObjectURL(audioBlob);
                 audioPlayer.src = audioUrl;
-                audioPlayerContainer.style.display = 'block';
-                playBtn.disabled = false;
+                audioSection.style.display = 'block';
                 
-                // Create file for form
+                // Créer un fichier pour le formulaire
                 const file = new File([audioBlob], 'recording.wav', { 
                     type: 'audio/wav' 
                 });
@@ -476,84 +309,81 @@ document.addEventListener('DOMContentLoaded', function() {
                 dataTransfer.items.add(file);
                 audioField.files = dataTransfer.files;
                 
-                status.textContent = 'Enregistrement terminé - Cliquez sur "Transcrire"';
-                status.className = 'text-sm font-medium text-green-600';
-                timer.style.display = 'none';
-                visualizerContainer.style.display = 'none';
-                
-                // Stop all tracks
-                stream.getTracks().forEach(track => track.stop());
-                isRecording = false;
+                // Arrêter toutes les pistes audio
+                stream.getTracks().forEach(track => {
+                    track.stop();
+                    console.log('Piste audio arrêtée');
+                });
             };
             
-            mediaRecorder.onerror = (event) => {
-                console.error('MediaRecorder error:', event.error);
-                status.textContent = 'Erreur d\'enregistrement';
-                status.className = 'text-sm font-medium text-red-600';
+            mediaRecorder.onerror = function(event) {
+                console.error('Erreur MediaRecorder:', event.error);
+                alert('Erreur lors de l\'enregistrement: ' + event.error);
+                resetRecording();
             };
             
-            mediaRecorder.start(1000); // Collect data every second
+            // Démarrer l'enregistrement
+            mediaRecorder.start(1000); // Collecter les données toutes les secondes
+            console.log('Enregistrement démarré');
             
-            // Update UI
-            startBtn.disabled = true;
-            stopBtn.disabled = false;
-            status.textContent = 'Enregistrement en cours...';
-            status.className = 'text-sm font-medium text-red-600';
-            timer.style.display = 'block';
-            visualizerContainer.style.display = 'block';
+            // Mettre à jour l'interface
+            isRecording = true;
+            recordBtn.style.display = 'none';
+            stopBtn.style.display = 'block';
+            recordingInfo.style.display = 'block';
             
-            // Start timer
+            // Démarrer le timer
+            startTime = Date.now();
             timerInterval = setInterval(updateTimer, 1000);
             
-            // Start visualization
-            visualize();
+        } catch (error) {
+            console.error('Erreur d\'accès au microphone:', error);
             
-        } catch (err) {
-            console.error('Erreur d\'accès au microphone:', err);
-            status.textContent = 'Erreur d\'accès au microphone - Vérifiez les permissions';
-            status.className = 'text-sm font-medium text-red-600';
+            let message = 'Impossible d\'accéder au microphone. ';
+            if (error.name === 'NotAllowedError') {
+                message += 'Veuillez autoriser l\'accès au microphone dans votre navigateur.';
+            } else if (error.name === 'NotFoundError') {
+                message += 'Aucun microphone détecté.';
+            } else {
+                message += 'Erreur: ' + error.message;
+            }
             
-            // Reset buttons
-            startBtn.disabled = false;
-            stopBtn.disabled = true;
+            alert(message);
+            resetRecording();
         }
-    }
+    });
     
-    function stopRecording() {
+    // Arrêter l'enregistrement
+    stopBtn.addEventListener('click', function() {
+        console.log('Arrêt de l\'enregistrement demandé');
+        
         if (mediaRecorder && mediaRecorder.state === 'recording') {
             mediaRecorder.stop();
-            
-            if (audioContext && audioContext.state !== 'closed') {
-                audioContext.close();
-            }
-            
-            if (animationId) {
-                cancelAnimationFrame(animationId);
-            }
-            
-            if (timerInterval) {
-                clearInterval(timerInterval);
-            }
-            
-            startBtn.disabled = false;
-            stopBtn.disabled = true;
-            
-            canvasContext.clearRect(0, 0, canvas.width, canvas.height);
+            console.log('MediaRecorder.stop() appelé');
         }
-    }
-    
-    function playRecording() {
-        if (audioPlayer.src) {
-            audioPlayer.play();
-        }
-    }
-    
-    function transcribeRecording() {
-        transcriptionStatus.style.display = 'inline';
-        transcribeBtn.disabled = true;
-        transcribeBtn.innerHTML = '<i class="fas fa-sync fa-spin mr-1"></i>Transcription...';
         
-        // Simulate transcription process
+        resetRecording();
+    });
+    
+    // Réinitialiser l'interface d'enregistrement
+    function resetRecording() {
+        isRecording = false;
+        recordBtn.style.display = 'block';
+        stopBtn.style.display = 'none';
+        recordingInfo.style.display = 'none';
+        
+        if (timerInterval) {
+            clearInterval(timerInterval);
+            timerInterval = null;
+        }
+    }
+    
+    // Transcrire l'enregistrement
+    transcribeBtn.addEventListener('click', function() {
+        transcribeBtn.disabled = true;
+        transcribeBtn.textContent = '⏳ Transcription en cours...';
+        
+        // Simulation de transcription (remplacer par vraie API)
         setTimeout(() => {
             const mockTranscriptions = [
                 "Patient présente des douleurs thoraciques depuis ce matin. Tension artérielle élevée à 160/95. Prescrit un ECG et analyses sanguines.",
@@ -566,62 +396,59 @@ document.addEventListener('DOMContentLoaded', function() {
             const transcription = mockTranscriptions[Math.floor(Math.random() * mockTranscriptions.length)];
             appendToTextArea(transcription, 'Enregistrement vocal transcrit');
             
-            transcriptionStatus.style.display = 'none';
             transcribeBtn.disabled = false;
-            transcribeBtn.innerHTML = '<i class="fas fa-check mr-1"></i>Transcrit avec succès';
-            transcribeBtn.className = 'px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors';
-        }, 2500);
-    }
+            transcribeBtn.textContent = '✅ Transcrit avec succès';
+            transcribeBtn.className = 'px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors';
+        }, 2000);
+    });
     
-    function updateTimer() {
-        if (!isRecording) return;
-        
-        const elapsed = Math.floor((Date.now() - recordingStartTime) / 1000);
-        const minutes = Math.floor(elapsed / 60);
-        const seconds = elapsed % 60;
-        timer.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-        
-        // Auto-stop after 10 minutes
-        if (elapsed >= 600) {
-            stopRecording();
-            alert('Enregistrement automatiquement arrêté après 10 minutes.');
-        }
-    }
-    
-    function visualize() {
-        if (!analyser || !isRecording) return;
-        
-        analyser.getByteFrequencyData(dataArray);
-        
-        canvasContext.fillStyle = '#ffffff';
-        canvasContext.fillRect(0, 0, canvas.width, canvas.height);
-        
-        const barWidth = (canvas.width / dataArray.length) * 2.5;
-        let barHeight;
-        let x = 0;
-        
-        for (let i = 0; i < dataArray.length; i++) {
-            barHeight = (dataArray[i] / 255) * canvas.height * 0.8;
+    // Gestion du fichier audio uploadé
+    audioField.addEventListener('change', function(e) {
+        if (e.target.files.length > 0) {
+            const file = e.target.files[0];
+            console.log('Fichier sélectionné:', file.name, file.size, 'bytes');
             
-            const gradient = canvasContext.createLinearGradient(0, canvas.height - barHeight, 0, canvas.height);
-            gradient.addColorStop(0, '#306484');
-            gradient.addColorStop(1, '#0D3B58');
-            
-            canvasContext.fillStyle = gradient;
-            canvasContext.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
-            
-            x += barWidth + 1;
-        }
-        
-        animationId = requestAnimationFrame(visualize);
-    }
-    
-    // Cleanup on page unload
-    window.addEventListener('beforeunload', function() {
-        if (isRecording) {
-            stopRecording();
+            // Simulation de transcription pour les fichiers uploadés
+            setTimeout(() => {
+                const mockTranscriptions = [
+                    "Transcription du fichier audio: Patient présente des symptômes de fatigue chronique. Examens complémentaires à prévoir.",
+                    "Transcription du fichier audio: Consultation post-opératoire. Cicatrisation normale. Retrait des fils dans 7 jours.",
+                    "Transcription du fichier audio: Contrôle tension artérielle. Valeurs normalisées sous traitement. Poursuite du protocole."
+                ];
+                
+                const transcription = mockTranscriptions[Math.floor(Math.random() * mockTranscriptions.length)];
+                appendToTextArea(transcription, 'Fichier ' + file.name + ' transcrit');
+            }, 1500);
         }
     });
+    
+    // Validation du formulaire
+    form.addEventListener('submit', function(e) {
+        const hasText = texteField.value.trim().length > 0;
+        const hasAudio = audioField.files.length > 0;
+        const hasRecording = audioPlayer.src && audioPlayer.src !== window.location.href;
+        
+        if (!hasText && !hasAudio && !hasRecording) {
+            e.preventDefault();
+            alert('⚠️ Veuillez fournir soit un texte, soit un fichier audio, soit un enregistrement.');
+            return false;
+        }
+        
+        if (hasText && texteField.value.trim().length < 10) {
+            e.preventDefault();
+            alert('⚠️ La note médicale doit contenir au moins 10 caractères.');
+            return false;
+        }
+    });
+    
+    // Nettoyage à la fermeture de la page
+    window.addEventListener('beforeunload', function() {
+        if (isRecording && mediaRecorder) {
+            mediaRecorder.stop();
+        }
+    });
+    
+    console.log('Script d\'enregistrement initialisé');
 });
 </script>
 {% endblock %}
