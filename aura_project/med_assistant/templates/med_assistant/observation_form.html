@@ -6,7 +6,7 @@
 
 {% block content %}
 <div class="min-h-screen bg-gray-50 p-4">
-    <div class="max-w-7xl mx-auto">
+    <div class="max-w-6xl mx-auto">
         <form method="post" enctype="multipart/form-data" class="space-y-6">
             {% csrf_token %}
             
@@ -33,136 +33,154 @@
                 </div>
             </div>
 
-            <!-- Main Content - Two Columns -->
-            <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            <!-- Main Content Area -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 
-                <!-- Left Column: Audio Recording -->
-                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                    <!-- Header -->
-                    <div class="flex items-center mb-6">
+                <!-- Header with Audio Controls -->
+                <div class="flex items-center justify-between mb-6 pb-4 border-b border-gray-200">
+                    <div class="flex items-center">
                         <div class="w-10 h-10 bg-primary-steel rounded-lg flex items-center justify-center mr-3">
-                            <i class="fas fa-microphone text-white text-sm"></i>
+                            <i class="fas fa-file-medical text-white text-sm"></i>
                         </div>
                         <div>
-                            <h2 class="text-lg font-semibold text-gray-800">Enregistrement vocal</h2>
-                            <p class="text-sm text-gray-600">Dictez votre observation médicale</p>
+                            <h2 class="text-xl font-semibold text-gray-800">Observation médicale</h2>
+                            <p class="text-sm text-gray-600">Dictez ou saisissez votre observation</p>
                         </div>
                     </div>
                     
-                    <!-- Recording Controls -->
-                    <div class="text-center mb-6">
-                        <div class="flex justify-center items-center space-x-6 mb-6">
-                            <div class="text-center">
-                                <button type="button" id="startRecord" 
-                                        class="w-16 h-16 bg-green-500 hover:bg-green-600 text-white rounded-full flex items-center justify-center text-lg transition-all duration-200 shadow-md hover:shadow-lg">
-                                    <i class="fas fa-microphone"></i>
-                                </button>
-                                <p class="text-xs text-gray-600 mt-2 font-medium">Démarrer</p>
-                            </div>
+                    <!-- Audio Recording Controls -->
+                    <div class="flex items-center space-x-4">
+                        <div class="flex items-center space-x-3">
+                            <button type="button" id="startRecord" 
+                                    class="w-12 h-12 bg-green-500 hover:bg-green-600 text-white rounded-full flex items-center justify-center transition-all duration-200 shadow-md hover:shadow-lg">
+                                <i class="fas fa-microphone text-sm"></i>
+                            </button>
                             
-                            <div class="text-center">
-                                <button type="button" id="stopRecord" disabled
-                                        class="w-16 h-16 bg-red-400 text-white rounded-full flex items-center justify-center text-lg transition-all duration-200 shadow-md disabled:opacity-50">
-                                    <i class="fas fa-stop"></i>
-                                </button>
-                                <p class="text-xs text-gray-600 mt-2 font-medium">Arrêter</p>
-                            </div>
+                            <button type="button" id="stopRecord" disabled
+                                    class="w-12 h-12 bg-red-400 text-white rounded-full flex items-center justify-center transition-all duration-200 shadow-md disabled:opacity-50">
+                                <i class="fas fa-stop text-sm"></i>
+                            </button>
                             
-                            <div class="text-center">
-                                <button type="button" id="playRecord" disabled
-                                        class="w-16 h-16 bg-primary-steel hover:bg-primary-deep text-white rounded-full flex items-center justify-center text-lg transition-all duration-200 shadow-md disabled:opacity-50">
-                                    <i class="fas fa-play"></i>
-                                </button>
-                                <p class="text-xs text-gray-600 mt-2 font-medium">Écouter</p>
-                            </div>
+                            <button type="button" id="playRecord" disabled
+                                    class="w-12 h-12 bg-primary-steel hover:bg-primary-deep text-white rounded-full flex items-center justify-center transition-all duration-200 shadow-md disabled:opacity-50">
+                                <i class="fas fa-play text-sm"></i>
+                            </button>
                         </div>
                         
-                        <!-- Status and Visualizer -->
-                        <div class="bg-gray-50 rounded-lg p-4 mb-4 border border-gray-200">
-                            <div class="mb-3">
-                                <canvas id="audioVisualizer" width="400" height="80" class="w-full h-16 rounded-lg bg-white border border-gray-200"></canvas>
+                        <!-- Recording Status -->
+                        <div class="text-right">
+                            <div id="recordingStatus" class="text-sm font-medium text-gray-700">
+                                Prêt à enregistrer
                             </div>
-                            <div id="recordingStatus" class="text-sm font-medium text-gray-700 mb-2">
-                                Appuyez sur le microphone pour commencer
-                            </div>
-                            <div id="recordingTimer" class="text-xl font-mono font-bold text-primary-steel" style="display: none;">
+                            <div id="recordingTimer" class="text-lg font-mono font-bold text-primary-steel" style="display: none;">
                                 00:00
                             </div>
-                        </div>
-                        
-                        <!-- Audio Player -->
-                        <div id="audioPlayerContainer" style="display: none;" class="mb-4">
-                            <audio id="audioPlayer" controls class="w-full rounded-lg"></audio>
-                        </div>
-                    </div>
-                    
-                    <!-- File Upload Alternative -->
-                    <div class="border-t border-gray-200 pt-4">
-                        <h3 class="text-sm font-medium text-gray-700 mb-3 flex items-center">
-                            <i class="fas fa-upload mr-2 text-primary-steel text-xs"></i>
-                            Ou importer un fichier audio
-                        </h3>
-                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-primary-steel transition-colors">
-                            {{ form.audio_file }}
-                            {% if form.audio_file.errors %}
-                                <div class="mt-2 text-sm text-red-600">
-                                    {% for error in form.audio_file.errors %}
-                                        <p><i class="fas fa-exclamation-circle mr-1 text-xs"></i>{{ error }}</p>
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
-                            <p class="mt-2 text-xs text-gray-500">
-                                <i class="fas fa-file-audio mr-1 text-xs"></i>
-                                Formats supportés: MP3, WAV, OGG, M4A, WebM
-                            </p>
                         </div>
                     </div>
                 </div>
 
-                <!-- Right Column: Text Input -->
-                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                    <!-- Header -->
-                    <div class="flex items-center mb-6">
-                        <div class="w-10 h-10 bg-primary-steel rounded-lg flex items-center justify-center mr-3">
-                            <i class="fas fa-keyboard text-white text-sm"></i>
+                <!-- Audio Visualizer -->
+                <div id="visualizerContainer" class="mb-6" style="display: none;">
+                    <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                        <canvas id="audioVisualizer" width="600" height="60" class="w-full h-12 rounded-lg bg-white border border-gray-200"></canvas>
+                    </div>
+                </div>
+
+                <!-- Audio Player -->
+                <div id="audioPlayerContainer" style="display: none;" class="mb-6">
+                    <div class="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-sm font-medium text-blue-800">
+                                <i class="fas fa-volume-up mr-2"></i>Enregistrement terminé
+                            </span>
+                            <button type="button" id="transcribeBtn" 
+                                    class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-medium transition-colors">
+                                <i class="fas fa-magic mr-1"></i>Transcrire
+                            </button>
                         </div>
-                        <div>
-                            <h2 class="text-lg font-semibold text-gray-800">Saisie manuelle</h2>
-                            <p class="text-sm text-gray-600">Rédigez votre observation</p>
+                        <audio id="audioPlayer" controls class="w-full"></audio>
+                    </div>
+                </div>
+
+                <!-- Main Text Area -->
+                <div class="mb-6">
+                    <div class="flex items-center justify-between mb-3">
+                        <label for="{{ form.texte_saisi.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                            <i class="fas fa-edit mr-2 text-primary-steel text-sm"></i>Note médicale
+                        </label>
+                        <div class="flex items-center space-x-3 text-xs text-gray-500">
+                            <span id="charCount">0 caractères</span>
+                            <span id="transcriptionStatus" style="display: none;" class="text-blue-600 font-medium">
+                                <i class="fas fa-sync fa-spin mr-1"></i>Transcription en cours...
+                            </span>
                         </div>
                     </div>
                     
-                    <!-- Text Area -->
-                    <div class="h-full">
-                        <label for="{{ form.texte_saisi.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-3">
-                            Note médicale
-                        </label>
-                        <div class="relative">
-                            <textarea name="{{ form.texte_saisi.name }}" 
-                                      id="{{ form.texte_saisi.id_for_label }}"
-                                      class="w-full h-80 px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-steel focus:border-primary-steel transition-all resize-none text-sm leading-relaxed"
-                                      placeholder="Saisissez votre observation médicale ici...
+                    <div class="relative">
+                        <textarea name="{{ form.texte_saisi.name }}" 
+                                  id="{{ form.texte_saisi.id_for_label }}"
+                                  class="w-full h-96 px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-steel focus:border-primary-steel transition-all resize-none text-sm leading-relaxed"
+                                  placeholder="Saisissez ou dictez votre observation médicale ici...
 
-Exemple de structure :
+Vous pouvez :
+• Utiliser l'enregistrement vocal (bouton microphone)
+• Saisir directement au clavier
+• Importer un fichier audio (section ci-dessous)
+• Modifier la transcription automatique
+
+Structure suggérée :
 • Motif de consultation
 • Antécédents médicaux
 • Examen clinique
 • Diagnostic
 • Traitement prescrit
 • Suivi recommandé">{{ form.texte_saisi.value|default_if_none:"" }}</textarea>
-                            
-                            <!-- Character counter -->
-                            <div class="absolute bottom-3 right-3 text-xs text-gray-400 bg-white px-2 py-1 rounded">
-                                <span id="charCount">0</span> caractères
-                            </div>
+                    </div>
+                    {% if form.texte_saisi.errors %}
+                        <div class="mt-2 text-sm text-red-600">
+                            {% for error in form.texte_saisi.errors %}
+                                <p><i class="fas fa-exclamation-circle mr-1 text-xs"></i>{{ error }}</p>
+                            {% endfor %}
                         </div>
-                        {% if form.texte_saisi.errors %}
+                    {% endif %}
+                </div>
+
+                <!-- File Upload Section -->
+                <div class="border-t border-gray-200 pt-6">
+                    <h3 class="text-sm font-medium text-gray-700 mb-4 flex items-center">
+                        <i class="fas fa-upload mr-2 text-primary-steel text-sm"></i>
+                        Importer un fichier audio
+                        <span class="ml-2 text-xs text-gray-500">(transcription automatique dans la note)</span>
+                    </h3>
+                    
+                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-primary-steel transition-colors">
+                        <div class="mb-4">
+                            <i class="fas fa-file-audio text-3xl text-gray-400 mb-2"></i>
+                            <p class="text-sm text-gray-600 mb-2">Glissez un fichier audio ici ou cliquez pour sélectionner</p>
+                        </div>
+                        
+                        {{ form.audio_file }}
+                        
+                        <div id="uploadProgress" style="display: none;" class="mt-4">
+                            <div class="bg-gray-200 rounded-full h-2">
+                                <div id="progressBar" class="bg-primary-steel h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                            </div>
+                            <p class="text-xs text-gray-600 mt-2">
+                                <i class="fas fa-sync fa-spin mr-1"></i>Transcription en cours...
+                            </p>
+                        </div>
+                        
+                        {% if form.audio_file.errors %}
                             <div class="mt-2 text-sm text-red-600">
-                                {% for error in form.texte_saisi.errors %}
+                                {% for error in form.audio_file.errors %}
                                     <p><i class="fas fa-exclamation-circle mr-1 text-xs"></i>{{ error }}</p>
                                 {% endfor %}
                             </div>
                         {% endif %}
+                        
+                        <p class="mt-3 text-xs text-gray-500">
+                            Formats supportés: MP3, WAV, OGG, M4A, WebM (max 50MB)
+                        </p>
                     </div>
                 </div>
             </div>
@@ -252,22 +270,75 @@ document.addEventListener('DOMContentLoaded', function() {
     const startBtn = document.getElementById('startRecord');
     const stopBtn = document.getElementById('stopRecord');
     const playBtn = document.getElementById('playRecord');
+    const transcribeBtn = document.getElementById('transcribeBtn');
     const audioPlayer = document.getElementById('audioPlayer');
     const audioPlayerContainer = document.getElementById('audioPlayerContainer');
+    const visualizerContainer = document.getElementById('visualizerContainer');
     const status = document.getElementById('recordingStatus');
     const timer = document.getElementById('recordingTimer');
     const charCount = document.getElementById('charCount');
+    const transcriptionStatus = document.getElementById('transcriptionStatus');
+    const uploadProgress = document.getElementById('uploadProgress');
+    const progressBar = document.getElementById('progressBar');
     
     canvas = document.getElementById('audioVisualizer');
     canvasContext = canvas.getContext('2d');
     
     // Character counter
-    texteField.addEventListener('input', function() {
-        charCount.textContent = this.value.length;
+    function updateCharCount() {
+        charCount.textContent = texteField.value.length + ' caractères';
+    }
+    
+    texteField.addEventListener('input', updateCharCount);
+    updateCharCount();
+    
+    // File upload handling
+    audioField.addEventListener('change', function(e) {
+        if (e.target.files.length > 0) {
+            const file = e.target.files[0];
+            simulateTranscription(file.name);
+        }
     });
     
-    // Initial character count
-    charCount.textContent = texteField.value.length;
+    // Simulate transcription for uploaded files
+    function simulateTranscription(fileName) {
+        uploadProgress.style.display = 'block';
+        let progress = 0;
+        
+        const interval = setInterval(() => {
+            progress += Math.random() * 20;
+            if (progress > 100) progress = 100;
+            
+            progressBar.style.width = progress + '%';
+            
+            if (progress >= 100) {
+                clearInterval(interval);
+                setTimeout(() => {
+                    const mockTranscription = "Patient présente des douleurs thoraciques depuis ce matin. Tension artérielle élevée à 160/95. Prescrit un ECG et analyses sanguines.";
+                    appendToTextArea(mockTranscription);
+                    uploadProgress.style.display = 'none';
+                    progressBar.style.width = '0%';
+                }, 500);
+            }
+        }, 200);
+    }
+    
+    // Append text to textarea (for transcription)
+    function appendToTextArea(text) {
+        const currentText = texteField.value;
+        const newText = currentText ? currentText + '\n\n' + text : text;
+        texteField.value = newText;
+        updateCharCount();
+        
+        // Smooth scroll to end
+        texteField.scrollTop = texteField.scrollHeight;
+        
+        // Brief highlight effect
+        texteField.style.backgroundColor = '#dbeafe';
+        setTimeout(() => {
+            texteField.style.backgroundColor = '';
+        }, 1000);
+    }
     
     // Form validation
     form.addEventListener('submit', function(e) {
@@ -286,6 +357,7 @@ document.addEventListener('DOMContentLoaded', function() {
     startBtn.addEventListener('click', startRecording);
     stopBtn.addEventListener('click', stopRecording);
     playBtn.addEventListener('click', playRecording);
+    transcribeBtn.addEventListener('click', transcribeRecording);
     
     async function startRecording() {
         try {
@@ -322,17 +394,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 dataTransfer.items.add(file);
                 audioField.files = dataTransfer.files;
                 
-                status.textContent = 'Enregistrement terminé avec succès';
-                status.className = 'text-sm font-medium text-green-600 mb-2';
+                status.textContent = 'Enregistrement terminé';
+                status.className = 'text-sm font-medium text-green-600';
                 timer.style.display = 'none';
+                visualizerContainer.style.display = 'none';
             };
             
             mediaRecorder.start();
             startBtn.disabled = true;
             stopBtn.disabled = false;
             status.textContent = 'Enregistrement en cours...';
-            status.className = 'text-sm font-medium text-red-600 mb-2';
+            status.className = 'text-sm font-medium text-red-600';
             timer.style.display = 'block';
+            visualizerContainer.style.display = 'block';
             
             // Start timer
             timerInterval = setInterval(updateTimer, 1000);
@@ -342,7 +416,7 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (err) {
             console.error('Erreur d\'accès au microphone:', err);
             status.textContent = 'Erreur d\'accès au microphone';
-            status.className = 'text-sm font-medium text-red-600 mb-2';
+            status.className = 'text-sm font-medium text-red-600';
         }
     }
     
@@ -374,6 +448,30 @@ document.addEventListener('DOMContentLoaded', function() {
         if (audioPlayer.src) {
             audioPlayer.play();
         }
+    }
+    
+    function transcribeRecording() {
+        transcriptionStatus.style.display = 'inline';
+        transcribeBtn.disabled = true;
+        transcribeBtn.innerHTML = '<i class="fas fa-sync fa-spin mr-1"></i>Transcription...';
+        
+        // Simulate transcription process
+        setTimeout(() => {
+            const mockTranscriptions = [
+                "Patient présente des douleurs thoraciques depuis ce matin. Tension artérielle élevée à 160/95. Prescrit un ECG et analyses sanguines.",
+                "Consultation de suivi pour diabète de type 2. Glycémie à jeun à 1,45 g/L. Ajustement de la metformine à 1000mg matin et soir.",
+                "Patient anxieux, troubles du sommeil depuis 3 semaines. Prescrit anxiolytique léger et suivi psychologique.",
+                "Douleur abdominale chronique, suspicion de gastrite. Prescription d'IPP et fibroscopie à programmer."
+            ];
+            
+            const transcription = mockTranscriptions[Math.floor(Math.random() * mockTranscriptions.length)];
+            appendToTextArea(transcription);
+            
+            transcriptionStatus.style.display = 'none';
+            transcribeBtn.disabled = false;
+            transcribeBtn.innerHTML = '<i class="fas fa-check mr-1"></i>Transcrit';
+            transcribeBtn.className = 'px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-xs font-medium transition-colors';
+        }, 2000);
     }
     
     function updateTimer() {
