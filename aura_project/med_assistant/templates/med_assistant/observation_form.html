@@ -5,200 +5,231 @@
 {% block page_subtitle %}Créer une nouvelle observation médicale{% endblock %}
 
 {% block content %}
-<div class="h-full flex flex-col">
-    <form method="post" enctype="multipart/form-data" class="flex-1 flex flex-col space-y-6">
-        {% csrf_token %}
-        
-        <!-- Patient Selection - Compact Header -->
-        <div class="medical-card rounded-lg p-4 fade-in">
-            <div class="flex items-center justify-between">
-                <div class="flex-1 mr-4">
-                    <label for="{{ form.patient.id_for_label }}" class="block text-sm font-medium text-primary-dark mb-2">
-                        <i class="fas fa-user mr-2"></i>Patient
-                    </label>
-                    {{ form.patient }}
-                    {% if form.patient.errors %}
-                        <div class="mt-1 text-sm text-red-600">
-                            {% for error in form.patient.errors %}
-                                <p><i class="fas fa-exclamation-circle mr-1"></i>{{ error }}</p>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
-                </div>
-                <a href="{% url 'med_assistant:patient_create' %}" 
-                   class="btn-secondary px-4 py-2 rounded-lg text-sm whitespace-nowrap">
-                    <i class="fas fa-plus mr-2"></i>Nouveau patient
-                </a>
-            </div>
-        </div>
-
-        <!-- Main Content Area - Full Height -->
-        <div class="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-6">
+<div class="min-h-screen bg-gray-50 p-6">
+    <div class="max-w-7xl mx-auto">
+        <form method="post" enctype="multipart/form-data" class="space-y-6">
+            {% csrf_token %}
             
-            <!-- Left Column: Audio Recording -->
-            <div class="medical-card rounded-lg p-6 flex flex-col">
-                <div class="flex items-center mb-6">
-                    <div class="w-12 h-12 bg-primary-steel rounded-lg flex items-center justify-center mr-4">
-                        <i class="fas fa-microphone text-white text-xl"></i>
+            <!-- Patient Selection Header -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center justify-between">
+                    <div class="flex-1 max-w-md">
+                        <label for="{{ form.patient.id_for_label }}" class="block text-sm font-semibold text-gray-700 mb-3">
+                            <i class="fas fa-user mr-2 text-primary-steel"></i>Sélectionner le patient
+                        </label>
+                        {{ form.patient }}
+                        {% if form.patient.errors %}
+                            <div class="mt-2 text-sm text-red-600">
+                                {% for error in form.patient.errors %}
+                                    <p><i class="fas fa-exclamation-circle mr-1"></i>{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
                     </div>
-                    <div>
-                        <h2 class="text-xl font-semibold text-primary-dark">Enregistrement vocal</h2>
-                        <p class="text-gray-600 text-sm">Dictez votre observation médicale</p>
-                    </div>
+                    <a href="{% url 'med_assistant:patient_create' %}" 
+                       class="ml-4 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors">
+                        <i class="fas fa-plus mr-2"></i>Nouveau patient
+                    </a>
                 </div>
+            </div>
+
+            <!-- Main Content - Two Columns -->
+            <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
                 
-                <!-- Recording Controls - Large and Touch Friendly -->
-                <div class="flex-1 flex flex-col justify-center">
+                <!-- Left Column: Audio Recording -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+                    <!-- Header -->
+                    <div class="flex items-center mb-8">
+                        <div class="w-14 h-14 bg-primary-steel rounded-xl flex items-center justify-center mr-4">
+                            <i class="fas fa-microphone text-white text-xl"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-2xl font-bold text-gray-800">Enregistrement vocal</h2>
+                            <p class="text-gray-600">Dictez votre observation médicale</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Recording Controls -->
                     <div class="text-center mb-8">
-                        <div class="flex justify-center space-x-6 mb-8">
-                            <button type="button" id="startRecord" 
-                                    class="w-20 h-20 bg-green-600 hover:bg-green-700 text-white rounded-full flex items-center justify-center text-2xl transition-all duration-200 shadow-lg">
-                                <i class="fas fa-microphone"></i>
-                            </button>
-                            <button type="button" id="stopRecord" disabled
-                                    class="w-20 h-20 bg-red-400 text-white rounded-full flex items-center justify-center text-2xl transition-all duration-200 shadow-lg">
-                                <i class="fas fa-stop"></i>
-                            </button>
-                            <button type="button" id="playRecord" disabled
-                                    class="w-20 h-20 bg-primary-steel hover:bg-primary-deep text-white rounded-full flex items-center justify-center text-2xl transition-all duration-200 shadow-lg">
-                                <i class="fas fa-play"></i>
-                            </button>
+                        <div class="flex justify-center items-center space-x-8 mb-8">
+                            <div class="text-center">
+                                <button type="button" id="startRecord" 
+                                        class="w-24 h-24 bg-green-500 hover:bg-green-600 text-white rounded-full flex items-center justify-center text-3xl transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105">
+                                    <i class="fas fa-microphone"></i>
+                                </button>
+                                <p class="text-sm text-gray-600 mt-2 font-medium">Démarrer</p>
+                            </div>
+                            
+                            <div class="text-center">
+                                <button type="button" id="stopRecord" disabled
+                                        class="w-24 h-24 bg-red-400 text-white rounded-full flex items-center justify-center text-3xl transition-all duration-200 shadow-lg disabled:opacity-50">
+                                    <i class="fas fa-stop"></i>
+                                </button>
+                                <p class="text-sm text-gray-600 mt-2 font-medium">Arrêter</p>
+                            </div>
+                            
+                            <div class="text-center">
+                                <button type="button" id="playRecord" disabled
+                                        class="w-24 h-24 bg-primary-steel hover:bg-primary-deep text-white rounded-full flex items-center justify-center text-3xl transition-all duration-200 shadow-lg disabled:opacity-50 hover:shadow-xl transform hover:scale-105">
+                                    <i class="fas fa-play"></i>
+                                </button>
+                                <p class="text-sm text-gray-600 mt-2 font-medium">Écouter</p>
+                            </div>
                         </div>
                         
                         <!-- Status and Visualizer -->
-                        <div class="bg-gray-50 rounded-lg p-6 mb-6">
-                            <canvas id="audioVisualizer" width="400" height="80" class="w-full h-20 mb-4"></canvas>
-                            <div id="recordingStatus" class="text-lg font-medium text-gray-600">
+                        <div class="bg-gray-50 rounded-xl p-6 mb-6 border border-gray-200">
+                            <div class="mb-4">
+                                <canvas id="audioVisualizer" width="500" height="100" class="w-full h-24 rounded-lg bg-white border border-gray-200"></canvas>
+                            </div>
+                            <div id="recordingStatus" class="text-lg font-semibold text-gray-700 mb-2">
                                 Appuyez sur le microphone pour commencer
                             </div>
-                            <div id="recordingTimer" class="text-sm text-gray-500 mt-2" style="display: none;">
+                            <div id="recordingTimer" class="text-2xl font-mono font-bold text-primary-steel" style="display: none;">
                                 00:00
                             </div>
                         </div>
                         
                         <!-- Audio Player -->
-                        <audio id="audioPlayer" controls class="w-full" style="display: none;"></audio>
-                    </div>
-                </div>
-                
-                <!-- File Upload Alternative -->
-                <div class="border-t border-gray-200 pt-6">
-                    <h3 class="text-sm font-medium text-gray-700 mb-3">
-                        <i class="fas fa-upload mr-2"></i>Ou importer un fichier audio
-                    </h3>
-                    {{ form.audio_file }}
-                    {% if form.audio_file.errors %}
-                        <div class="mt-2 text-sm text-red-600">
-                            {% for error in form.audio_file.errors %}
-                                <p><i class="fas fa-exclamation-circle mr-1"></i>{{ error }}</p>
-                            {% endfor %}
+                        <div id="audioPlayerContainer" style="display: none;" class="mb-6">
+                            <audio id="audioPlayer" controls class="w-full rounded-lg"></audio>
                         </div>
-                    {% endif %}
-                    <p class="mt-2 text-xs text-gray-500">
-                        Formats supportés: MP3, WAV, OGG, M4A, WebM
-                    </p>
-                </div>
-            </div>
-
-            <!-- Right Column: Text Input -->
-            <div class="medical-card rounded-lg p-6 flex flex-col">
-                <div class="flex items-center mb-6">
-                    <div class="w-12 h-12 bg-primary-steel rounded-lg flex items-center justify-center mr-4">
-                        <i class="fas fa-keyboard text-white text-xl"></i>
                     </div>
-                    <div>
-                        <h2 class="text-xl font-semibold text-primary-dark">Saisie manuelle</h2>
-                        <p class="text-gray-600 text-sm">Rédigez votre observation</p>
-                    </div>
-                </div>
-                
-                <!-- Text Area - Full Height -->
-                <div class="flex-1 flex flex-col">
-                    <label for="{{ form.texte_saisi.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-3">
-                        Note médicale
-                    </label>
-                    <div class="flex-1">
-                        <textarea name="{{ form.texte_saisi.name }}" 
-                                  id="{{ form.texte_saisi.id_for_label }}"
-                                  class="w-full h-full min-h-[400px] px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-steel focus:border-primary-steel transition-colors resize-none text-base"
-                                  placeholder="Saisissez votre observation médicale ici...
-
-Exemple:
-- Motif de consultation
-- Antécédents
-- Examen clinique
-- Diagnostic
-- Traitement prescrit">{{ form.texte_saisi.value|default_if_none:"" }}</textarea>
-                    </div>
-                    {% if form.texte_saisi.errors %}
-                        <div class="mt-2 text-sm text-red-600">
-                            {% for error in form.texte_saisi.errors %}
-                                <p><i class="fas fa-exclamation-circle mr-1"></i>{{ error }}</p>
-                            {% endfor %}
+                    
+                    <!-- File Upload Alternative -->
+                    <div class="border-t border-gray-200 pt-6">
+                        <h3 class="text-lg font-semibold text-gray-700 mb-4 flex items-center">
+                            <i class="fas fa-upload mr-3 text-primary-steel"></i>
+                            Ou importer un fichier audio
+                        </h3>
+                        <div class="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-primary-steel transition-colors">
+                            {{ form.audio_file }}
+                            {% if form.audio_file.errors %}
+                                <div class="mt-3 text-sm text-red-600">
+                                    {% for error in form.audio_file.errors %}
+                                        <p><i class="fas fa-exclamation-circle mr-1"></i>{{ error }}</p>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <p class="mt-3 text-sm text-gray-500">
+                                <i class="fas fa-file-audio mr-2"></i>
+                                Formats supportés: MP3, WAV, OGG, M4A, WebM
+                            </p>
                         </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-
-        <!-- AI Processing Info - Compact -->
-        <div class="medical-card rounded-lg p-4 fade-in">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center">
-                    <div class="w-10 h-10 bg-primary-steel rounded-lg flex items-center justify-center mr-3">
-                        <i class="fas fa-robot text-white"></i>
-                    </div>
-                    <div>
-                        <h3 class="font-semibold text-primary-dark">Analyse automatique AURA</h3>
-                        <p class="text-sm text-gray-600">Transcription • Classification • Extraction • Résumé</p>
                     </div>
                 </div>
-                <div class="flex items-center space-x-4 text-sm text-gray-600">
-                    <div class="flex items-center">
-                        <i class="fas fa-volume-up mr-1 text-primary-steel"></i>
-                        <span>Whisper</span>
+
+                <!-- Right Column: Text Input -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+                    <!-- Header -->
+                    <div class="flex items-center mb-8">
+                        <div class="w-14 h-14 bg-primary-steel rounded-xl flex items-center justify-center mr-4">
+                            <i class="fas fa-keyboard text-white text-xl"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-2xl font-bold text-gray-800">Saisie manuelle</h2>
+                            <p class="text-gray-600">Rédigez votre observation</p>
+                        </div>
                     </div>
-                    <div class="flex items-center">
-                        <i class="fas fa-tags mr-1 text-primary-steel"></i>
-                        <span>CamemBERT</span>
-                    </div>
-                    <div class="flex items-center">
-                        <i class="fas fa-search mr-1 text-primary-steel"></i>
-                        <span>DrBERT</span>
-                    </div>
-                    <div class="flex items-center">
-                        <i class="fas fa-compress-alt mr-1 text-primary-steel"></i>
-                        <span>T5</span>
+                    
+                    <!-- Text Area -->
+                    <div class="h-full">
+                        <label for="{{ form.texte_saisi.id_for_label }}" class="block text-lg font-semibold text-gray-700 mb-4">
+                            Note médicale
+                        </label>
+                        <div class="relative">
+                            <textarea name="{{ form.texte_saisi.name }}" 
+                                      id="{{ form.texte_saisi.id_for_label }}"
+                                      class="w-full h-96 px-6 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-steel focus:border-primary-steel transition-all resize-none text-base leading-relaxed"
+                                      placeholder="Saisissez votre observation médicale ici...
+
+Exemple de structure :
+• Motif de consultation
+• Antécédents médicaux
+• Examen clinique
+• Diagnostic
+• Traitement prescrit
+• Suivi recommandé">{{ form.texte_saisi.value|default_if_none:"" }}</textarea>
+                            
+                            <!-- Character counter -->
+                            <div class="absolute bottom-4 right-4 text-sm text-gray-400 bg-white px-2 py-1 rounded">
+                                <span id="charCount">0</span> caractères
+                            </div>
+                        </div>
+                        {% if form.texte_saisi.errors %}
+                            <div class="mt-3 text-sm text-red-600">
+                                {% for error in form.texte_saisi.errors %}
+                                    <p><i class="fas fa-exclamation-circle mr-1"></i>{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Form Errors -->
-        {% if form.non_field_errors %}
-            <div class="p-4 bg-red-50 border border-red-200 rounded-lg">
-                {% for error in form.non_field_errors %}
-                    <p class="text-sm text-red-600">
-                        <i class="fas fa-exclamation-circle mr-1"></i>{{ error }}
-                    </p>
-                {% endfor %}
+            <!-- AI Processing Info -->
+            <div class="bg-gradient-to-r from-primary-deep to-primary-steel rounded-xl p-6 text-white">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center mr-4">
+                            <i class="fas fa-robot text-white text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold">Analyse automatique AURA</h3>
+                            <p class="text-white/90">L'IA analysera automatiquement votre observation</p>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+                        <div class="text-center bg-white/10 rounded-lg p-3">
+                            <i class="fas fa-volume-up text-xl mb-2"></i>
+                            <div class="font-semibold">Whisper</div>
+                            <div class="text-xs opacity-80">Transcription</div>
+                        </div>
+                        <div class="text-center bg-white/10 rounded-lg p-3">
+                            <i class="fas fa-tags text-xl mb-2"></i>
+                            <div class="font-semibold">CamemBERT</div>
+                            <div class="text-xs opacity-80">Classification</div>
+                        </div>
+                        <div class="text-center bg-white/10 rounded-lg p-3">
+                            <i class="fas fa-search text-xl mb-2"></i>
+                            <div class="font-semibold">DrBERT</div>
+                            <div class="text-xs opacity-80">Extraction</div>
+                        </div>
+                        <div class="text-center bg-white/10 rounded-lg p-3">
+                            <i class="fas fa-compress-alt text-xl mb-2"></i>
+                            <div class="font-semibold">T5</div>
+                            <div class="text-xs opacity-80">Résumé</div>
+                        </div>
+                    </div>
+                </div>
             </div>
-        {% endif %}
 
-        <!-- Action Buttons - Fixed Bottom -->
-        <div class="flex justify-between items-center pt-4 border-t border-gray-200">
-            <a href="{% url 'med_assistant:dashboard' %}" 
-               class="btn-secondary px-8 py-3 rounded-lg font-medium">
-                <i class="fas fa-times mr-2"></i>
-                Annuler
-            </a>
-            <button type="submit" 
-                    class="btn-primary px-8 py-3 rounded-lg font-medium text-lg">
-                <i class="fas fa-save mr-2"></i>
-                Créer et analyser
-            </button>
-        </div>
-    </form>
+            <!-- Form Errors -->
+            {% if form.non_field_errors %}
+                <div class="bg-red-50 border border-red-200 rounded-xl p-4">
+                    {% for error in form.non_field_errors %}
+                        <p class="text-sm text-red-600">
+                            <i class="fas fa-exclamation-circle mr-1"></i>{{ error }}
+                        </p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <!-- Action Buttons -->
+            <div class="flex justify-between items-center pt-6">
+                <a href="{% url 'med_assistant:dashboard' %}" 
+                   class="px-8 py-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-semibold transition-colors">
+                    <i class="fas fa-times mr-2"></i>
+                    Annuler
+                </a>
+                <button type="submit" 
+                        class="px-12 py-4 bg-primary-steel hover:bg-primary-deep text-white rounded-xl font-semibold text-lg transition-colors shadow-lg hover:shadow-xl">
+                    <i class="fas fa-save mr-3"></i>
+                    Créer et analyser
+                </button>
+            </div>
+        </form>
+    </div>
 </div>
 
 <script>
@@ -222,11 +253,21 @@ document.addEventListener('DOMContentLoaded', function() {
     const stopBtn = document.getElementById('stopRecord');
     const playBtn = document.getElementById('playRecord');
     const audioPlayer = document.getElementById('audioPlayer');
+    const audioPlayerContainer = document.getElementById('audioPlayerContainer');
     const status = document.getElementById('recordingStatus');
     const timer = document.getElementById('recordingTimer');
+    const charCount = document.getElementById('charCount');
     
     canvas = document.getElementById('audioVisualizer');
     canvasContext = canvas.getContext('2d');
+    
+    // Character counter
+    texteField.addEventListener('input', function() {
+        charCount.textContent = this.value.length;
+    });
+    
+    // Initial character count
+    charCount.textContent = texteField.value.length;
     
     // Form validation
     form.addEventListener('submit', function(e) {
@@ -272,7 +313,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
                 const audioUrl = URL.createObjectURL(audioBlob);
                 audioPlayer.src = audioUrl;
-                audioPlayer.style.display = 'block';
+                audioPlayerContainer.style.display = 'block';
                 playBtn.disabled = false;
                 
                 // Create file for form
@@ -281,8 +322,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 dataTransfer.items.add(file);
                 audioField.files = dataTransfer.files;
                 
-                status.textContent = 'Enregistrement terminé';
-                status.className = 'text-lg font-medium text-green-600';
+                status.textContent = 'Enregistrement terminé avec succès';
+                status.className = 'text-lg font-semibold text-green-600 mb-2';
                 timer.style.display = 'none';
             };
             
@@ -290,7 +331,7 @@ document.addEventListener('DOMContentLoaded', function() {
             startBtn.disabled = true;
             stopBtn.disabled = false;
             status.textContent = 'Enregistrement en cours...';
-            status.className = 'text-lg font-medium text-red-600';
+            status.className = 'text-lg font-semibold text-red-600 mb-2';
             timer.style.display = 'block';
             
             // Start timer
@@ -301,7 +342,7 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (err) {
             console.error('Erreur d\'accès au microphone:', err);
             status.textContent = 'Erreur d\'accès au microphone';
-            status.className = 'text-lg font-medium text-red-600';
+            status.className = 'text-lg font-semibold text-red-600 mb-2';
         }
     }
     
@@ -347,7 +388,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         analyser.getByteFrequencyData(dataArray);
         
-        canvasContext.fillStyle = '#f8fafc';
+        canvasContext.fillStyle = '#ffffff';
         canvasContext.fillRect(0, 0, canvas.width, canvas.height);
         
         const barWidth = (canvas.width / dataArray.length) * 2.5;
