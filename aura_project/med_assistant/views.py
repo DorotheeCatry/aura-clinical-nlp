@@ -7,7 +7,6 @@ from django.core.paginator import Paginator
 from .models import Patient, Observation
 from .forms import PatientForm, ObservationForm, PatientSearchForm
 from .nlp_pipeline import nlp_pipeline
-from .api_client import fastapi_client
 import json
 from collections import defaultdict
 from faster_whisper import WhisperModel
@@ -174,14 +173,14 @@ def patient_edit(request, patient_id):
 
 
 def observation_create(request):
-    """Création d'une nouvelle observation avec traitement NLP via FastAPI, DrBERT et T5"""
+    """Création d'une nouvelle observation avec traitement NLP via modèles Hugging Face directs"""
     if request.method == 'POST':
         form = ObservationForm(request.POST, request.FILES)
         if form.is_valid():
             observation = form.save(commit=False)
             observation.save()
             
-            # Traitement NLP avec FastAPI + DrBERT + T5 intégré
+            # Traitement NLP avec modèles Hugging Face directs
             try:
                 results = nlp_pipeline.process_observation(observation)
                 
@@ -195,8 +194,8 @@ def observation_create(request):
                     
                     # Message de succès avec info sur les méthodes utilisées
                     methods_used = []
-                    if results.get('fastapi_used'):
-                        methods_used.append("FastAPI")
+                    if results.get('classification_used'):
+                        methods_used.append("Classification HF")
                     if results.get('drbert_used'):
                         methods_used.append("DrBERT")
                     if results.get('t5_used'):
@@ -304,7 +303,7 @@ def observation_detail(request, observation_id):
 
 @require_http_methods(["POST"])
 def observation_reprocess(request, observation_id):
-    """Retraitement d'une observation avec FastAPI, DrBERT et T5"""
+    """Retraitement d'une observation avec modèles Hugging Face directs"""
     observation = get_object_or_404(Observation, id=observation_id)
     
     try:
@@ -317,7 +316,7 @@ def observation_reprocess(request, observation_id):
         observation.traitement_termine = False
         observation.traitement_erreur = None
         
-        # Nouveau traitement avec FastAPI + DrBERT + T5
+        # Nouveau traitement avec modèles Hugging Face directs
         results = nlp_pipeline.process_observation(observation)
         
         if results['success']:
@@ -330,8 +329,8 @@ def observation_reprocess(request, observation_id):
             
             # Message avec info sur les méthodes utilisées
             methods_used = []
-            if results.get('fastapi_used'):
-                methods_used.append("FastAPI")
+            if results.get('classification_used'):
+                methods_used.append("Classification HF")
             if results.get('drbert_used'):
                 methods_used.append("DrBERT")
             if results.get('t5_used'):
@@ -356,7 +355,7 @@ def observation_reprocess(request, observation_id):
 
 
 def statistics(request):
-    """Vue des statistiques avancées avec info FastAPI, DrBERT, T5 et prédictions"""
+    """Vue des statistiques avancées avec info modèles Hugging Face et prédictions"""
     # Statistiques par thème avec mapping des pathologies
     theme_stats = {}
     theme_counts = Observation.objects.filter(theme_classe__isnull=False).values('theme_classe').annotate(count=Count('theme_classe'))
@@ -448,13 +447,13 @@ def api_nlp_status(request):
 
 
 def api_fastapi_models(request):
-    """API pour récupérer les modèles disponibles via FastAPI"""
+    """API pour récupérer les modèles disponibles (maintenant Hugging Face)"""
     try:
-        models = fastapi_client.get_available_models()
+        status = nlp_pipeline.get_status()
         return JsonResponse({
             'success': True,
-            'models': models,
-            'api_available': fastapi_client.is_api_available()
+            'models': status.get('available_models', []),
+            'api_available': status.get('transformers_available', False)
         })
     except Exception as e:
         return JsonResponse({

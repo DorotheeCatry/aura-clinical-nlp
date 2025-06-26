@@ -1,6 +1,6 @@
 """
 Pipeline NLP pour AURA - Assistant Médical
-Traitement automatique des observations médicales avec intégration FastAPI, DrBERT et T5
+Traitement automatique des observations médicales avec modèles Hugging Face directs
 Optimisé pour GPU avec mémoire limitée
 """
 
@@ -10,9 +10,8 @@ import json
 import random
 import os
 import tempfile
-from .api_client import fastapi_client
 
-# Imports pour Whisper (fallback local)
+# Imports pour Whisper (transcription)
 try:
     import torch
     import torchaudio
@@ -24,21 +23,16 @@ except ImportError as e:
     WHISPER_AVAILABLE = False
     print(f"⚠️ Whisper non disponible: {e}")
 
-# Imports pour DrBERT (extraction d'entités)
+# Imports pour les modèles Hugging Face
 try:
-    from transformers import AutoTokenizer, AutoModelForTokenClassification, pipeline
-    DRBERT_AVAILABLE = True
+    from transformers import (
+        AutoTokenizer, AutoModelForSequenceClassification, AutoModelForTokenClassification,
+        T5Tokenizer, T5ForConditionalGeneration, pipeline
+    )
+    TRANSFORMERS_AVAILABLE = True
 except ImportError as e:
-    DRBERT_AVAILABLE = False
-    print(f"⚠️ DrBERT non disponible: {e}")
-
-# Imports pour T5 (résumés)
-try:
-    from transformers import T5Tokenizer, T5ForConditionalGeneration
-    T5_AVAILABLE = True
-except ImportError as e:
-    T5_AVAILABLE = False
-    print(f"⚠️ T5 non disponible: {e}")
+    TRANSFORMERS_AVAILABLE = False
+    print(f"⚠️ Transformers non disponible: {e}")
 
 logger = logging.getLogger(__name__)
 
@@ -46,25 +40,31 @@ logger = logging.getLogger(__name__)
 class NLPPipeline:
     """
     Pipeline de traitement NLP pour les observations médicales
-    Intègre : transcription Whisper, classification via FastAPI, extraction d'entités DrBERT, résumé T5
+    Intègre : transcription Whisper, classification, extraction d'entités DrBERT, résumé T5
     Optimisé pour GPU avec mémoire limitée
     """
     
     def __init__(self):
-        """Initialise la pipeline NLP avec FastAPI, Whisper, DrBERT et T5"""
+        """Initialise la pipeline NLP avec les modèles Hugging Face directs"""
         self.models_loaded = False
         self.whisper_available = WHISPER_AVAILABLE
-        self.drbert_available = DRBERT_AVAILABLE
-        self.t5_available = T5_AVAILABLE
+        self.transformers_available = TRANSFORMERS_AVAILABLE
         self.device = "cuda" if torch.cuda.is_available() else "cpu" if WHISPER_AVAILABLE else "cpu"
-        self.fastapi_available = False
-        self.available_models = []
         
         # Modèles chargés à la demande pour économiser la mémoire
         self.whisper_model = None
         self.whisper_processor = None
+        self.classification_model = None
+        self.classification_tokenizer = None
         self.drbert_pipeline = None
         self.t5_pipeline = None
+        
+        # Configuration des modèles
+        self.models_config = {
+            'classification': 'waelbensoltana/finetuned-medical-fr',
+            'entities': 'Thibeb/DrBert_generalized', 
+            'summarization': 'plguillou/t5-base-fr-sum-cnndm'
+        }
         
         # Mapping des pathologies du modèle
         self.pathology_mapping = {
@@ -97,18 +97,10 @@ class NLPPipeline:
     
     def _load_models(self):
         """
-        Charge les modèles NLP incluant Whisper, DrBERT, T5 et vérifie FastAPI
+        Charge les modèles NLP incluant Whisper
         Optimisé pour GPU avec mémoire limitée
         """
         try:
-            # Vérifier la disponibilité de FastAPI
-            self.fastapi_available = fastapi_client.is_api_available()
-            if self.fastapi_available:
-                self.available_models = fastapi_client.get_available_models()
-                logger.info(f"✅ FastAPI disponible avec {len(self.available_models)} modèles: {self.available_models}")
-            else:
-                logger.warning("⚠️ FastAPI non disponible, utilisation des modèles locaux")
-            
             # Charger Whisper pour la transcription (local) - PRIORITÉ
             if self.whisper_available:
                 logger.info("🎤 Chargement du modèle Whisper...")
@@ -127,8 +119,8 @@ class NLPPipeline:
             else:
                 logger.warning("⚠️ Whisper non disponible, utilisation de la simulation")
             
-            # DrBERT et T5 seront chargés à la demande pour économiser la mémoire
-            logger.info("💡 DrBERT et T5 seront chargés à la demande pour optimiser la mémoire")
+            # Les autres modèles seront chargés à la demande pour économiser la mémoire
+            logger.info("💡 Classification, DrBERT et T5 seront chargés à la demande pour optimiser la mémoire")
             
             self.models_loaded = True
             logger.info("✅ Pipeline NLP initialisée avec succès")
@@ -137,36 +129,70 @@ class NLPPipeline:
             logger.error(f"❌ Erreur lors du chargement des modèles: {e}")
             self.models_loaded = False
             self.whisper_available = False
-            self.drbert_available = False
-            self.t5_available = False
-            self.fastapi_available = False
+            self.transformers_available = False
+    
+    def _load_classification_on_demand(self):
+        """Charge le modèle de classification à la demande"""
+        if self.classification_model is not None:
+            return True
+            
+        if not self.transformers_available:
+            return False
+            
+        try:
+            logger.info("🏷️ Chargement du modèle de classification à la demande...")
+            
+            self.classification_tokenizer = AutoTokenizer.from_pretrained(self.models_config['classification'])
+            self.classification_model = AutoModelForSequenceClassification.from_pretrained(
+                self.models_config['classification'],
+                torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32,
+                low_cpu_mem_usage=True
+            )
+            
+            if torch.cuda.is_available():
+                self.classification_model.to(self.device)
+            
+            logger.info(f"✅ Modèle de classification chargé sur {self.device}")
+            
+            # Afficher l'utilisation mémoire
+            if torch.cuda.is_available():
+                memory_used = torch.cuda.memory_allocated() / 1024**3
+                memory_total = torch.cuda.get_device_properties(0).total_memory / 1024**3
+                logger.info(f"📊 Mémoire GPU après classification: {memory_used:.2f}GB / {memory_total:.2f}GB")
+            
+            return True
+            
+        except Exception as e:
+            logger.error(f"❌ Erreur chargement modèle de classification: {e}")
+            self.transformers_available = False
+            return False
     
     def _load_drbert_on_demand(self):
-        """Charge DrBERT à la demande et libère Whisper si nécessaire"""
+        """Charge DrBERT à la demande et libère le modèle de classification si nécessaire"""
         if self.drbert_pipeline is not None:
             return True
             
-        if not self.drbert_available:
+        if not self.transformers_available:
             return False
             
         try:
             logger.info("🧠 Chargement du modèle DrBERT à la demande...")
             
-            # Libérer Whisper temporairement si nécessaire
-            whisper_was_loaded = self.whisper_model is not None
-            if whisper_was_loaded and torch.cuda.is_available():
-                logger.info("🔄 Libération temporaire de Whisper pour DrBERT...")
-                del self.whisper_model
-                del self.whisper_processor
-                self.whisper_model = None
-                self.whisper_processor = None
+            # Libérer le modèle de classification temporairement si nécessaire
+            classification_was_loaded = self.classification_model is not None
+            if classification_was_loaded and torch.cuda.is_available():
+                logger.info("🔄 Libération temporaire du modèle de classification pour DrBERT...")
+                del self.classification_model
+                del self.classification_tokenizer
+                self.classification_model = None
+                self.classification_tokenizer = None
                 self._clear_gpu_cache()
             
             # Charger DrBERT avec optimisations mémoire
-            tokenizer = AutoTokenizer.from_pretrained("Thibeb/DrBert_generalized")
+            tokenizer = AutoTokenizer.from_pretrained(self.models_config['entities'])
             model = AutoModelForTokenClassification.from_pretrained(
-                "Thibeb/DrBert_generalized",
-                torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32,  # FP16 pour économiser la mémoire
+                self.models_config['entities'],
+                torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32,
                 low_cpu_mem_usage=True
             )
             
@@ -192,11 +218,11 @@ class NLPPipeline:
             
         except Exception as e:
             logger.error(f"❌ Erreur chargement DrBERT: {e}")
-            self.drbert_available = False
+            self.transformers_available = False
             
-            # Recharger Whisper si il était chargé
-            if whisper_was_loaded and self.whisper_available:
-                self._reload_whisper()
+            # Recharger le modèle de classification si il était chargé
+            if classification_was_loaded:
+                self._load_classification_on_demand()
             
             return False
     
@@ -205,7 +231,7 @@ class NLPPipeline:
         if self.t5_pipeline is not None:
             return True
             
-        if not self.t5_available:
+        if not self.transformers_available:
             return False
             
         try:
@@ -220,10 +246,10 @@ class NLPPipeline:
                 self._clear_gpu_cache()
             
             # Charger T5 avec optimisations mémoire
-            tokenizer = T5Tokenizer.from_pretrained("plguillou/t5-base-fr-sum-cnndm")
+            tokenizer = T5Tokenizer.from_pretrained(self.models_config['summarization'], legacy=False)
             model = T5ForConditionalGeneration.from_pretrained(
-                "plguillou/t5-base-fr-sum-cnndm",
-                torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32,  # FP16 pour économiser la mémoire
+                self.models_config['summarization'],
+                torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32,
                 low_cpu_mem_usage=True
             )
             
@@ -248,7 +274,7 @@ class NLPPipeline:
             
         except Exception as e:
             logger.error(f"❌ Erreur chargement T5: {e}")
-            self.t5_available = False
+            self.transformers_available = False
             return False
     
     def _reload_whisper(self):
@@ -367,7 +393,7 @@ class NLPPipeline:
     
     def classify_theme(self, text: str) -> tuple[Optional[str], Optional[int]]:
         """
-        Classifie le thème médical via FastAPI et retourne le thème + prédiction numérique
+        Classifie le thème médical avec le modèle waelbensoltana/finetuned-medical-fr
         
         Args:
             text: Texte à classifier
@@ -376,43 +402,46 @@ class NLPPipeline:
             Tuple (thème_classifié, prédiction_numérique) ou (None, None) en cas d'erreur
         """
         try:
-            if self.fastapi_available and self.available_models:
-                # Utiliser le modèle de classification fine-tuné
-                model_name = "FinetunedMedicalModel"  # Votre modèle spécialisé
-                
-                if model_name in self.available_models:
-                    result = fastapi_client.process_text(model_name, text)
-                    
-                    if result['success']:
-                        response = result['response']
-                        
-                        # Parser la réponse pour extraire la classe prédite
-                        # Format attendu: "Classe prédite : X"
-                        try:
-                            if "Classe prédite :" in response:
-                                prediction_str = response.split("Classe prédite :")[1].strip()
-                                prediction = int(prediction_str)
-                                
-                                # Convertir la prédiction en thème
-                                theme = self.pathology_mapping.get(prediction, 'autre')
-                                
-                                logger.info(f"🏷️ Classification via FastAPI: prédiction={prediction}, thème={theme}")
-                                return theme, prediction
-                            else:
-                                logger.warning(f"⚠️ Format de réponse inattendu: {response}")
-                                return self._mock_classification_with_prediction(text)
-                                
-                        except (ValueError, IndexError) as e:
-                            logger.warning(f"⚠️ Erreur parsing prédiction: {e}")
-                            return self._mock_classification_with_prediction(text)
-                    else:
-                        logger.warning(f"⚠️ Erreur FastAPI classification: {result['error']}")
-                        return self._mock_classification_with_prediction(text)
-                else:
-                    logger.warning(f"⚠️ Modèle {model_name} non disponible")
-                    return self._mock_classification_with_prediction(text)
-            else:
+            # Charger le modèle de classification à la demande
+            if not self._load_classification_on_demand():
+                logger.warning("⚠️ Modèle de classification non disponible, utilisation de la simulation")
                 return self._mock_classification_with_prediction(text)
+            
+            logger.info(f"🏷️ Classification du texte: {text[:50]}...")
+            
+            # Tokeniser le texte
+            inputs = self.classification_tokenizer(
+                text, 
+                return_tensors="pt", 
+                truncation=True, 
+                padding=True,
+                max_length=512
+            )
+            
+            # Déplacer sur le bon device si nécessaire
+            if torch.cuda.is_available():
+                inputs = {k: v.to(self.device) for k, v in inputs.items()}
+            
+            # Prédiction
+            with torch.no_grad():
+                outputs = self.classification_model(**inputs)
+                prediction = torch.argmax(outputs.logits, dim=1).item()
+            
+            # Convertir la prédiction en thème
+            theme = self.pathology_mapping.get(prediction, 'autre')
+            
+            logger.info(f"✅ Classification: prédiction={prediction}, thème={theme}")
+            
+            # Libérer le modèle de classification après utilisation pour économiser la mémoire
+            if self.classification_model is not None:
+                logger.info("🔄 Libération du modèle de classification après utilisation")
+                del self.classification_model
+                del self.classification_tokenizer
+                self.classification_model = None
+                self.classification_tokenizer = None
+                self._clear_gpu_cache()
+            
+            return theme, prediction
             
         except Exception as e:
             logger.error(f"❌ Erreur lors de la classification: {e}")
@@ -441,10 +470,10 @@ class NLPPipeline:
             
             # Organiser les entités par catégorie
             categorized_entities = {
-                'DISO': [],  # Disorders/Maladies
-                'CHEM': [],  # Chemicals/Médicaments
-                'ANAT': [],  # Anatomie
-                'PROC': [],  # Procédures
+                'DISO': [],  # Disorders
+                'CHEM': [],  # Chemicals/Drugs
+                'ANAT': [],  # Anatomy
+                'PROC': [],  # Procedures
             }
             
             for entity in entities:
@@ -535,7 +564,7 @@ class NLPPipeline:
     
     def generate_summary(self, text: str) -> Optional[str]:
         """
-        Génère un résumé via T5 local ou FastAPI ou fallback local
+        Génère un résumé via T5 local
         
         Args:
             text: Texte à résumer
@@ -543,34 +572,7 @@ class NLPPipeline:
         Returns:
             Résumé généré ou None en cas d'erreur
         """
-        try:
-            # Priorité 1: T5 local (plus spécialisé pour les résumés)
-            if self.t5_available:
-                return self.generate_summary_t5(text)
-            
-            # Priorité 2: FastAPI (si T5 non disponible)
-            if self.fastapi_available and self.available_models:
-                # Utiliser le premier modèle disponible pour le résumé
-                model_name = self.available_models[0]
-                
-                # Préparer la question pour le résumé
-                summary_prompt = f"Résumez ce texte médical en français de manière concise et professionnelle: {text}"
-                
-                result = fastapi_client.process_text(model_name, summary_prompt)
-                
-                if result['success']:
-                    summary = result['response'].strip()
-                    logger.info(f"📄 Résumé généré via FastAPI: {len(summary)} caractères")
-                    return summary
-                else:
-                    logger.warning(f"⚠️ Erreur FastAPI résumé: {result['error']}")
-                    return self._mock_summary(text)
-            else:
-                return self._mock_summary(text)
-            
-        except Exception as e:
-            logger.error(f"❌ Erreur lors de la génération du résumé: {e}")
-            return self._mock_summary(text)
+        return self.generate_summary_t5(text)
     
     def process_observation(self, observation) -> Dict[str, Any]:
         """
@@ -590,9 +592,9 @@ class NLPPipeline:
             'entites': {},
             'success': False,
             'error': None,
-            'fastapi_used': self.fastapi_available,
-            'drbert_used': self.drbert_available,
-            't5_used': self.t5_available
+            'classification_used': self.transformers_available,
+            'drbert_used': self.transformers_available,
+            't5_used': self.transformers_available
         }
         
         try:
@@ -618,7 +620,7 @@ class NLPPipeline:
             
             logger.info(f"📝 Texte source: {len(text_source)} caractères")
             
-            # 3. Classification du thème (FastAPI ou local) avec prédiction numérique
+            # 3. Classification du thème avec prédiction numérique
             theme, prediction = self.classify_theme(text_source)
             if theme:
                 results['theme_classe'] = theme
@@ -630,7 +632,7 @@ class NLPPipeline:
             results['entites'] = entities
             logger.info(f"🔍 Entités extraites: {len(entities)} catégories")
             
-            # 5. Génération du résumé (T5 local à la demande ou FastAPI ou simulation)
+            # 5. Génération du résumé (T5 local à la demande)
             summary = self.generate_summary(text_source)
             if summary:
                 results['resume'] = summary
@@ -655,15 +657,21 @@ class NLPPipeline:
         """
         return {
             'whisper_available': self.whisper_available,
-            'drbert_available': self.drbert_available,
-            't5_available': self.t5_available,
-            'fastapi_available': self.fastapi_available,
-            'available_models': self.available_models,
+            'drbert_available': self.transformers_available,
+            't5_available': self.transformers_available,
+            'classification_available': self.transformers_available,
+            'fastapi_available': False,  # Plus utilisé
+            'available_models': [
+                'waelbensoltana/finetuned-medical-fr',
+                'Thibeb/DrBert_generalized', 
+                'plguillou/t5-base-fr-sum-cnndm'
+            ] if self.transformers_available else [],
             'models_loaded': self.models_loaded,
             'device': self.device,
             'pathology_mapping': self.pathology_mapping,
             'drbert_entity_mapping': self.drbert_entity_mapping,
-            'memory_optimized': True  # Nouveau : indique que la pipeline est optimisée pour la mémoire
+            'memory_optimized': True,
+            'models_config': self.models_config
         }
     
     # Méthodes de simulation pour le développement
