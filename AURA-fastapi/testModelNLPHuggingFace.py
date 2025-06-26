@@ -8,6 +8,12 @@ model = AutoModelForSequenceClassification.from_pretrained("NicoCasso/finetuned-
 
 # Exemple de texte à classifier
 texts =[]
+
+texts.append("Le patient est très diabétique..")
+texts.append("je dois surveiller mon taux de sucre")
+texts.append("j'ai une tension élevée")
+texts.append("le patient a une tension élevée")
+texts.append("Le diabète de type 2 est difficile à contrôler dans ce cas.")
 texts.append("On note une tachycardie persistante suite à une activité physique intense.")
 texts.append("La dépression est diagnostiquée depuis plusieurs semaines.")
 texts.append("Le diabète de type 2 est difficile à contrôler dans ce cas.")
