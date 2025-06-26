@@ -14,24 +14,42 @@
         </div>
         <div class="mt-4 sm:mt-0">
             <a href="{% url 'med_assistant:patient_create' %}" 
-               class="btn-primary px-6 py-3 rounded-lg font-medium inline-flex items-center space-x-2">
+               class="btn-primary px-6 py-3 rounded-lg font-medium inline-flex items-center space-x-2 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200">
                 <i class="fas fa-plus"></i>
                 <span>Nouveau patient</span>
             </a>
         </div>
     </div>
 
-    <!-- Search -->
+    <!-- Search and Filter -->
     <div class="medical-card rounded-lg p-6 fade-in">
-        <form method="get" class="flex flex-col sm:flex-row gap-4">
-            <div class="flex-1">
+        <form method="get" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <!-- Recherche -->
+            <div class="md:col-span-1">
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                    <i class="fas fa-search mr-1"></i>
+                    Rechercher
+                </label>
                 {{ form.search }}
             </div>
-            <button type="submit" 
-                    class="btn-primary px-8 py-3 rounded-lg font-medium flex items-center justify-center space-x-2">
-                <i class="fas fa-search"></i>
-                <span>Rechercher</span>
-            </button>
+            
+            <!-- Filtre par pathologie -->
+            <div class="md:col-span-1">
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                    <i class="fas fa-filter mr-1"></i>
+                    Pathologie
+                </label>
+                {{ form.pathology_filter }}
+            </div>
+            
+            <!-- Bouton de recherche -->
+            <div class="md:col-span-1 flex items-end">
+                <button type="submit" 
+                        class="w-full btn-primary px-6 py-3 rounded-lg font-medium flex items-center justify-center space-x-2 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200">
+                    <i class="fas fa-search"></i>
+                    <span>Rechercher</span>
+                </button>
+            </div>
         </form>
     </div>
 
@@ -66,31 +84,59 @@
                         <span class="px-3 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-700">
                             {{ patient.observations.count }} observation{{ patient.observations.count|pluralize }}
                         </span>
+                        {% if patient.main_pathology %}
+                        <span class="px-3 py-1 text-xs font-medium rounded-full {% if patient.main_pathology == 'cardiovasculaire' %}bg-red-100 text-red-700{% elif patient.main_pathology == 'psy' %}bg-purple-100 text-purple-700{% elif patient.main_pathology == 'diabete' %}bg-yellow-100 text-yellow-700{% else %}bg-blue-100 text-blue-700{% endif %}">
+                            {{ patient.main_pathology_display }}
+                        </span>
+                        {% endif %}
                     </div>
                 </div>
             </div>
             
-            <div class="flex items-center space-x-3">
+            <div class="flex items-center space-x-2">
+                <!-- Nouvelle observation -->
                 <a href="{% url 'med_assistant:observation_create' %}?patient_id={{ patient.id }}" 
-                   class="btn-secondary px-4 py-2 rounded-lg text-sm flex items-center space-x-1"
+                   class="group relative px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm transition-all duration-200 transform hover:-translate-y-0.5 hover:shadow-lg"
                    title="Nouvelle observation">
                     <i class="fas fa-plus"></i>
-                    <span class="hidden sm:inline">Observation</span>
+                    <span class="hidden sm:inline ml-1">Observation</span>
+                    <!-- Tooltip -->
+                    <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap">
+                        Nouvelle observation
+                    </div>
                 </a>
+                
+                <!-- Modifier -->
                 <a href="{% url 'med_assistant:patient_edit' patient.id %}" 
-                   class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm transition-colors"
+                   class="group relative px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm transition-all duration-200 transform hover:-translate-y-0.5 hover:shadow-lg"
                    title="Modifier">
                     <i class="fas fa-edit"></i>
+                    <!-- Tooltip -->
+                    <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+                        Modifier
+                    </div>
                 </a>
+                
+                <!-- Supprimer -->
                 <a href="{% url 'med_assistant:patient_delete' patient.id %}" 
-                   class="bg-red-100 hover:bg-red-200 text-red-700 px-4 py-2 rounded-lg text-sm transition-colors"
+                   class="group relative px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm transition-all duration-200 transform hover:-translate-y-0.5 hover:shadow-lg"
                    title="Supprimer">
                     <i class="fas fa-trash"></i>
+                    <!-- Tooltip -->
+                    <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+                        Supprimer
+                    </div>
                 </a>
+                
+                <!-- Voir détails -->
                 <a href="{% url 'med_assistant:patient_detail' patient.id %}" 
-                   class="btn-primary px-4 py-2 rounded-lg text-sm flex items-center space-x-1">
+                   class="group relative px-4 py-2 bg-primary-steel hover:bg-primary-deep text-white rounded-lg text-sm transition-all duration-200 transform hover:-translate-y-0.5 hover:shadow-lg">
                     <i class="fas fa-eye"></i>
-                    <span class="hidden sm:inline">Voir</span>
+                    <span class="hidden sm:inline ml-1">Voir</span>
+                    <!-- Tooltip -->
+                    <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+                        Voir détails
+                    </div>
                 </a>
             </div>
         </div>
@@ -102,11 +148,11 @@
     <div class="flex justify-center fade-in">
         <nav class="flex items-center space-x-2">
             {% if page_obj.has_previous %}
-                <a href="?page=1{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" 
+                <a href="?page=1{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.pathology_filter %}&pathology_filter={{ request.GET.pathology_filter }}{% endif %}" 
                    class="medical-card hover:bg-gray-50 border border-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm transition-colors">
                     <i class="fas fa-angle-double-left"></i>
                 </a>
-                <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" 
+                <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.pathology_filter %}&pathology_filter={{ request.GET.pathology_filter }}{% endif %}" 
                    class="medical-card hover:bg-gray-50 border border-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm transition-colors">
                     <i class="fas fa-angle-left"></i>
                 </a>
@@ -117,11 +163,11 @@
             </span>
 
             {% if page_obj.has_next %}
-                <a href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" 
+                <a href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.pathology_filter %}&pathology_filter={{ request.GET.pathology_filter }}{% endif %}" 
                    class="medical-card hover:bg-gray-50 border border-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm transition-colors">
                     <i class="fas fa-angle-right"></i>
                 </a>
-                <a href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" 
+                <a href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.pathology_filter %}&pathology_filter={{ request.GET.pathology_filter }}{% endif %}" 
                    class="medical-card hover:bg-gray-50 border border-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm transition-colors">
                     <i class="fas fa-angle-double-right"></i>
                 </a>
@@ -137,22 +183,22 @@
             <i class="fas fa-users text-3xl text-gray-400"></i>
         </div>
         <h3 class="text-xl font-semibold text-primary-dark mb-4">
-            {% if request.GET.search %}
+            {% if request.GET.search or request.GET.pathology_filter %}
                 Aucun patient trouvé
             {% else %}
                 Aucun patient enregistré
             {% endif %}
         </h3>
         <p class="text-gray-600 mb-8">
-            {% if request.GET.search %}
-                Essayez avec d'autres termes de recherche.
+            {% if request.GET.search or request.GET.pathology_filter %}
+                Essayez avec d'autres critères de recherche.
             {% else %}
                 Commencez par ajouter votre premier patient au système.
             {% endif %}
         </p>
-        {% if not request.GET.search %}
+        {% if not request.GET.search and not request.GET.pathology_filter %}
         <a href="{% url 'med_assistant:patient_create' %}" 
-           class="btn-primary px-8 py-3 rounded-lg font-medium inline-flex items-center space-x-2">
+           class="btn-primary px-8 py-3 rounded-lg font-medium inline-flex items-center space-x-2 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200">
             <i class="fas fa-plus"></i>
             <span>Créer un patient</span>
         </a>
@@ -160,4 +206,43 @@
     </div>
     {% endif %}
 </div>
+
+<style>
+/* Animations pour les boutons */
+.btn-primary, .bg-green-500, .bg-blue-500, .bg-red-500 {
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-primary::before, .bg-green-500::before, .bg-blue-500::before, .bg-red-500::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s;
+}
+
+.btn-primary:hover::before, .bg-green-500:hover::before, .bg-blue-500:hover::before, .bg-red-500:hover::before {
+    left: 100%;
+}
+
+/* Amélioration des tooltips */
+.group:hover .group-hover\:opacity-100 {
+    animation: fadeInUp 0.2s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translate(-50%, 10px);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+}
+</style>
 {% endblock %}

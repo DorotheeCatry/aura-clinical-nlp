@@ -23,30 +23,41 @@
                 </div>
             </div>
             <div class="mt-4 sm:mt-0 flex flex-wrap gap-2">
+                <!-- Voir patient -->
                 <a href="{% url 'med_assistant:patient_detail' observation.patient.id %}" 
-                   class="px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors">
+                   class="group relative px-4 py-2 bg-slate-500 hover:bg-slate-600 text-white rounded-lg transition-all duration-200 transform hover:-translate-y-0.5 hover:shadow-lg">
                     <i class="fas fa-user mr-2"></i>
                     Voir patient
+                    <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-0 group-hover:opacity-20 transform -skew-x-12 group-hover:translate-x-full transition-all duration-700"></div>
                 </a>
+                
+                <!-- Modifier -->
                 <a href="{% url 'med_assistant:observation_edit' observation.id %}" 
-                   class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                   class="group relative px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-all duration-200 transform hover:-translate-y-0.5 hover:shadow-lg">
                     <i class="fas fa-edit mr-2"></i>
                     Modifier
+                    <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-0 group-hover:opacity-20 transform -skew-x-12 group-hover:translate-x-full transition-all duration-700"></div>
                 </a>
+                
+                <!-- Retraiter si erreur -->
                 {% if observation.traitement_erreur %}
                 <form method="post" action="{% url 'med_assistant:observation_reprocess' observation.id %}" class="inline">
                     {% csrf_token %}
                     <button type="submit" 
-                            class="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors">
+                            class="group relative px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg transition-all duration-200 transform hover:-translate-y-0.5 hover:shadow-lg">
                         <i class="fas fa-redo mr-2"></i>
                         Retraiter
+                        <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-0 group-hover:opacity-20 transform -skew-x-12 group-hover:translate-x-full transition-all duration-700"></div>
                     </button>
                 </form>
                 {% endif %}
+                
+                <!-- Supprimer -->
                 <a href="{% url 'med_assistant:observation_delete' observation.id %}" 
-                   class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+                   class="group relative px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-all duration-200 transform hover:-translate-y-0.5 hover:shadow-lg">
                     <i class="fas fa-trash mr-2"></i>
                     Supprimer
+                    <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-0 group-hover:opacity-20 transform -skew-x-12 group-hover:translate-x-full transition-all duration-700"></div>
                 </a>
             </div>
         </div>
@@ -159,7 +170,7 @@
         {% endif %}
     </div>
 
-    <!-- Entités extraites avec noms compréhensibles et suppression -->
+    <!-- Entités extraites avec noms compréhensibles et suppression améliorée -->
     {% if observation.entites_formatees %}
     <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
         <h2 class="text-lg font-semibold text-slate-800 mb-4 flex items-center">
@@ -178,15 +189,15 @@
                 </h3>
                 <div class="space-y-2">
                     {% for item in items %}
-                    <div class="bg-white px-3 py-2 rounded-lg border border-purple-200 flex items-center justify-between group">
+                    <div class="bg-white px-3 py-2 rounded-lg border border-purple-200 flex items-center justify-between group hover:shadow-md transition-all duration-200">
                         <span class="flex-1">{{ item }}</span>
-                        <!-- Bouton de suppression -->
+                        <!-- Bouton de suppression amélioré -->
                         <form method="post" action="{% url 'med_assistant:delete_entity' observation.id %}" class="inline ml-2">
                             {% csrf_token %}
                             <input type="hidden" name="category" value="{{ category_name }}">
                             <input type="hidden" name="entity" value="{{ item }}">
                             <button type="submit" 
-                                    class="opacity-0 group-hover:opacity-100 transition-opacity text-red-500 hover:text-red-700 p-1 rounded"
+                                    class="opacity-0 group-hover:opacity-100 transition-all duration-200 text-red-500 hover:text-white hover:bg-red-500 p-1.5 rounded-full transform hover:scale-110"
                                     title="Supprimer cette entité"
                                     onclick="return confirm('Êtes-vous sûr de vouloir supprimer cette entité ?')">
                                 <i class="fas fa-times text-xs"></i>
@@ -200,7 +211,7 @@
             {% endfor %}
         </div>
         
-        <!-- Note d'aide -->
+        <!-- Note d'aide améliorée -->
         <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
             <p class="text-sm text-blue-700 flex items-center">
                 <i class="fas fa-info-circle mr-2"></i>
@@ -239,4 +250,46 @@
         </div>
     </div>
 </div>
+
+<style>
+/* Effet de brillance pour les boutons */
+.group {
+    position: relative;
+    overflow: hidden;
+}
+
+/* Animation pour les boutons de suppression d'entités */
+.group:hover button {
+    animation: bounceIn 0.3s ease-out;
+}
+
+@keyframes bounceIn {
+    0% {
+        transform: scale(0);
+        opacity: 0;
+    }
+    50% {
+        transform: scale(1.2);
+        opacity: 0.8;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* Effet de pulsation pour les entités au survol */
+.group:hover .bg-white {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 0 10px rgba(139, 92, 246, 0);
+    }
+}
+</style>
 {% endblock %}

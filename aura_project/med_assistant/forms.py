@@ -90,7 +90,7 @@ class ObservationEditForm(forms.ModelForm):
 
 
 class PatientSearchForm(forms.Form):
-    """Formulaire de recherche de patients"""
+    """Formulaire de recherche et filtrage de patients"""
     
     search = forms.CharField(
         required=False,
@@ -99,3 +99,20 @@ class PatientSearchForm(forms.Form):
             'placeholder': 'Rechercher un patient (nom, prénom)...'
         })
     )
+    
+    pathology_filter = forms.ChoiceField(
+        required=False,
+        widget=forms.Select(attrs={
+            'class': 'w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors'
+        })
+    )
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # Choix de pathologies basés sur les observations existantes
+        pathology_choices = [('', 'Toutes les pathologies')]
+        pathology_choices.extend(Observation.THEME_CHOICES)
+        
+        self.fields['pathology_filter'].choices = pathology_choices
+        self.fields['pathology_filter'].label = "Filtrer par pathologie"
