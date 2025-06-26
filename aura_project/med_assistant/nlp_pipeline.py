@@ -200,7 +200,7 @@ class NLPPipeline:
                 "ner",
                 model=model,
                 tokenizer=tokenizer,
-                aggregation_strategy="simple",
+                aggregation_strategy="simple",  # IMPORTANT: garder "simple" pour avoir des entités propres
                 device=0 if torch.cuda.is_available() else -1,
                 torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32
             )
@@ -290,55 +290,29 @@ class NLPPipeline:
         except Exception as e:
             logger.error(f"❌ Erreur rechargement Whisper: {e}")
     
-    def regroup_entities_pro(self, entities, original_text, max_gap=2):
+    def clean_entity_text(self, text: str) -> str:
         """
-        Nettoie et regroupe les entités extraites par DrBERT
+        Nettoie le texte d'une entité extraite
         
         Args:
-            entities: Liste des entités brutes de DrBERT
-            original_text: Texte original pour récupérer le vrai texte
-            max_gap: Écart maximum entre entités pour les regrouper
+            text: Texte brut de l'entité
             
         Returns:
-            Liste des entités nettoyées et regroupées
+            Texte nettoyé
         """
-        grouped = []
-        current = None
-
-        for ent in entities:
-            # Nettoyage du sous-token
-            word = ent['word'].lstrip('#')
-
-            if (current is None 
-                or ent['entity_group'] != current['entity_group'] 
-                or ent['start'] - current['end'] > max_gap):
-                # On ferme l'entité précédente
-                if current:
-                    # Récupère le vrai texte dans l'original (pour être 100% propre)
-                    current['text'] = original_text[current['start']:current['end']].strip()
-                    current['score'] = float(sum(current['score']) / len(current['score']))
-                    grouped.append(current)
-
-                # Nouvelle entité
-                current = {
-                    'entity_group': ent['entity_group'],
-                    'start': ent['start'],
-                    'end': ent['end'],
-                    'score': [ent['score']],
-                }
-
-            else:
-                # On prolonge l'entité en cours
-                current['end'] = ent['end']
-                current['score'].append(ent['score'])
-
-        # Ajouter la dernière
-        if current:
-            current['text'] = original_text[current['start']:current['end']].strip()
-            current['score'] = float(sum(current['score']) / len(current['score']))
-            grouped.append(current)
-
-        return grouped
+        if not text:
+            return ""
+        
+        # Supprimer les espaces en début/fin
+        cleaned = text.strip()
+        
+        # Supprimer les caractères de tokenisation
+        cleaned = cleaned.replace("##", "")
+        
+        # Supprimer les espaces multiples
+        cleaned = " ".join(cleaned.split())
+        
+        return cleaned
     
     def transcribe_audio(self, audio_file_path: str) -> Optional[str]:
         """
@@ -497,7 +471,7 @@ class NLPPipeline:
     
     def extract_entities_drbert(self, text: str) -> Dict[str, List[str]]:
         """
-        Extrait les entités médicales avec DrBERT (chargé à la demande) et les nettoie
+        Extrait les entités médicales avec DrBERT et les nettoie
         
         Args:
             text: Texte à analyser
@@ -513,11 +487,10 @@ class NLPPipeline:
             
             logger.info(f"🔍 Extraction d'entités DrBERT pour: {text[:50]}...")
             
-            # Utiliser le pipeline NER de DrBERT avec aggregation_strategy="none" pour avoir les tokens bruts
-            raw_entities = self.drbert_pipeline(text, aggregation_strategy="none")
+            # Utiliser le pipeline NER de DrBERT avec aggregation_strategy="simple"
+            entities = self.drbert_pipeline(text)
             
-            # Nettoyer et regrouper les entités avec votre fonction
-            clean_entities = self.regroup_entities_pro(raw_entities, text)
+            logger.info(f"🔍 DrBERT a trouvé {len(entities)} entités brutes")
             
             # Organiser les entités par catégorie
             categorized_entities = {
@@ -527,9 +500,9 @@ class NLPPipeline:
                 'PROC': [],  # Procedures
             }
             
-            for entity in clean_entities:
+            for entity in entities:
                 entity_label = entity['entity_group']
-                entity_text = entity['text']
+                entity_text = self.clean_entity_text(entity['word'])
                 confidence = entity['score']
                 
                 # Mapper vers nos catégories
