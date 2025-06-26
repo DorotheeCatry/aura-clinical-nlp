@@ -92,47 +92,19 @@ def dashboard(request):
 
 
 def patient_list(request):
-    """Liste des patients avec recherche et filtrage par pathologie"""
+    """Liste des patients avec recherche"""
     form = PatientSearchForm(request.GET)
     patients = Patient.objects.all()
     
-    if form.is_valid():
-        # Recherche par nom/prénom
-        if form.cleaned_data['search']:
-            search_term = form.cleaned_data['search']
-            patients = patients.filter(
-                Q(nom__icontains=search_term) | 
-                Q(prenom__icontains=search_term)
-            )
-        
-        # Filtrage par pathologie
-        if form.cleaned_data['pathology_filter']:
-            pathology = form.cleaned_data['pathology_filter']
-            # Récupérer les patients qui ont au moins une observation avec cette pathologie
-            patients_with_pathology = Observation.objects.filter(
-                theme_classe=pathology
-            ).values_list('patient_id', flat=True).distinct()
-            patients = patients.filter(id__in=patients_with_pathology)
-    
-    # Annoter avec les pathologies principales de chaque patient
-    patients_with_pathologies = []
-    for patient in patients:
-        # Récupérer la pathologie la plus fréquente pour ce patient
-        main_pathology = patient.observations.filter(
-            theme_classe__isnull=False
-        ).values('theme_classe').annotate(
-            count=Count('theme_classe')
-        ).order_by('-count').first()
-        
-        patient.main_pathology = main_pathology['theme_classe'] if main_pathology else None
-        patient.main_pathology_display = dict(Observation.THEME_CHOICES).get(
-            patient.main_pathology, 'Non classé'
-        ) if patient.main_pathology else 'Non classé'
-        
-        patients_with_pathologies.append(patient)
+    if form.is_valid() and form.cleaned_data['search']:
+        search_term = form.cleaned_data['search']
+        patients = patients.filter(
+            Q(nom__icontains=search_term) | 
+            Q(prenom__icontains=search_term)
+        )
     
     # Pagination
-    paginator = Paginator(patients_with_pathologies, 10)
+    paginator = Paginator(patients, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
