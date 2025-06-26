@@ -1,4 +1,5 @@
 {% extends 'med_assistant/base.html' %}
+{% load custom_filters %}
 
 {% block title %}Statistiques - AURA Medical AI{% endblock %}
 {% block page_title %}Statistiques{% endblock %}
@@ -274,7 +275,4 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
-
-<!-- Custom template filter for dictionary access -->
-{% load custom_filters %}
 {% endblock %}
