@@ -112,17 +112,6 @@ def patient_list(request):
             patients = patients.filter(
                 observations__theme_classe=pathologie
             ).distinct()
-        
-        # Filtre par âge
-        if form.cleaned_data['age_min'] is not None:
-            age_min = form.cleaned_data['age_min']
-            birth_year_max = date.today().year - age_min
-            patients = patients.filter(date_naissance__year__lte=birth_year_max)
-        
-        if form.cleaned_data['age_max'] is not None:
-            age_max = form.cleaned_data['age_max']
-            birth_year_min = date.today().year - age_max
-            patients = patients.filter(date_naissance__year__gte=birth_year_min)
     
     # Précharger les observations pour optimiser les requêtes
     patients = patients.prefetch_related('observations')
