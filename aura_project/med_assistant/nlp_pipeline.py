@@ -196,12 +196,11 @@ class NLPPipeline:
                 low_cpu_mem_usage=True
             )
             
-            # Créer le pipeline NER avec optimisations
+            # Créer le pipeline NER avec optimisations - SANS aggregation_strategy pour avoir les entités brutes
             self.drbert_pipeline = pipeline(
                 "ner",
                 model=model,
                 tokenizer=tokenizer,
-                aggregation_strategy="simple",  # IMPORTANT: garder "simple" pour avoir des entités propres
                 device=0 if torch.cuda.is_available() else -1,
                 torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32
             )
@@ -291,84 +290,56 @@ class NLPPipeline:
         except Exception as e:
             logger.error(f"❌ Erreur rechargement Whisper: {e}")
     
-    def clean_entity_text(self, text: str) -> str:
+    def regroup_entities_pro(self, entities: List[Dict], original_text: str, max_gap: int = 2) -> List[Dict]:
         """
-        Nettoie le texte d'une entité extraite de manière plus robuste
+        Fonction de regroupement professionnel des entités DrBERT
+        Exactement comme vous l'avez demandé !
         
         Args:
-            text: Texte brut de l'entité
+            entities: Liste des entités brutes de DrBERT
+            original_text: Texte original pour extraire le vrai texte
+            max_gap: Gap maximum entre entités pour les fusionner
             
         Returns:
-            Texte nettoyé
+            Liste des entités regroupées et nettoyées
         """
-        if not text:
-            return ""
-        
-        # Supprimer les espaces en début/fin
-        cleaned = text.strip()
-        
-        # Supprimer les caractères de tokenisation
-        cleaned = cleaned.replace("##", "")
-        
-        # Supprimer les espaces multiples
-        cleaned = " ".join(cleaned.split())
-        
-        # Corrections spécifiques pour les entités médicales françaises
-        corrections = {
-            # Corrections de mots coupés
-            r'\buleurs?\b': 'douleurs',
-            r'\bdysp\b': 'dyspnée',
-            r'\bnee marquee\b': 'dyspnée marquée',
-            r'\beurs froides\b': 'sueurs froides',
-            r'\binfarctus du myocarde st \+': 'infarctus du myocarde ST+',
-            
-            # Corrections générales
-            r'\b(\w+)eurs?\b': r'\1douleurs',  # *eurs -> *douleurs
-            r'\b(\w+)nee\b': r'\1née',         # *nee -> *née
-            r'\bst \+': 'ST+',                 # st + -> ST+
-            
-            # Nettoyer les caractères parasites
-            r'\s+': ' ',                       # Espaces multiples
-            r'^\W+|\W+$': '',                  # Caractères non-alphanumériques en début/fin
-        }
-        
-        for pattern, replacement in corrections.items():
-            cleaned = re.sub(pattern, replacement, cleaned, flags=re.IGNORECASE)
-        
-        # Nettoyer à nouveau les espaces
-        cleaned = cleaned.strip()
-        
-        return cleaned
-    
-    def merge_similar_entities(self, entities: List[str]) -> List[str]:
-        """
-        Fusionne les entités similaires ou qui se chevauchent
-        
-        Args:
-            entities: Liste des entités à fusionner
-            
-        Returns:
-            Liste des entités fusionnées
-        """
-        if not entities:
-            return []
-        
-        # Trier par longueur décroissante pour privilégier les entités complètes
-        sorted_entities = sorted(set(entities), key=len, reverse=True)
-        merged = []
-        
-        for entity in sorted_entities:
-            # Vérifier si cette entité n'est pas déjà contenue dans une entité plus longue
-            is_contained = False
-            for existing in merged:
-                if entity.lower() in existing.lower() and entity != existing:
-                    is_contained = True
-                    break
-            
-            if not is_contained:
-                merged.append(entity)
-        
-        return merged
+        grouped = []
+        current = None
+
+        for ent in entities:
+            # Nettoyage du sous-token
+            word = ent['word'].lstrip('#')
+
+            if (current is None 
+                or ent['entity_group'] != current['entity_group'] 
+                or ent['start'] - current['end'] > max_gap):
+                # On ferme l'entité précédente
+                if current:
+                    # Récupère le vrai texte dans l'original (pour être 100% propre)
+                    current['text'] = original_text[current['start']:current['end']]
+                    current['score'] = float(sum(current['score']) / len(current['score']))
+                    grouped.append(current)
+
+                # Nouvelle entité
+                current = {
+                    'entity_group': ent['entity_group'],
+                    'start': ent['start'],
+                    'end': ent['end'],
+                    'score': [ent['score']],
+                }
+
+            else:
+                # On prolonge l'entité en cours
+                current['end'] = ent['end']
+                current['score'].append(ent['score'])
+
+        # Ajouter la dernière
+        if current:
+            current['text'] = original_text[current['start']:current['end']]
+            current['score'] = float(sum(current['score']) / len(current['score']))
+            grouped.append(current)
+
+        return grouped
     
     def transcribe_audio(self, audio_file_path: str) -> Optional[str]:
         """
@@ -527,7 +498,7 @@ class NLPPipeline:
     
     def extract_entities_drbert(self, text: str) -> Dict[str, List[str]]:
         """
-        Extrait les entités médicales avec DrBERT et les nettoie de manière robuste
+        Extrait les entités médicales avec DrBERT en utilisant votre fonction regroup_entities_pro
         
         Args:
             text: Texte à analyser
@@ -543,10 +514,15 @@ class NLPPipeline:
             
             logger.info(f"🔍 Extraction d'entités DrBERT pour: {text[:50]}...")
             
-            # Utiliser le pipeline NER de DrBERT avec aggregation_strategy="simple"
-            entities = self.drbert_pipeline(text)
+            # Utiliser le pipeline NER de DrBERT SANS aggregation_strategy pour avoir les entités brutes
+            raw_entities = self.drbert_pipeline(text)
             
-            logger.info(f"🔍 DrBERT a trouvé {len(entities)} entités brutes")
+            logger.info(f"🔍 DrBERT a trouvé {len(raw_entities)} entités brutes")
+            
+            # Appliquer votre fonction de regroupement professionnel
+            clean_entities = self.regroup_entities_pro(raw_entities, text)
+            
+            logger.info(f"🧹 Après regroupement: {len(clean_entities)} entités nettoyées")
             
             # Organiser les entités par catégorie
             categorized_entities = {
@@ -556,29 +532,25 @@ class NLPPipeline:
                 'PROC': [],  # Procedures
             }
             
-            for entity in entities:
+            for entity in clean_entities:
                 entity_label = entity['entity_group']
-                entity_text = self.clean_entity_text(entity['word'])
+                entity_text = entity['text'].strip()
                 confidence = entity['score']
                 
                 # Mapper vers nos catégories
                 mapped_category = self.drbert_entity_mapping.get(entity_label, 'PROC')
                 
                 # Filtrer par confiance (seuil à 0.5) et longueur minimale
-                if confidence > 0.5 and len(entity_text.strip()) > 2:
+                if confidence > 0.5 and len(entity_text) > 2:
                     # Éviter les doublons
                     if entity_text not in categorized_entities[mapped_category]:
                         categorized_entities[mapped_category].append(entity_text)
                         logger.debug(f"  ✓ {mapped_category}: {entity_text} (conf: {confidence:.2f})")
             
-            # Fusionner les entités similaires dans chaque catégorie
-            for category in categorized_entities:
-                categorized_entities[category] = self.merge_similar_entities(categorized_entities[category])
-            
             # Nettoyer les catégories vides
             categorized_entities = {k: v for k, v in categorized_entities.items() if v}
             
-            logger.info(f"✅ DrBERT: {sum(len(v) for v in categorized_entities.values())} entités extraites et nettoyées")
+            logger.info(f"✅ DrBERT: {sum(len(v) for v in categorized_entities.values())} entités extraites et regroupées")
             
             # Libérer DrBERT après utilisation pour économiser la mémoire
             if self.drbert_pipeline is not None:
@@ -711,10 +683,10 @@ class NLPPipeline:
                 results['model_prediction'] = prediction
                 logger.info(f"🏷️ Thème classifié: {theme} (prédiction: {prediction})")
             
-            # 4. Extraction d'entités (DrBERT local à la demande avec nettoyage amélioré)
+            # 4. Extraction d'entités (DrBERT avec votre fonction regroup_entities_pro)
             entities = self.extract_entities(text_source)
             results['entites'] = entities
-            logger.info(f"🔍 Entités extraites et nettoyées: {len(entities)} catégories")
+            logger.info(f"🔍 Entités extraites avec regroup_entities_pro: {len(entities)} catégories")
             
             # 5. Génération du résumé (T5 local à la demande)
             summary = self.generate_summary(text_source)
