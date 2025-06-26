@@ -191,7 +191,7 @@
         {% endif %}
     </div>
 
-    <!-- Recent Observations -->
+    <!-- Recent Observations - CORRIGÉ -->
     {% if observations_recentes %}
     <div class="medical-card rounded-lg overflow-hidden fade-in">
         <div class="p-6 border-b border-gray-200">
@@ -202,56 +202,73 @@
         </div>
         <div class="divide-y divide-gray-100">
             {% for observation in observations_recentes %}
-            <div class="flex items-center justify-between p-6 hover:bg-gray-50 transition-colors">
-                <div class="flex items-center space-x-4">
-                    <div class="w-12 h-12 bg-primary-steel rounded-lg flex items-center justify-center">
-                        <i class="fas fa-user-md text-white"></i>
+            <div class="p-6 hover:bg-gray-50 transition-colors">
+                <div class="flex items-start space-x-4">
+                    <!-- Avatar et info patient -->
+                    <div class="flex-shrink-0">
+                        <div class="w-12 h-12 bg-primary-steel rounded-lg flex items-center justify-center">
+                            <i class="fas fa-user-md text-white"></i>
+                        </div>
                     </div>
-                    <div>
-                        <h3 class="font-semibold text-primary-dark">{{ observation.patient.nom_complet }}</h3>
-                        <p class="text-sm text-gray-500">{{ observation.date|date:"d/m/Y à H:i" }}</p>
-                        {% if observation.patient.age %}
-                        <p class="text-xs text-gray-400">{{ observation.patient.age }} ans</p>
-                        {% endif %}
+                    
+                    <!-- Informations principales -->
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-start justify-between">
+                            <div class="flex-1 min-w-0">
+                                <!-- Nom et date -->
+                                <div class="flex items-center space-x-3 mb-2">
+                                    <h3 class="font-semibold text-primary-dark">{{ observation.patient.nom_complet }}</h3>
+                                    <span class="text-sm text-gray-500">{{ observation.date|date:"d/m/Y à H:i" }}</span>
+                                    {% if observation.patient.age %}
+                                    <span class="text-xs text-gray-400">{{ observation.patient.age }} ans</span>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Résumé -->
+                                <div class="mb-3">
+                                    {% if observation.resume %}
+                                    <p class="text-sm text-gray-600 line-clamp-2 leading-relaxed">{{ observation.resume }}</p>
+                                    {% else %}
+                                    <p class="text-sm text-gray-400 italic">En cours d'analyse...</p>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Tags et statut -->
+                                <div class="flex items-center space-x-3">
+                                    {% if observation.theme_classe %}
+                                    <span class="px-3 py-1 text-xs font-medium rounded-full {% if observation.theme_classe == 'cardiovasculaire' %}theme-cardio{% elif observation.theme_classe == 'psy' %}theme-psy{% elif observation.theme_classe == 'diabete' %}theme-diabete{% else %}theme-general{% endif %} text-white">
+                                        {{ observation.get_theme_classe_display }}
+                                    </span>
+                                    {% endif %}
+                                    
+                                    {% if not observation.traitement_termine %}
+                                    <span class="flex items-center text-yellow-600 text-sm">
+                                        <i class="fas fa-clock mr-1"></i>
+                                        <span class="hidden sm:inline">En cours</span>
+                                    </span>
+                                    {% elif observation.traitement_erreur %}
+                                    <span class="flex items-center text-red-600 text-sm">
+                                        <i class="fas fa-exclamation-triangle mr-1"></i>
+                                        <span class="hidden sm:inline">Erreur</span>
+                                    </span>
+                                    {% else %}
+                                    <span class="flex items-center text-green-600 text-sm">
+                                        <i class="fas fa-check-circle mr-1"></i>
+                                        <span class="hidden sm:inline">Terminé</span>
+                                    </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <!-- Bouton d'action -->
+                            <div class="flex-shrink-0 ml-4">
+                                <a href="{% url 'med_assistant:observation_detail' observation.id %}" 
+                                   class="btn-primary px-4 py-2 rounded-lg text-sm">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </div>
+                        </div>
                     </div>
-                </div>
-                
-                <div class="flex-1 mx-6">
-                    {% if observation.resume %}
-                    <p class="text-sm text-gray-600 line-clamp-2">{{ observation.resume }}</p>
-                    {% else %}
-                    <p class="text-sm text-gray-400 italic">En cours d'analyse...</p>
-                    {% endif %}
-                </div>
-                
-                <div class="flex items-center space-x-3">
-                    {% if observation.theme_classe %}
-                    <span class="px-3 py-1 text-xs font-medium rounded-full {% if observation.theme_classe == 'cardiovasculaire' %}theme-cardio{% elif observation.theme_classe == 'psy' %}theme-psy{% elif observation.theme_classe == 'diabete' %}theme-diabete{% else %}theme-general{% endif %} text-white">
-                        {{ observation.get_theme_classe_display }}
-                    </span>
-                    {% endif %}
-                    
-                    {% if not observation.traitement_termine %}
-                    <span class="flex items-center text-yellow-600 text-sm">
-                        <i class="fas fa-clock mr-1"></i>
-                        <span class="hidden sm:inline">En cours</span>
-                    </span>
-                    {% elif observation.traitement_erreur %}
-                    <span class="flex items-center text-red-600 text-sm">
-                        <i class="fas fa-exclamation-triangle mr-1"></i>
-                        <span class="hidden sm:inline">Erreur</span>
-                    </span>
-                    {% else %}
-                    <span class="flex items-center text-green-600 text-sm">
-                        <i class="fas fa-check-circle mr-1"></i>
-                        <span class="hidden sm:inline">Terminé</span>
-                    </span>
-                    {% endif %}
-                    
-                    <a href="{% url 'med_assistant:observation_detail' observation.id %}" 
-                       class="btn-primary px-4 py-2 rounded-lg text-sm">
-                        <i class="fas fa-eye"></i>
-                    </a>
                 </div>
             </div>
             {% endfor %}
