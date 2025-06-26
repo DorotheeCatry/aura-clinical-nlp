@@ -159,12 +159,13 @@
         {% endif %}
     </div>
 
-    <!-- Entités extraites avec noms compréhensibles -->
+    <!-- Entités extraites avec noms compréhensibles et suppression -->
     {% if observation.entites_formatees %}
     <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
         <h2 class="text-lg font-semibold text-slate-800 mb-4 flex items-center">
             <i class="fas fa-search mr-2 text-purple-600"></i>
             Entités médicales extraites par DrBERT
+            <span class="ml-2 text-sm font-normal text-gray-500">({{ entities_count }} entités)</span>
         </h2>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
             {% for category_name, items in observation.entites_formatees.items %}
@@ -173,17 +174,38 @@
                 <h3 class="font-medium text-purple-800 mb-3 flex items-center">
                     <i class="fas fa-{% if category_name == 'Maladies et Symptômes' %}heartbeat{% elif category_name == 'Médicaments' %}pills{% elif category_name == 'Anatomie' %}user{% elif category_name == 'Procédures Médicales' %}cogs{% else %}tag{% endif %} mr-2"></i>
                     {{ category_name }}
+                    <span class="ml-2 text-xs font-normal text-purple-600">({{ items|length }})</span>
                 </h3>
                 <div class="space-y-2">
                     {% for item in items %}
-                    <div class="bg-white px-3 py-2 rounded-lg border border-purple-200">
-                        <span>{{ item }}</span>
+                    <div class="bg-white px-3 py-2 rounded-lg border border-purple-200 flex items-center justify-between group">
+                        <span class="flex-1">{{ item }}</span>
+                        <!-- Bouton de suppression -->
+                        <form method="post" action="{% url 'med_assistant:delete_entity' observation.id %}" class="inline ml-2">
+                            {% csrf_token %}
+                            <input type="hidden" name="category" value="{{ category_name }}">
+                            <input type="hidden" name="entity" value="{{ item }}">
+                            <button type="submit" 
+                                    class="opacity-0 group-hover:opacity-100 transition-opacity text-red-500 hover:text-red-700 p-1 rounded"
+                                    title="Supprimer cette entité"
+                                    onclick="return confirm('Êtes-vous sûr de vouloir supprimer cette entité ?')">
+                                <i class="fas fa-times text-xs"></i>
+                            </button>
+                        </form>
                     </div>
                     {% endfor %}
                 </div>
             </div>
             {% endif %}
             {% endfor %}
+        </div>
+        
+        <!-- Note d'aide -->
+        <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <p class="text-sm text-blue-700 flex items-center">
+                <i class="fas fa-info-circle mr-2"></i>
+                Survolez une entité pour voir le bouton de suppression. Les entités supprimées peuvent être récupérées en retraitant l'observation.
+            </p>
         </div>
     </div>
     {% endif %}

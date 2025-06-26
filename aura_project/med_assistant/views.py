@@ -4,13 +4,13 @@ from django.db.models import Q, Count
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.core.paginator import Paginator
+from django.views.decorators.csrf import csrf_exempt
 from .models import Patient, Observation
 from .forms import PatientForm, ObservationForm, PatientSearchForm, ObservationEditForm
 from .nlp_pipeline import nlp_pipeline
 import json
 from collections import defaultdict
 from faster_whisper import WhisperModel
-from django.views.decorators.csrf import csrf_exempt
 import tempfile, subprocess, json
 
 
@@ -291,6 +291,55 @@ def observation_delete(request, observation_id):
         'observation': observation
     }
     return render(request, 'med_assistant/observation_delete_confirm.html', context)
+
+
+@require_http_methods(["POST"])
+def delete_entity(request, observation_id):
+    """Suppression d'une entité spécifique d'une observation"""
+    observation = get_object_or_404(Observation, id=observation_id)
+    
+    try:
+        # Récupérer les paramètres
+        category = request.POST.get('category')
+        entity_text = request.POST.get('entity')
+        
+        if not category or not entity_text:
+            messages.error(request, 'Paramètres manquants pour la suppression.')
+            return redirect('med_assistant:observation_detail', observation_id=observation.id)
+        
+        # Vérifier que l'observation a des entités
+        if not observation.entites:
+            messages.error(request, 'Aucune entité trouvée dans cette observation.')
+            return redirect('med_assistant:observation_detail', observation_id=observation.id)
+        
+        # Vérifier que la catégorie existe
+        if category not in observation.entites:
+            messages.error(request, f'Catégorie "{category}" non trouvée.')
+            return redirect('med_assistant:observation_detail', observation_id=observation.id)
+        
+        # Supprimer l'entité de la liste
+        entities_list = observation.entites[category]
+        if isinstance(entities_list, list):
+            if entity_text in entities_list:
+                entities_list.remove(entity_text)
+                
+                # Si la liste devient vide, supprimer la catégorie
+                if not entities_list:
+                    del observation.entites[category]
+                
+                # Sauvegarder les modifications
+                observation.save()
+                
+                messages.success(request, f'Entité "{entity_text}" supprimée de la catégorie "{category}".')
+            else:
+                messages.error(request, f'Entité "{entity_text}" non trouvée dans la catégorie "{category}".')
+        else:
+            messages.error(request, 'Format d\'entités invalide.')
+        
+    except Exception as e:
+        messages.error(request, f'Erreur lors de la suppression de l\'entité: {e}')
+    
+    return redirect('med_assistant:observation_detail', observation_id=observation.id)
 
 
 @csrf_exempt

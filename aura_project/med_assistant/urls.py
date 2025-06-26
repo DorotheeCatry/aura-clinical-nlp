@@ -22,6 +22,9 @@ urlpatterns = [
     path('observations/<int:observation_id>/supprimer/', views.observation_delete, name='observation_delete'),
     path('observations/<int:observation_id>/retraiter/', views.observation_reprocess, name='observation_reprocess'),
     
+    # Entités
+    path('observations/<int:observation_id>/entites/supprimer/', views.delete_entity, name='delete_entity'),
+    
     # Statistiques
     path('statistiques/', views.statistics, name='statistics'),
     
