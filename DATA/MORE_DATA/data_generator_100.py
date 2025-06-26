@@ -1,10 +1,19 @@
 class DataGenerator100:
     def __init__(self):
-         pass
+        self.hta_percentage = 1.0    
+        self.hta_essentielle = [] 
+        self.hta_secondaire = [] 
+        self.complications_hta = [] 
 
+    def get_hta_percentage_of(self, source : list) ->list :
+        max_num = len(source)
+        percent_num = int(self.hta_percentage * max_num)
+
+        return source[:percent_num]
+     
     #region hta (170/320)
     def generate_111(self, number : int)-> list:
-        hta_essentielle = [
+        self.hta_essentielle = [
             ("Je me sens souvent fatigué sans raison apparente.",number),
             ("J'ai des maux de tête fréquents, surtout le matin.",number),
             ("Ma vision devient parfois floue sans raison.",number),
@@ -151,10 +160,10 @@ class DataGenerator100:
             ("Je ressens une oppression dans la tête qui est très inconfortable.", number)
         ]
 
-        return hta_essentielle
+        return self.get_hta_percentage_of(self.hta_essentielle)
 
     def generate_112(self, number:int)-> list:
-        hta_secondaire = [
+        self.hta_secondaire = [
             ("J'ai remarqué que j'ai souvent mal à la tête et que ma vision devient floue de temps en temps.",number),
             ("Je me sens constamment fatigué et j'ai des difficultés à respirer même après un effort léger.",number),
             ("Mon médecin m'a dit que j'avais un bruit dans les artères du cou lors de mon dernier examen.",number),
@@ -166,10 +175,10 @@ class DataGenerator100:
             ("J'ai des difficultés à dormir et je me réveille souvent la nuit avec une sensation d'oppression.",number)
         ]   
 
-        return hta_secondaire
+        return self.get_hta_percentage_of(self.hta_secondaire)
     
     def generate_113(self, number : int)-> list:
-        complications_hta = [
+        self.complications_hta = [
             ("Je ressens une douleur intense dans la poitrine qui irradie vers mon bras gauche.",number), 
             ("J'ai souvent des essoufflements même lorsque je suis au repos.",number), 
             ("Je me sens très fatigué et faible, même après une bonne nuit de sommeil.",number), 
@@ -189,7 +198,7 @@ class DataGenerator100:
             ("Je me sens confus et j'ai du mal à me concentrer sur des tâches simples.",number)
         ]   
 
-        return complications_hta
+        return self.get_hta_percentage_of(self.complications_hta)
     
 
     #endregion hta (170/320)
