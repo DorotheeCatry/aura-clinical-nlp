@@ -10,7 +10,7 @@ class DataGenerator:
         self.data100 = DataGenerator100()
         #self.data200 = DataGenerator200()
 
-    d(self) -> pd.DataFrame:
+    def get_df_medical(self) -> pd.DataFrame:
         # Ajout d'un mapping pour les noms des pathologies les plus courantes
         # 110 : hypertension artérielle
         self.pathology_mapping[111]= "Hypertension artérielle : HTA essentielle",
