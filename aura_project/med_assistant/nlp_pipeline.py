@@ -39,7 +39,7 @@ logger = logging.getLogger(__name__)
 class NLPPipeline:
     """
     Pipeline de traitement NLP pour les observations médicales
-    Intègre : transcription Whisper, classification, extraction d'entités DrBERT, résumé T5
+    Intègre : transcription Whisper, classification, extraction d'entités DrBERT-CASM2, résumé T5
     Optimisé pour GPU avec mémoire limitée
     """
     
@@ -58,10 +58,10 @@ class NLPPipeline:
         self.drbert_pipeline = None
         self.t5_pipeline = None
         
-        # Configuration des modèles
+        # Configuration des modèles - NOUVEAU DrBERT-CASM2
         self.models_config = {
             'classification': 'waelbensoltana/finetuned-medical-fr',
-            'entities': 'Thibeb/DrBert_generalized', 
+            'entities': 'medkit/DrBERT-CASM2',  # NOUVEAU MODÈLE !
             'summarization': 'plguillou/t5-base-fr-sum-cnndm'
         }
         
@@ -72,7 +72,7 @@ class NLPPipeline:
             2: 'diabete'
         }
         
-        # Mapping des entités DrBERT vers nos catégories
+        # Mapping des entités DrBERT-CASM2 vers nos catégories
         self.drbert_entity_mapping = {
             'DISO': 'DISO',  # Disorders/Maladies
             'CHEM': 'CHEM',  # Chemicals/Médicaments
@@ -119,7 +119,7 @@ class NLPPipeline:
                 logger.warning("⚠️ Whisper non disponible")
             
             # Les autres modèles seront chargés à la demande pour économiser la mémoire
-            logger.info("💡 Classification, DrBERT et T5 seront chargés à la demande pour optimiser la mémoire")
+            logger.info("💡 Classification, DrBERT-CASM2 et T5 seront chargés à la demande pour optimiser la mémoire")
             
             self.models_loaded = True
             logger.info("✅ Pipeline NLP initialisée avec succès")
@@ -167,7 +167,7 @@ class NLPPipeline:
             return False
     
     def _load_drbert_on_demand(self):
-        """Charge DrBERT à la demande et libère le modèle de classification si nécessaire"""
+        """Charge DrBERT-CASM2 à la demande et libère le modèle de classification si nécessaire"""
         if self.drbert_pipeline is not None:
             return True
             
@@ -175,19 +175,19 @@ class NLPPipeline:
             return False
             
         try:
-            logger.info("🧠 Chargement du modèle DrBERT à la demande...")
+            logger.info("🧠 Chargement du modèle DrBERT-CASM2 à la demande...")
             
             # Libérer le modèle de classification temporairement si nécessaire
             classification_was_loaded = self.classification_model is not None
             if classification_was_loaded and torch.cuda.is_available():
-                logger.info("🔄 Libération temporaire du modèle de classification pour DrBERT...")
+                logger.info("🔄 Libération temporaire du modèle de classification pour DrBERT-CASM2...")
                 del self.classification_model
                 del self.classification_tokenizer
                 self.classification_model = None
                 self.classification_tokenizer = None
                 self._clear_gpu_cache()
             
-            # Charger DrBERT avec optimisations mémoire
+            # Charger DrBERT-CASM2 avec optimisations mémoire
             tokenizer = AutoTokenizer.from_pretrained(self.models_config['entities'])
             model = AutoModelForTokenClassification.from_pretrained(
                 self.models_config['entities'],
@@ -195,27 +195,28 @@ class NLPPipeline:
                 low_cpu_mem_usage=True
             )
             
-            # Créer le pipeline NER SANS aggregation_strategy pour avoir les entités brutes
+            # Créer le pipeline NER avec aggregation_strategy="simple" comme dans votre exemple
             self.drbert_pipeline = pipeline(
                 "ner",
                 model=model,
                 tokenizer=tokenizer,
+                aggregation_strategy="simple",
                 device=0 if torch.cuda.is_available() else -1,
                 torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32
             )
             
-            logger.info(f"✅ DrBERT chargé sur {self.device}")
+            logger.info(f"✅ DrBERT-CASM2 chargé sur {self.device}")
             
             # Afficher l'utilisation mémoire
             if torch.cuda.is_available():
                 memory_used = torch.cuda.memory_allocated() / 1024**3
                 memory_total = torch.cuda.get_device_properties(0).total_memory / 1024**3
-                logger.info(f"📊 Mémoire GPU après DrBERT: {memory_used:.2f}GB / {memory_total:.2f}GB")
+                logger.info(f"📊 Mémoire GPU après DrBERT-CASM2: {memory_used:.2f}GB / {memory_total:.2f}GB")
             
             return True
             
         except Exception as e:
-            logger.error(f"❌ Erreur chargement DrBERT: {e}")
+            logger.error(f"❌ Erreur chargement DrBERT-CASM2: {e}")
             self.transformers_available = False
             
             # Recharger le modèle de classification si il était chargé
@@ -238,7 +239,7 @@ class NLPPipeline:
             # Libérer DrBERT temporairement si nécessaire
             drbert_was_loaded = self.drbert_pipeline is not None
             if drbert_was_loaded:
-                logger.info("🔄 Libération temporaire de DrBERT pour T5...")
+                logger.info("🔄 Libération temporaire de DrBERT-CASM2 pour T5...")
                 del self.drbert_pipeline
                 self.drbert_pipeline = None
                 self._clear_gpu_cache()
@@ -289,56 +290,33 @@ class NLPPipeline:
         except Exception as e:
             logger.error(f"❌ Erreur rechargement Whisper: {e}")
     
-    def regroup_entities_pro(self, entities: List[Dict], original_text: str, max_gap: int = 2) -> List[Dict]:
+    def clean_entities(self, entities: List[Dict]) -> List[Dict]:
         """
-        Fonction de regroupement professionnel des entités DrBERT
-        Exactement comme vous l'avez demandé !
+        Votre fonction clean_entities exactement comme vous l'avez écrite !
+        Post-traitement pour nettoyer les entités DrBERT-CASM2
         
         Args:
-            entities: Liste des entités brutes de DrBERT
-            original_text: Texte original pour extraire le vrai texte
-            max_gap: Gap maximum entre entités pour les fusionner
+            entities: Liste des entités brutes de DrBERT-CASM2
             
         Returns:
-            Liste des entités regroupées et nettoyées
+            Liste des entités nettoyées
         """
-        grouped = []
-        current = None
-
+        cleaned = []
         for ent in entities:
-            # Nettoyage du sous-token
-            word = ent['word'].lstrip('#')
-
-            if (current is None 
-                or ent['entity_group'] != current['entity_group'] 
-                or ent['start'] - current['end'] > max_gap):
-                # On ferme l'entité précédente
-                if current:
-                    # Récupère le vrai texte dans l'original (pour être 100% propre)
-                    current['text'] = original_text[current['start']:current['end']]
-                    current['score'] = float(sum(current['score']) / len(current['score']))
-                    grouped.append(current)
-
-                # Nouvelle entité
-                current = {
-                    'entity_group': ent['entity_group'],
-                    'start': ent['start'],
-                    'end': ent['end'],
-                    'score': [ent['score']],
-                }
-
+            word = ent["word"].replace("##", "")
+            # On fusionne si c'est la suite d'un mot précédent
+            if cleaned and ent["start"] == cleaned[-1]["end"]:
+                cleaned[-1]["word"] += word
+                cleaned[-1]["end"] = ent["end"]
             else:
-                # On prolonge l'entité en cours
-                current['end'] = ent['end']
-                current['score'].append(ent['score'])
-
-        # Ajouter la dernière
-        if current:
-            current['text'] = original_text[current['start']:current['end']]
-            current['score'] = float(sum(current['score']) / len(current['score']))
-            grouped.append(current)
-
-        return grouped
+                cleaned.append({
+                    "entity_group": ent["entity_group"],
+                    "word": word,
+                    "start": ent["start"],
+                    "end": ent["end"],
+                    "score": ent["score"]
+                })
+        return cleaned
     
     def transcribe_audio(self, audio_file_path: str) -> Optional[str]:
         """
@@ -497,7 +475,7 @@ class NLPPipeline:
     
     def extract_entities_drbert(self, text: str) -> Dict[str, List[str]]:
         """
-        Extrait les entités médicales avec DrBERT en utilisant votre fonction regroup_entities_pro
+        Extrait les entités médicales avec DrBERT-CASM2 en utilisant votre fonction clean_entities
         
         Args:
             text: Texte à analyser
@@ -506,29 +484,29 @@ class NLPPipeline:
             Dictionnaire des entités extraites par catégorie
         """
         try:
-            # Charger DrBERT à la demande
+            # Charger DrBERT-CASM2 à la demande
             if not self._load_drbert_on_demand():
-                logger.warning("⚠️ DrBERT non disponible")
+                logger.warning("⚠️ DrBERT-CASM2 non disponible")
                 return {}
             
-            logger.info(f"🔍 Extraction d'entités DrBERT pour: {text[:50]}...")
+            logger.info(f"🔍 Extraction d'entités DrBERT-CASM2 pour: {text[:50]}...")
             
-            # Utiliser le pipeline NER de DrBERT SANS aggregation_strategy pour avoir les entités brutes
-            raw_entities = self.drbert_pipeline(text)
+            # Utiliser le pipeline NER de DrBERT-CASM2 avec aggregation_strategy="simple"
+            entities = self.drbert_pipeline(text)
             
-            logger.info(f"🔍 DrBERT a trouvé {len(raw_entities)} entités brutes")
+            logger.info(f"🔍 DrBERT-CASM2 a trouvé {len(entities)} entités brutes")
             
             # DEBUG: Afficher quelques entités brutes
-            for i, ent in enumerate(raw_entities[:5]):
+            for i, ent in enumerate(entities[:5]):
                 logger.info(f"  Entité brute {i}: {ent}")
             
-            # Appliquer votre fonction de regroupement professionnel
-            clean_entities = self.regroup_entities_pro(raw_entities, text)
+            # Appliquer votre fonction clean_entities
+            cleaned_entities = self.clean_entities(entities)
             
-            logger.info(f"🧹 Après regroupement: {len(clean_entities)} entités nettoyées")
+            logger.info(f"🧹 Après clean_entities: {len(cleaned_entities)} entités nettoyées")
             
             # DEBUG: Afficher quelques entités nettoyées
-            for i, ent in enumerate(clean_entities[:5]):
+            for i, ent in enumerate(cleaned_entities[:5]):
                 logger.info(f"  Entité nettoyée {i}: {ent}")
             
             # Organiser les entités par catégorie
@@ -539,9 +517,9 @@ class NLPPipeline:
                 'PROC': [],  # Procedures
             }
             
-            for entity in clean_entities:
+            for entity in cleaned_entities:
                 entity_label = entity['entity_group']
-                entity_text = entity['text'].strip()
+                entity_text = entity['word'].strip()
                 confidence = entity['score']
                 
                 # Mapper vers nos catégories
@@ -557,15 +535,15 @@ class NLPPipeline:
             # Nettoyer les catégories vides
             categorized_entities = {k: v for k, v in categorized_entities.items() if v}
             
-            logger.info(f"✅ DrBERT: {sum(len(v) for v in categorized_entities.values())} entités extraites et regroupées")
+            logger.info(f"✅ DrBERT-CASM2: {sum(len(v) for v in categorized_entities.values())} entités extraites et nettoyées")
             
             # DEBUG: Afficher le résultat final
-            for category, entities in categorized_entities.items():
-                logger.info(f"  {category}: {entities}")
+            for category, entities_list in categorized_entities.items():
+                logger.info(f"  {category}: {entities_list}")
             
             # Libérer DrBERT après utilisation pour économiser la mémoire
             if self.drbert_pipeline is not None:
-                logger.info("🔄 Libération de DrBERT après utilisation")
+                logger.info("🔄 Libération de DrBERT-CASM2 après utilisation")
                 del self.drbert_pipeline
                 self.drbert_pipeline = None
                 self._clear_gpu_cache()
@@ -573,13 +551,13 @@ class NLPPipeline:
             return categorized_entities
             
         except Exception as e:
-            logger.error(f"❌ Erreur lors de l'extraction DrBERT: {e}")
+            logger.error(f"❌ Erreur lors de l'extraction DrBERT-CASM2: {e}")
             logger.exception("Détails de l'erreur:")
             return {}
     
     def extract_entities(self, text: str) -> Dict[str, Any]:
         """
-        Extrait les entités médicales (utilise DrBERT maintenant)
+        Extrait les entités médicales (utilise DrBERT-CASM2 maintenant)
         
         Args:
             text: Texte à analyser
@@ -695,10 +673,10 @@ class NLPPipeline:
                 results['model_prediction'] = prediction
                 logger.info(f"🏷️ Thème classifié: {theme} (prédiction: {prediction})")
             
-            # 4. Extraction d'entités (DrBERT avec votre fonction regroup_entities_pro)
+            # 4. Extraction d'entités (DrBERT-CASM2 avec votre fonction clean_entities)
             entities = self.extract_entities(text_source)
             results['entites'] = entities
-            logger.info(f"🔍 Entités extraites avec regroup_entities_pro: {len(entities)} catégories")
+            logger.info(f"🔍 Entités extraites avec clean_entities: {len(entities)} catégories")
             
             # 5. Génération du résumé (T5 local à la demande)
             summary = self.generate_summary(text_source)
@@ -730,7 +708,7 @@ class NLPPipeline:
             'classification_available': self.transformers_available,
             'available_models': [
                 'waelbensoltana/finetuned-medical-fr',
-                'Thibeb/DrBert_generalized', 
+                'medkit/DrBERT-CASM2',  # NOUVEAU MODÈLE !
                 'plguillou/t5-base-fr-sum-cnndm'
             ] if self.transformers_available else [],
             'models_loaded': self.models_loaded,
