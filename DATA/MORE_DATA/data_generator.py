@@ -11,6 +11,8 @@ class DataGenerator:
         #self.data200 = DataGenerator200()
 
     def get_df_medical(self) -> pd.DataFrame:
+        self.pathology_mapping = {}
+        self.all_data = []
         # Ajout d'un mapping pour les noms des pathologies les plus courantes
         # 110 : hypertension artérielle
         self.pathology_mapping[111]= "Hypertension artérielle : HTA essentielle",
@@ -40,7 +42,7 @@ class DataGenerator:
         self.all_data.extend(self.data100.generate_134())
 
         # Création du DataFrame
-        df_medical = pd.DataFrame(self.all_data, columns=['text', 'labe'])
+        df_medical = pd.DataFrame(self.all_data, columns=['text', 'label'])
         #df_medical['nom_pathologie'] = df_medical['pathologie'].map(self.pathology_mapping)
 
         return df_medical
