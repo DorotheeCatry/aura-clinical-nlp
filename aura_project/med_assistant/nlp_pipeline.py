@@ -7,7 +7,6 @@ Optimisé pour GPU avec mémoire limitée
 import logging
 from typing import Dict, Any, Optional, List, Tuple
 import json
-import random
 import os
 import tempfile
 
@@ -117,7 +116,7 @@ class NLPPipeline:
                     memory_total = torch.cuda.get_device_properties(0).total_memory / 1024**3
                     logger.info(f"📊 Mémoire GPU après Whisper: {memory_used:.2f}GB / {memory_total:.2f}GB")
             else:
-                logger.warning("⚠️ Whisper non disponible, utilisation de la simulation")
+                logger.warning("⚠️ Whisper non disponible")
             
             # Les autres modèles seront chargés à la demande pour économiser la mémoire
             logger.info("💡 Classification, DrBERT et T5 seront chargés à la demande pour optimiser la mémoire")
@@ -303,14 +302,14 @@ class NLPPipeline:
         """
         try:
             if not self.whisper_available or not self.models_loaded:
-                logger.warning("⚠️ Whisper non disponible, utilisation de la simulation")
-                return self._mock_transcription()
+                logger.warning("⚠️ Whisper non disponible")
+                return None
             
             # S'assurer que Whisper est chargé
             if self.whisper_model is None:
                 self._reload_whisper()
                 if self.whisper_model is None:
-                    return self._mock_transcription()
+                    return None
             
             logger.info(f"🎤 Début transcription de: {audio_file_path}")
             
@@ -388,8 +387,7 @@ class NLPPipeline:
             
         except Exception as e:
             logger.error(f"❌ Erreur lors de la transcription Whisper: {e}")
-            # Fallback vers simulation en cas d'erreur
-            return self._mock_transcription()
+            return None
     
     def classify_theme(self, text: str) -> tuple[Optional[str], Optional[int]]:
         """
@@ -404,8 +402,8 @@ class NLPPipeline:
         try:
             # Charger le modèle de classification à la demande
             if not self._load_classification_on_demand():
-                logger.warning("⚠️ Modèle de classification non disponible, utilisation de la simulation")
-                return self._mock_classification_with_prediction(text)
+                logger.warning("⚠️ Modèle de classification non disponible")
+                return None, None
             
             logger.info(f"🏷️ Classification du texte: {text[:50]}...")
             
@@ -445,7 +443,7 @@ class NLPPipeline:
             
         except Exception as e:
             logger.error(f"❌ Erreur lors de la classification: {e}")
-            return self._mock_classification_with_prediction(text)
+            return None, None
     
     def extract_entities_drbert(self, text: str) -> Dict[str, List[str]]:
         """
@@ -460,8 +458,8 @@ class NLPPipeline:
         try:
             # Charger DrBERT à la demande
             if not self._load_drbert_on_demand():
-                logger.warning("⚠️ DrBERT non disponible, utilisation de la simulation")
-                return self._mock_entities(text)
+                logger.warning("⚠️ DrBERT non disponible")
+                return {}
             
             logger.info(f"🔍 Extraction d'entités DrBERT pour: {text[:50]}...")
             
@@ -507,7 +505,7 @@ class NLPPipeline:
             
         except Exception as e:
             logger.error(f"❌ Erreur lors de l'extraction DrBERT: {e}")
-            return self._mock_entities(text)
+            return {}
     
     def extract_entities(self, text: str) -> Dict[str, Any]:
         """
@@ -534,8 +532,8 @@ class NLPPipeline:
         try:
             # Charger T5 à la demande
             if not self._load_t5_on_demand():
-                logger.warning("⚠️ T5 non disponible, utilisation de la simulation")
-                return self._mock_summary(text)
+                logger.warning("⚠️ T5 non disponible")
+                return None
             
             logger.info(f"📝 Génération résumé T5 pour: {text[:50]}...")
             
@@ -560,7 +558,7 @@ class NLPPipeline:
             
         except Exception as e:
             logger.error(f"❌ Erreur lors de la génération T5: {e}")
-            return self._mock_summary(text)
+            return None
     
     def generate_summary(self, text: str) -> Optional[str]:
         """
@@ -660,7 +658,6 @@ class NLPPipeline:
             'drbert_available': self.transformers_available,
             't5_available': self.transformers_available,
             'classification_available': self.transformers_available,
-            'fastapi_available': False,  # Plus utilisé
             'available_models': [
                 'waelbensoltana/finetuned-medical-fr',
                 'Thibeb/DrBert_generalized', 
@@ -673,113 +670,6 @@ class NLPPipeline:
             'memory_optimized': True,
             'models_config': self.models_config
         }
-    
-    # Méthodes de simulation pour le développement
-    def _mock_transcription(self) -> str:
-        """Simulation de transcription pour le développement"""
-        transcriptions = [
-            "Patient présente des douleurs thoraciques depuis ce matin. Tension artérielle élevée à 160/95. Prescrit un ECG et analyses sanguines.",
-            "Consultation de suivi pour diabète de type 2. Glycémie à jeun à 1,45 g/L. Ajustement de la metformine à 1000mg matin et soir.",
-            "Patient anxieux, troubles du sommeil depuis 3 semaines. Prescrit anxiolytique léger et suivi psychologique.",
-            "Douleur abdominale chronique, suspicion de gastrite. Prescription d'IPP et fibroscopie à programmer."
-        ]
-        return random.choice(transcriptions)
-    
-    def _mock_classification_with_prediction(self, text: str) -> tuple[str, int]:
-        """Simulation de classification avec prédiction numérique"""
-        text_lower = text.lower()
-        
-        if any(word in text_lower for word in ['cœur', 'cardiaque', 'tension', 'ecg', 'thoracique', 'cardiovasculaire']):
-            return 'cardiovasculaire', 0
-        elif any(word in text_lower for word in ['anxiété', 'dépression', 'stress', 'anxieux', 'sommeil', 'psychiatrie', 'psychique']):
-            return 'psy', 1
-        elif any(word in text_lower for word in ['diabète', 'glycémie', 'insuline', 'metformine', 'métabolique']):
-            return 'diabete', 2
-        else:
-            # Choisir aléatoirement parmi les 3 classes principales
-            prediction = random.choice([0, 1, 2])
-            theme = self.pathology_mapping[prediction]
-            return theme, prediction
-    
-    def _mock_classification(self, text: str) -> str:
-        """Simulation de classification pour compatibilité"""
-        theme, _ = self._mock_classification_with_prediction(text)
-        return theme
-    
-    def _mock_entities(self, text: str) -> Dict[str, List[str]]:
-        """Simulation d'extraction d'entités avec catégories DrBERT"""
-        text_lower = text.lower()
-        entities = {
-            'DISO': [],  # Disorders
-            'CHEM': [],  # Chemicals/Drugs
-            'ANAT': [],  # Anatomy
-            'PROC': [],  # Procedures
-        }
-        
-        # Simulation basée sur le contenu
-        if 'douleur' in text_lower:
-            entities['DISO'].append('douleur thoracique')
-        if 'diabète' in text_lower:
-            entities['DISO'].append('diabète de type 2')
-        if 'anxiété' in text_lower or 'anxieux' in text_lower:
-            entities['DISO'].append('troubles anxieux')
-        if 'gastrite' in text_lower:
-            entities['DISO'].append('gastrite chronique')
-        if 'hypertension' in text_lower:
-            entities['DISO'].append('hypertension artérielle')
-            
-        if 'metformine' in text_lower:
-            entities['CHEM'].append('metformine')
-        if 'anxiolytique' in text_lower:
-            entities['CHEM'].append('anxiolytique')
-        if 'ipp' in text_lower:
-            entities['CHEM'].append('inhibiteur de pompe à protons')
-        if 'insuline' in text_lower:
-            entities['CHEM'].append('insuline')
-            
-        if 'thorax' in text_lower or 'thoracique' in text_lower:
-            entities['ANAT'].append('thorax')
-        if 'cœur' in text_lower:
-            entities['ANAT'].append('cœur')
-        if 'abdomen' in text_lower:
-            entities['ANAT'].append('abdomen')
-        if 'pancréas' in text_lower:
-            entities['ANAT'].append('pancréas')
-            
-        if 'ecg' in text_lower:
-            entities['PROC'].append('électrocardiogramme')
-        if 'fibroscopie' in text_lower:
-            entities['PROC'].append('fibroscopie gastrique')
-        if 'analyses' in text_lower:
-            entities['PROC'].append('analyses sanguines')
-        if 'glycémie' in text_lower:
-            entities['PROC'].append('dosage glycémie')
-            
-        # Nettoyer les listes vides
-        return {k: v for k, v in entities.items() if v}
-    
-    def _mock_summary(self, text: str) -> str:
-        """Simulation de résumé pour le développement"""
-        summaries = {
-            'cardiovasculaire': "Consultation cardiologique : douleurs thoraciques avec HTA. Examens complémentaires prescrits.",
-            'diabete': "Suivi diabétologique : ajustement thérapeutique suite à déséquilibre glycémique.",
-            'psy': "Consultation psychiatrique : troubles anxieux avec retentissement sur le sommeil. Traitement initié.",
-            'gastro': "Consultation gastroentérologique : douleurs abdominales chroniques. Explorations à poursuivre.",
-            'general': "Consultation de médecine générale : prise en charge symptomatique et suivi."
-        }
-        
-        # Déterminer le type basé sur le texte
-        text_lower = text.lower()
-        if any(word in text_lower for word in ['cœur', 'cardiaque', 'tension', 'ecg']):
-            return summaries['cardiovasculaire']
-        elif any(word in text_lower for word in ['diabète', 'glycémie', 'metformine']):
-            return summaries['diabete']
-        elif any(word in text_lower for word in ['anxiété', 'anxieux', 'sommeil']):
-            return summaries['psy']
-        elif any(word in text_lower for word in ['abdomen', 'gastrite']):
-            return summaries['gastro']
-        else:
-            return summaries['general']
 
 
 # Instance globale de la pipeline
