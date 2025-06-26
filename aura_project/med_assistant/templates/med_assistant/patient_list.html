@@ -82,6 +82,11 @@
                    title="Modifier">
                     <i class="fas fa-edit"></i>
                 </a>
+                <a href="{% url 'med_assistant:patient_delete' patient.id %}" 
+                   class="bg-red-100 hover:bg-red-200 text-red-700 px-4 py-2 rounded-lg text-sm transition-colors"
+                   title="Supprimer">
+                    <i class="fas fa-trash"></i>
+                </a>
                 <a href="{% url 'med_assistant:patient_detail' patient.id %}" 
                    class="btn-primary px-4 py-2 rounded-lg text-sm flex items-center space-x-1">
                     <i class="fas fa-eye"></i>

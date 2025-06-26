@@ -1,0 +1,136 @@
+{% extends 'med_assistant/base.html' %}
+
+{% block title %}Modifier observation - AURA{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="bg-white rounded-xl p-8 shadow-sm border border-slate-200">
+        <!-- En-tête -->
+        <div class="mb-8">
+            <h1 class="text-2xl font-bold text-slate-800 flex items-center">
+                <i class="fas fa-edit mr-3 text-blue-600"></i>
+                Modifier l'observation
+            </h1>
+            <p class="text-slate-600 mt-2">
+                Patient : <strong>{{ observation.patient.nom_complet }}</strong> • 
+                {{ observation.date|date:"d/m/Y à H:i" }}
+            </p>
+        </div>
+
+        <!-- Formulaire -->
+        <form method="post" class="space-y-6">
+            {% csrf_token %}
+            
+            <!-- Classification -->
+            <div>
+                <label for="{{ form.theme_classe.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">
+                    <i class="fas fa-tags mr-1"></i>
+                    Classification médicale
+                </label>
+                {{ form.theme_classe }}
+                {% if form.theme_classe.errors %}
+                    <div class="mt-1 text-sm text-red-600">
+                        {% for error in form.theme_classe.errors %}
+                            <p><i class="fas fa-exclamation-circle mr-1"></i>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                <p class="mt-1 text-xs text-gray-500">
+                    Vous pouvez corriger la classification automatique si elle est incorrecte
+                </p>
+            </div>
+
+            <!-- Résumé -->
+            <div>
+                <label for="{{ form.resume.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">
+                    <i class="fas fa-compress-alt mr-1"></i>
+                    Résumé
+                </label>
+                {{ form.resume }}
+                {% if form.resume.errors %}
+                    <div class="mt-1 text-sm text-red-600">
+                        {% for error in form.resume.errors %}
+                            <p><i class="fas fa-exclamation-circle mr-1"></i>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                <p class="mt-1 text-xs text-gray-500">
+                    Modifiez ou complétez le résumé automatique
+                </p>
+            </div>
+
+            <!-- Texte source -->
+            <div>
+                <label for="{{ form.texte_saisi.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">
+                    <i class="fas fa-file-alt mr-1"></i>
+                    Texte de l'observation
+                </label>
+                {{ form.texte_saisi }}
+                {% if form.texte_saisi.errors %}
+                    <div class="mt-1 text-sm text-red-600">
+                        {% for error in form.texte_saisi.errors %}
+                            <p><i class="fas fa-exclamation-circle mr-1"></i>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                <p class="mt-1 text-xs text-gray-500">
+                    Modifiez le texte source de l'observation
+                </p>
+            </div>
+
+            <!-- Informations sur les entités (lecture seule) -->
+            {% if observation.entites %}
+            <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <h3 class="text-sm font-medium text-gray-700 mb-3 flex items-center">
+                    <i class="fas fa-info-circle mr-2"></i>
+                    Entités extraites automatiquement
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {% for category, entities in observation.entites.items %}
+                    {% if entities %}
+                    <div>
+                        <h4 class="text-xs font-medium text-gray-600 mb-2">{{ category }}</h4>
+                        <div class="flex flex-wrap gap-1">
+                            {% for entity in entities %}
+                            <span class="px-2 py-1 bg-white text-gray-700 text-xs rounded border">{{ entity }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+                <p class="text-xs text-gray-500 mt-3">
+                    <i class="fas fa-lightbulb mr-1"></i>
+                    Pour mettre à jour les entités, utilisez le bouton "Retraiter" après avoir sauvegardé
+                </p>
+            </div>
+            {% endif %}
+
+            <!-- Erreurs générales du formulaire -->
+            {% if form.non_field_errors %}
+                <div class="p-4 bg-red-50 border border-red-200 rounded-lg">
+                    {% for error in form.non_field_errors %}
+                        <p class="text-sm text-red-600">
+                            <i class="fas fa-exclamation-circle mr-1"></i>{{ error }}
+                        </p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <!-- Boutons d'action -->
+            <div class="flex flex-col sm:flex-row sm:justify-end space-y-3 sm:space-y-0 sm:space-x-3 pt-6 border-t border-slate-200">
+                <a href="{% url 'med_assistant:observation_detail' observation.id %}" 
+                   class="px-6 py-3 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors text-center">
+                    <i class="fas fa-times mr-2"></i>
+                    Annuler
+                </a>
+                <button type="submit" 
+                        class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                    <i class="fas fa-save mr-2"></i>
+                    Sauvegarder les modifications
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

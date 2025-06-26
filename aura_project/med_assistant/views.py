@@ -5,7 +5,7 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.core.paginator import Paginator
 from .models import Patient, Observation
-from .forms import PatientForm, ObservationForm, PatientSearchForm
+from .forms import PatientForm, ObservationForm, PatientSearchForm, ObservationEditForm
 from .nlp_pipeline import nlp_pipeline
 import json
 from collections import defaultdict
@@ -172,6 +172,24 @@ def patient_edit(request, patient_id):
     return render(request, 'med_assistant/patient_form.html', context)
 
 
+def patient_delete(request, patient_id):
+    """Suppression d'un patient"""
+    patient = get_object_or_404(Patient, id=patient_id)
+    
+    if request.method == 'POST':
+        patient_name = patient.nom_complet
+        observations_count = patient.observations.count()
+        patient.delete()
+        messages.success(request, f'Patient {patient_name} et ses {observations_count} observation(s) supprimé(s) avec succès.')
+        return redirect('med_assistant:patient_list')
+    
+    context = {
+        'patient': patient,
+        'observations_count': patient.observations.count()
+    }
+    return render(request, 'med_assistant/patient_delete_confirm.html', context)
+
+
 def observation_create(request):
     """Création d'une nouvelle observation avec traitement NLP via modèles Hugging Face directs"""
     if request.method == 'POST':
@@ -235,6 +253,44 @@ def observation_create(request):
         'nlp_status': nlp_status
     }
     return render(request, 'med_assistant/observation_form.html', context)
+
+
+def observation_edit(request, observation_id):
+    """Modification d'une observation"""
+    observation = get_object_or_404(Observation, id=observation_id)
+    
+    if request.method == 'POST':
+        form = ObservationEditForm(request.POST, instance=observation)
+        if form.is_valid():
+            observation = form.save()
+            messages.success(request, 'Observation modifiée avec succès.')
+            return redirect('med_assistant:observation_detail', observation_id=observation.id)
+    else:
+        form = ObservationEditForm(instance=observation)
+    
+    context = {
+        'form': form,
+        'observation': observation,
+        'is_edit': True
+    }
+    return render(request, 'med_assistant/observation_edit.html', context)
+
+
+def observation_delete(request, observation_id):
+    """Suppression d'une observation"""
+    observation = get_object_or_404(Observation, id=observation_id)
+    
+    if request.method == 'POST':
+        patient = observation.patient
+        observation_date = observation.date.strftime('%d/%m/%Y à %H:%M')
+        observation.delete()
+        messages.success(request, f'Observation du {observation_date} supprimée avec succès.')
+        return redirect('med_assistant:patient_detail', patient_id=patient.id)
+    
+    context = {
+        'observation': observation
+    }
+    return render(request, 'med_assistant/observation_delete_confirm.html', context)
 
 
 @csrf_exempt

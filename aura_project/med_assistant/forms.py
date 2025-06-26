@@ -62,6 +62,33 @@ class ObservationForm(forms.ModelForm):
         return cleaned_data
 
 
+class ObservationEditForm(forms.ModelForm):
+    """Formulaire pour modifier une observation existante"""
+    
+    class Meta:
+        model = Observation
+        fields = ['theme_classe', 'resume', 'texte_saisi']
+        widgets = {
+            'theme_classe': forms.Select(attrs={
+                'class': 'w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors'
+            }),
+            'resume': forms.Textarea(attrs={
+                'class': 'w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors resize-none',
+                'rows': 4,
+                'placeholder': 'Résumé de l\'observation...'
+            }),
+            'texte_saisi': forms.Textarea(attrs={
+                'class': 'w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors resize-none',
+                'rows': 8,
+                'placeholder': 'Texte de l\'observation...'
+            }),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['theme_classe'].empty_label = "Sélectionner un thème"
+
+
 class PatientSearchForm(forms.Form):
     """Formulaire de recherche de patients"""
     
