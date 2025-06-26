@@ -144,35 +144,25 @@
         {% endif %}
     </div>
 
-    <!-- Entités extraites -->
+    <!-- Entités extraites avec noms compréhensibles -->
     {% if observation.entites_formatees %}
     <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
         <h2 class="text-lg font-semibold text-slate-800 mb-4 flex items-center">
             <i class="fas fa-search mr-2 text-purple-600"></i>
-            Entités médicales extraites
+            Entités médicales extraites par DrBERT
         </h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {% for type, items in observation.entites_formatees.items %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
+            {% for category_name, items in observation.entites_formatees.items %}
             {% if items %}
             <div class="p-4 bg-purple-50 border border-purple-200 rounded-lg">
-                <h3 class="font-medium text-purple-800 mb-3 capitalize flex items-center">
-                    <i class="fas fa-{% if type == 'symptomes' %}heartbeat{% elif type == 'medicaments' %}pills{% elif type == 'examens' %}microscope{% elif type == 'valeurs_biologiques' %}chart-line{% else %}tag{% endif %} mr-2"></i>
-                    {{ type|title }}
+                <h3 class="font-medium text-purple-800 mb-3 flex items-center">
+                    <i class="fas fa-{% if category_name == 'Maladies et Symptômes' %}heartbeat{% elif category_name == 'Médicaments' %}pills{% elif category_name == 'Anatomie' %}user{% elif category_name == 'Procédures Médicales' %}cogs{% else %}tag{% endif %} mr-2"></i>
+                    {{ category_name }}
                 </h3>
                 <div class="space-y-2">
                     {% for item in items %}
                     <div class="bg-white px-3 py-2 rounded-lg border border-purple-200">
-                        {% if item.valeur %}
-                            <span class="font-medium">{{ item.valeur }}</span>
-                            {% if item.unite %}
-                                <span class="text-slate-600 ml-1">{{ item.unite }}</span>
-                            {% endif %}
-                            {% if item.type %}
-                                <div class="text-xs text-slate-500 mt-1">{{ item.type }}</div>
-                            {% endif %}
-                        {% else %}
-                            <span>{{ item }}</span>
-                        {% endif %}
+                        <span>{{ item }}</span>
                     </div>
                     {% endfor %}
                 </div>

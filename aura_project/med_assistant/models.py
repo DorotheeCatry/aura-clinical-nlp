@@ -54,15 +54,12 @@ class Observation(models.Model):
         ('autre', 'Autre'),
     ]
 
-    # Nouvelles catégories d'entités médicales
+    # Nouvelles catégories d'entités médicales avec noms compréhensibles
     ENTITY_CATEGORIES = [
-        ('DISO', 'Disorder - Maladies/Symptômes'),
-        ('CHEM', 'Chemical/Drug - Médicaments'),
-        ('ANAT', 'Anatomie - Parties du corps'),
-        ('PROC', 'Procédure médicale'),
-        ('TEST', 'Examen médical'),
-        ('MED', 'Médicament'),
-        ('BODY', 'Partie du corps'),
+        ('Maladies et Symptômes', 'Maladies et Symptômes'),
+        ('Médicaments', 'Médicaments'),
+        ('Anatomie', 'Anatomie'),
+        ('Procédures Médicales', 'Procédures Médicales'),
     ]
 
     patient = models.ForeignKey(
@@ -194,14 +191,11 @@ class Observation(models.Model):
         return colors.get(self.theme_classe, 'bg-gray-50 text-gray-700 border-gray-200')
 
     def get_entity_color(self, entity_type):
-        """Retourne la couleur pour un type d'entité"""
+        """Retourne la couleur pour un type d'entité avec noms compréhensibles"""
         colors = {
-            'DISO': 'bg-red-50 text-red-700 border-red-200',
-            'CHEM': 'bg-blue-50 text-blue-700 border-blue-200',
-            'ANAT': 'bg-green-50 text-green-700 border-green-200',
-            'PROC': 'bg-purple-50 text-purple-700 border-purple-200',
-            'TEST': 'bg-orange-50 text-orange-700 border-orange-200',
-            'MED': 'bg-cyan-50 text-cyan-700 border-cyan-200',
-            'BODY': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+            'Maladies et Symptômes': 'bg-red-50 text-red-700 border-red-200',
+            'Médicaments': 'bg-blue-50 text-blue-700 border-blue-200',
+            'Anatomie': 'bg-green-50 text-green-700 border-green-200',
+            'Procédures Médicales': 'bg-purple-50 text-purple-700 border-purple-200',
         }
         return colors.get(entity_type, 'bg-gray-50 text-gray-700 border-gray-200')

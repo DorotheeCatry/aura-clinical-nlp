@@ -33,7 +33,7 @@ def dashboard(request):
     entity_stats = defaultdict(int)
     observations_with_entities = Observation.objects.exclude(entites={})
     
-    # Compter seulement les vraies entités DrBERT
+    # Compter seulement les vraies entités DrBERT avec noms compréhensibles
     real_entities_count = 0
     for obs in observations_with_entities:
         if obs.entites:
@@ -284,7 +284,7 @@ def observation_detail(request, observation_id):
             'confidence': 'Élevée' if observation.model_prediction in [0, 1, 2] else 'Faible'
         }
     
-    # Compter les entités réelles
+    # Compter les entités réelles avec noms compréhensibles
     entities_count = 0
     if observation.entites:
         for entity_type, entities in observation.entites.items():
@@ -370,7 +370,7 @@ def statistics(request):
         pathology_name = Observation.get_pathology_display_name(item['model_prediction'])
         prediction_stats[f"Classe {item['model_prediction']} - {pathology_name}"] = item['count']
     
-    # Statistiques des entités RÉELLES par catégorie DrBERT
+    # Statistiques des entités RÉELLES par catégorie DrBERT avec noms compréhensibles
     entity_stats = defaultdict(lambda: defaultdict(int))
     observations_with_entities = Observation.objects.exclude(entites={})
     
@@ -396,12 +396,12 @@ def statistics(request):
     # Statut de la pipeline NLP
     nlp_status = nlp_pipeline.get_status()
     
-    # Catégories d'entités DrBERT
+    # Catégories d'entités DrBERT avec noms compréhensibles
     drbert_categories = [
-        ('DISO', 'Disorders - Maladies/Symptômes'),
-        ('CHEM', 'Chemical/Drug - Médicaments'),
-        ('ANAT', 'Anatomie - Parties du corps'),
-        ('PROC', 'Procédure médicale'),
+        ('Maladies et Symptômes', 'Maladies et Symptômes'),
+        ('Médicaments', 'Médicaments'),
+        ('Anatomie', 'Anatomie'),
+        ('Procédures Médicales', 'Procédures Médicales'),
     ]
     
     context = {

@@ -72,18 +72,18 @@ class NLPPipeline:
             2: 'diabete'
         }
         
-        # Mapping des entités DrBERT vers nos catégories
+        # Mapping des entités DrBERT vers nos catégories AVEC NOMS COMPRÉHENSIBLES
         self.drbert_entity_mapping = {
-            'DISO': 'DISO',  # Disorders/Maladies
-            'CHEM': 'CHEM',  # Chemicals/Médicaments
-            'ANAT': 'ANAT',  # Anatomie
-            'PROC': 'PROC',  # Procédures
-            'LIVB': 'ANAT',  # Living beings -> Anatomie
-            'OBJC': 'PROC',  # Objects -> Procédures
-            'PHEN': 'DISO',  # Phenomena -> Disorders
-            'PHYS': 'DISO',  # Physiology -> Disorders
-            'GEOG': 'PROC',  # Geography -> Procédures
-            'CONC': 'PROC',  # Concepts -> Procédures
+            'DISO': 'Maladies et Symptômes',     # Disorders/Maladies
+            'CHEM': 'Médicaments',              # Chemicals/Médicaments
+            'ANAT': 'Anatomie',                 # Anatomie
+            'PROC': 'Procédures Médicales',     # Procédures
+            'LIVB': 'Anatomie',                 # Living beings -> Anatomie
+            'OBJC': 'Procédures Médicales',     # Objects -> Procédures
+            'PHEN': 'Maladies et Symptômes',    # Phenomena -> Disorders
+            'PHYS': 'Maladies et Symptômes',    # Physiology -> Disorders
+            'GEOG': 'Procédures Médicales',     # Geography -> Procédures
+            'CONC': 'Procédures Médicales',     # Concepts -> Procédures
         }
         
         self._load_models()
@@ -481,7 +481,7 @@ class NLPPipeline:
             text: Texte à analyser
             
         Returns:
-            Dictionnaire des entités extraites par catégorie
+            Dictionnaire des entités extraites par catégorie avec noms compréhensibles
         """
         try:
             # Charger DrBERT à la demande
@@ -509,12 +509,12 @@ class NLPPipeline:
             for i, ent in enumerate(cleaned_entities[:5]):
                 logger.info(f"  Entité nettoyée {i}: {ent}")
             
-            # Organiser les entités par catégorie
+            # Organiser les entités par catégorie AVEC NOMS COMPRÉHENSIBLES
             categorized_entities = {
-                'DISO': [],  # Disorders
-                'CHEM': [],  # Chemicals/Drugs
-                'ANAT': [],  # Anatomy
-                'PROC': [],  # Procedures
+                'Maladies et Symptômes': [],      # DISO
+                'Médicaments': [],                # CHEM
+                'Anatomie': [],                   # ANAT
+                'Procédures Médicales': [],       # PROC
             }
             
             for entity in cleaned_entities:
@@ -522,8 +522,8 @@ class NLPPipeline:
                 entity_text = entity['word'].strip()
                 confidence = entity['score']
                 
-                # Mapper vers nos catégories
-                mapped_category = self.drbert_entity_mapping.get(entity_label, 'PROC')
+                # Mapper vers nos catégories avec noms compréhensibles
+                mapped_category = self.drbert_entity_mapping.get(entity_label, 'Procédures Médicales')
                 
                 # Filtrer par confiance (seuil à 0.5) et longueur minimale
                 if confidence > 0.5 and len(entity_text) > 2:
