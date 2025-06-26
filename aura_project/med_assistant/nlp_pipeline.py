@@ -9,6 +9,7 @@ from typing import Dict, Any, Optional, List, Tuple
 import json
 import os
 import tempfile
+import re
 
 # Imports pour Whisper (transcription)
 try:
@@ -292,7 +293,7 @@ class NLPPipeline:
     
     def clean_entity_text(self, text: str) -> str:
         """
-        Nettoie le texte d'une entité extraite
+        Nettoie le texte d'une entité extraite de manière plus robuste
         
         Args:
             text: Texte brut de l'entité
@@ -312,7 +313,62 @@ class NLPPipeline:
         # Supprimer les espaces multiples
         cleaned = " ".join(cleaned.split())
         
+        # Corrections spécifiques pour les entités médicales françaises
+        corrections = {
+            # Corrections de mots coupés
+            r'\buleurs?\b': 'douleurs',
+            r'\bdysp\b': 'dyspnée',
+            r'\bnee marquee\b': 'dyspnée marquée',
+            r'\beurs froides\b': 'sueurs froides',
+            r'\binfarctus du myocarde st \+': 'infarctus du myocarde ST+',
+            
+            # Corrections générales
+            r'\b(\w+)eurs?\b': r'\1douleurs',  # *eurs -> *douleurs
+            r'\b(\w+)nee\b': r'\1née',         # *nee -> *née
+            r'\bst \+': 'ST+',                 # st + -> ST+
+            
+            # Nettoyer les caractères parasites
+            r'\s+': ' ',                       # Espaces multiples
+            r'^\W+|\W+$': '',                  # Caractères non-alphanumériques en début/fin
+        }
+        
+        for pattern, replacement in corrections.items():
+            cleaned = re.sub(pattern, replacement, cleaned, flags=re.IGNORECASE)
+        
+        # Nettoyer à nouveau les espaces
+        cleaned = cleaned.strip()
+        
         return cleaned
+    
+    def merge_similar_entities(self, entities: List[str]) -> List[str]:
+        """
+        Fusionne les entités similaires ou qui se chevauchent
+        
+        Args:
+            entities: Liste des entités à fusionner
+            
+        Returns:
+            Liste des entités fusionnées
+        """
+        if not entities:
+            return []
+        
+        # Trier par longueur décroissante pour privilégier les entités complètes
+        sorted_entities = sorted(set(entities), key=len, reverse=True)
+        merged = []
+        
+        for entity in sorted_entities:
+            # Vérifier si cette entité n'est pas déjà contenue dans une entité plus longue
+            is_contained = False
+            for existing in merged:
+                if entity.lower() in existing.lower() and entity != existing:
+                    is_contained = True
+                    break
+            
+            if not is_contained:
+                merged.append(entity)
+        
+        return merged
     
     def transcribe_audio(self, audio_file_path: str) -> Optional[str]:
         """
@@ -471,7 +527,7 @@ class NLPPipeline:
     
     def extract_entities_drbert(self, text: str) -> Dict[str, List[str]]:
         """
-        Extrait les entités médicales avec DrBERT et les nettoie
+        Extrait les entités médicales avec DrBERT et les nettoie de manière robuste
         
         Args:
             text: Texte à analyser
@@ -514,6 +570,10 @@ class NLPPipeline:
                     if entity_text not in categorized_entities[mapped_category]:
                         categorized_entities[mapped_category].append(entity_text)
                         logger.debug(f"  ✓ {mapped_category}: {entity_text} (conf: {confidence:.2f})")
+            
+            # Fusionner les entités similaires dans chaque catégorie
+            for category in categorized_entities:
+                categorized_entities[category] = self.merge_similar_entities(categorized_entities[category])
             
             # Nettoyer les catégories vides
             categorized_entities = {k: v for k, v in categorized_entities.items() if v}
@@ -651,7 +711,7 @@ class NLPPipeline:
                 results['model_prediction'] = prediction
                 logger.info(f"🏷️ Thème classifié: {theme} (prédiction: {prediction})")
             
-            # 4. Extraction d'entités (DrBERT local à la demande avec nettoyage)
+            # 4. Extraction d'entités (DrBERT local à la demande avec nettoyage amélioré)
             entities = self.extract_entities(text_source)
             results['entites'] = entities
             logger.info(f"🔍 Entités extraites et nettoyées: {len(entities)} catégories")
