@@ -21,17 +21,63 @@
         </div>
     </div>
 
-    <!-- Search -->
+    <!-- Filtres avancés -->
     <div class="medical-card rounded-lg p-6 fade-in">
-        <form method="get" class="flex flex-col sm:flex-row gap-4">
-            <div class="flex-1">
-                {{ form.search }}
+        <h2 class="text-lg font-semibold text-primary-dark mb-4 flex items-center">
+            <i class="fas fa-filter mr-2 text-primary-steel"></i>
+            Recherche et filtres
+        </h2>
+        <form method="get" class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- Recherche par nom -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-search mr-1"></i>
+                        Recherche
+                    </label>
+                    {{ form.search }}
+                </div>
+                
+                <!-- Filtre par pathologie -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-stethoscope mr-1"></i>
+                        Pathologie
+                    </label>
+                    {{ form.pathologie }}
+                </div>
+                
+                <!-- Âge minimum -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-calendar mr-1"></i>
+                        Âge minimum
+                    </label>
+                    {{ form.age_min }}
+                </div>
+                
+                <!-- Âge maximum -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-calendar mr-1"></i>
+                        Âge maximum
+                    </label>
+                    {{ form.age_max }}
+                </div>
             </div>
-            <button type="submit" 
-                    class="btn-primary px-8 py-3 rounded-lg font-medium flex items-center justify-center space-x-2">
-                <i class="fas fa-search"></i>
-                <span>Rechercher</span>
-            </button>
+            
+            <div class="flex flex-col sm:flex-row gap-3">
+                <button type="submit" 
+                        class="btn-primary px-8 py-3 rounded-lg font-medium flex items-center justify-center space-x-2">
+                    <i class="fas fa-search"></i>
+                    <span>Appliquer les filtres</span>
+                </button>
+                <a href="{% url 'med_assistant:patient_list' %}" 
+                   class="btn-secondary px-8 py-3 rounded-lg font-medium flex items-center justify-center space-x-2">
+                    <i class="fas fa-times"></i>
+                    <span>Réinitialiser</span>
+                </a>
+            </div>
         </form>
     </div>
 
@@ -66,6 +112,30 @@
                         <span class="px-3 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-700">
                             {{ patient.observations.count }} observation{{ patient.observations.count|pluralize }}
                         </span>
+                        
+                        <!-- Pathologies du patient -->
+                        {% if patient.pathologies_display %}
+                        <div class="flex flex-wrap gap-1">
+                            {% for pathologie in patient.pathologies_display %}
+                            <span class="px-2 py-1 text-xs font-medium rounded-full 
+                                {% if 'Cardiovasculaire' in pathologie %}bg-red-100 text-red-700
+                                {% elif 'Psychique' in pathologie or 'Neuropsychiatrique' in pathologie %}bg-purple-100 text-purple-700
+                                {% elif 'Diabète' in pathologie or 'Métabolique' in pathologie %}bg-yellow-100 text-yellow-700
+                                {% elif 'Neurologie' in pathologie %}bg-indigo-100 text-indigo-700
+                                {% elif 'Pneumologie' in pathologie %}bg-blue-100 text-blue-700
+                                {% elif 'Gastroentérologie' in pathologie %}bg-green-100 text-green-700
+                                {% elif 'Orthopédie' in pathologie %}bg-gray-100 text-gray-700
+                                {% elif 'Dermatologie' in pathologie %}bg-pink-100 text-pink-700
+                                {% else %}bg-slate-100 text-slate-700{% endif %}">
+                                {{ pathologie }}
+                            </span>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-500">
+                            Aucune pathologie identifiée
+                        </span>
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -102,11 +172,11 @@
     <div class="flex justify-center fade-in">
         <nav class="flex items-center space-x-2">
             {% if page_obj.has_previous %}
-                <a href="?page=1{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" 
+                <a href="?page=1{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.pathologie %}&pathologie={{ request.GET.pathologie }}{% endif %}{% if request.GET.age_min %}&age_min={{ request.GET.age_min }}{% endif %}{% if request.GET.age_max %}&age_max={{ request.GET.age_max }}{% endif %}" 
                    class="medical-card hover:bg-gray-50 border border-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm transition-colors">
                     <i class="fas fa-angle-double-left"></i>
                 </a>
-                <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" 
+                <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.pathologie %}&pathologie={{ request.GET.pathologie }}{% endif %}{% if request.GET.age_min %}&age_min={{ request.GET.age_min }}{% endif %}{% if request.GET.age_max %}&age_max={{ request.GET.age_max }}{% endif %}" 
                    class="medical-card hover:bg-gray-50 border border-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm transition-colors">
                     <i class="fas fa-angle-left"></i>
                 </a>
@@ -117,11 +187,11 @@
             </span>
 
             {% if page_obj.has_next %}
-                <a href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" 
+                <a href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.pathologie %}&pathologie={{ request.GET.pathologie }}{% endif %}{% if request.GET.age_min %}&age_min={{ request.GET.age_min }}{% endif %}{% if request.GET.age_max %}&age_max={{ request.GET.age_max }}{% endif %}" 
                    class="medical-card hover:bg-gray-50 border border-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm transition-colors">
                     <i class="fas fa-angle-right"></i>
                 </a>
-                <a href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" 
+                <a href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.pathologie %}&pathologie={{ request.GET.pathologie }}{% endif %}{% if request.GET.age_min %}&age_min={{ request.GET.age_min }}{% endif %}{% if request.GET.age_max %}&age_max={{ request.GET.age_max }}{% endif %}" 
                    class="medical-card hover:bg-gray-50 border border-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm transition-colors">
                     <i class="fas fa-angle-double-right"></i>
                 </a>
@@ -137,20 +207,20 @@
             <i class="fas fa-users text-3xl text-gray-400"></i>
         </div>
         <h3 class="text-xl font-semibold text-primary-dark mb-4">
-            {% if request.GET.search %}
+            {% if request.GET.search or request.GET.pathologie or request.GET.age_min or request.GET.age_max %}
                 Aucun patient trouvé
             {% else %}
                 Aucun patient enregistré
             {% endif %}
         </h3>
         <p class="text-gray-600 mb-8">
-            {% if request.GET.search %}
-                Essayez avec d'autres termes de recherche.
+            {% if request.GET.search or request.GET.pathologie or request.GET.age_min or request.GET.age_max %}
+                Essayez avec d'autres critères de recherche ou réinitialisez les filtres.
             {% else %}
                 Commencez par ajouter votre premier patient au système.
             {% endif %}
         </p>
-        {% if not request.GET.search %}
+        {% if not request.GET.search and not request.GET.pathologie and not request.GET.age_min and not request.GET.age_max %}
         <a href="{% url 'med_assistant:patient_create' %}" 
            class="btn-primary px-8 py-3 rounded-lg font-medium inline-flex items-center space-x-2">
             <i class="fas fa-plus"></i>

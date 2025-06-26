@@ -90,7 +90,7 @@ class ObservationEditForm(forms.ModelForm):
 
 
 class PatientSearchForm(forms.Form):
-    """Formulaire de recherche de patients"""
+    """Formulaire de recherche et filtrage de patients"""
     
     search = forms.CharField(
         required=False,
@@ -99,3 +99,50 @@ class PatientSearchForm(forms.Form):
             'placeholder': 'Rechercher un patient (nom, prénom)...'
         })
     )
+    
+    pathologie = forms.ChoiceField(
+        required=False,
+        widget=forms.Select(attrs={
+            'class': 'w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors'
+        })
+    )
+    
+    age_min = forms.IntegerField(
+        required=False,
+        widget=forms.NumberInput(attrs={
+            'class': 'w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors',
+            'placeholder': 'Âge min',
+            'min': 0,
+            'max': 120
+        })
+    )
+    
+    age_max = forms.IntegerField(
+        required=False,
+        widget=forms.NumberInput(attrs={
+            'class': 'w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors',
+            'placeholder': 'Âge max',
+            'min': 0,
+            'max': 120
+        })
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # Récupérer toutes les pathologies existantes
+        pathologies_choices = [('', 'Toutes les pathologies')]
+        
+        # Ajouter les pathologies depuis les observations existantes
+        from django.db.models import Q
+        pathologies_existantes = Observation.objects.filter(
+            theme_classe__isnull=False
+        ).values_list('theme_classe', flat=True).distinct()
+        
+        theme_dict = dict(Observation.THEME_CHOICES)
+        for pathologie in pathologies_existantes:
+            if pathologie:
+                display_name = theme_dict.get(pathologie, pathologie)
+                pathologies_choices.append((pathologie, display_name))
+        
+        self.fields['pathologie'].choices = pathologies_choices

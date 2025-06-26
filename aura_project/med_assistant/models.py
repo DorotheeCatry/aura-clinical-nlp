@@ -29,6 +29,31 @@ class Patient(models.Model):
         today = date.today()
         return today.year - self.date_naissance.year - ((today.month, today.day) < (self.date_naissance.month, self.date_naissance.day))
 
+    @property
+    def pathologies(self):
+        """Retourne la liste des pathologies uniques du patient"""
+        pathologies = set()
+        for obs in self.observations.filter(theme_classe__isnull=False):
+            if obs.theme_classe:
+                pathologies.add(obs.theme_classe)
+        return list(pathologies)
+
+    @property
+    def pathologies_display(self):
+        """Retourne les pathologies avec leurs noms d'affichage"""
+        pathologies_dict = dict(Observation.THEME_CHOICES)
+        return [pathologies_dict.get(p, p) for p in self.pathologies]
+
+    @property
+    def pathologies_count(self):
+        """Retourne le nombre de pathologies différentes"""
+        return len(self.pathologies)
+
+    @property
+    def derniere_observation(self):
+        """Retourne la dernière observation du patient"""
+        return self.observations.first()
+
 
 class Observation(models.Model):
     """Modèle représentant une observation médicale avec traitement NLP"""
