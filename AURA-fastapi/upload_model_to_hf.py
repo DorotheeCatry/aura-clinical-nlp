@@ -1,10 +1,29 @@
 from huggingface_hub import create_repo, Repository, upload_folder
 import os
 
+print(os.getcwd())
+
+# Préalable :
+#  créer un login sur hugginface
+#  puis dans profil, settings créer un token 
+
+# se connecter à Hugging face avec 
+#     huggingface-cli login
+#     ça va demander le token
+
+# installer git lfs avec 
+# sudo apt update
+# sudo apt install git-lfs
+
+# Initialiser Git LFS une fois pour toutes
+# git lfs install
+
+
 # === CONFIGURATION ===
 repo_name = "finetuned-medical-fr"
-user = "waelbensoltana"  # ← Remplace par ton nom d'utilisateur HF
-local_dir = "results"
+#user = "waelbensoltana"  # ← Remplace par ton nom d'utilisateur HF
+user = "NicoCasso"  # ← Remplace par ton nom d'utilisateur HF
+local_dir = "notebooks/results"
 repo_url = f"https://huggingface.co/{user}/{repo_name}"
 full_model_path = os.path.abspath(local_dir)
 readme_path = os.path.join(local_dir, "README.md")
@@ -69,7 +88,14 @@ Pour plus d’infos : https://www.apache.org/licenses/LICENSE-2.0
 ✨ Auteur
 Ce modèle a été entraîné et publié par {user}.
 """
-with open(readme_path, "w", encoding="utf-8") as f:
+with open(readme_path, "w+", encoding="utf-8") as f:
     f.write(readme_content)
 
-upload_folder(repo_id=repo_id, folder_path=local_dir, repo_type="model", commit_message="🔁 Upload complet du modèle et du README",)
+upload_folder(
+    repo_id=repo_id, 
+    folder_path=local_dir, 
+    commit_message="Upload initial avec README")
+
+# force le push ?
+# repo = Repository(local_dir=local_dir, clone_from=repo_url)
+# repo.push_to_hub()
