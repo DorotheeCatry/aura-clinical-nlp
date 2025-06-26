@@ -2,7 +2,7 @@
 
 {% block title %}Patients - AURA Medical AI{% endblock %}
 {% block page_title %}Gestion des patients{% endblock %}
-{% block page_subtitle %}Consultez et gérez les dossiers médicaux{% endblock %}
+{% block page_subtitle %}Consultez et gérez les dossiers médicaux avec pathologies{% endblock %}
 
 {% block content %}
 <div class="space-y-6">
@@ -10,7 +10,7 @@
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
             <h1 class="text-2xl font-bold text-primary-dark">Liste des patients</h1>
-            <p class="text-gray-600 mt-1">{{ patients|length }} patient{{ patients|length|pluralize }} enregistré{{ patients|length|pluralize }}</p>
+            <p class="text-gray-600 mt-1">{{ total_patients }} patient{{ total_patients|pluralize }} enregistré{{ total_patients|pluralize }}</p>
         </div>
         <div class="mt-4 sm:mt-0">
             <a href="{% url 'med_assistant:patient_create' %}" 
@@ -21,17 +21,71 @@
         </div>
     </div>
 
-    <!-- Search -->
+    <!-- Statistiques des pathologies -->
+    {% if pathologies_stats %}
     <div class="medical-card rounded-lg p-6 fade-in">
-        <form method="get" class="flex flex-col sm:flex-row gap-4">
-            <div class="flex-1">
-                {{ form.search }}
+        <h2 class="text-lg font-semibold text-primary-dark mb-4 flex items-center">
+            <i class="fas fa-chart-pie mr-2 text-primary-steel"></i>
+            Répartition des pathologies dominantes
+        </h2>
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            {% for pathologie, count in pathologies_stats.items %}
+            <div class="bg-gray-50 rounded-lg p-4 text-center">
+                <div class="text-2xl font-bold text-primary-steel">{{ count }}</div>
+                <div class="text-sm text-gray-600 mt-1">{{ pathologie }}</div>
             </div>
-            <button type="submit" 
-                    class="btn-primary px-8 py-3 rounded-lg font-medium flex items-center justify-center space-x-2">
-                <i class="fas fa-search"></i>
-                <span>Rechercher</span>
-            </button>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Search and Filters -->
+    <div class="medical-card rounded-lg p-6 fade-in">
+        <form method="get" class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- Recherche -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-search mr-1"></i>
+                        Recherche
+                    </label>
+                    {{ form.search }}
+                </div>
+                
+                <!-- Filtrage par pathologie -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-filter mr-1"></i>
+                        Pathologie
+                    </label>
+                    {{ form.pathologie }}
+                </div>
+                
+                <!-- Tri -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-sort mr-1"></i>
+                        Trier par
+                    </label>
+                    {{ form.tri }}
+                </div>
+            </div>
+            
+            <div class="flex flex-col sm:flex-row gap-2">
+                <button type="submit" 
+                        class="btn-primary px-8 py-3 rounded-lg font-medium flex items-center justify-center space-x-2">
+                    <i class="fas fa-search"></i>
+                    <span>Appliquer les filtres</span>
+                </button>
+                
+                {% if current_filters.search or current_filters.pathologie %}
+                <a href="{% url 'med_assistant:patient_list' %}" 
+                   class="btn-secondary px-6 py-3 rounded-lg font-medium flex items-center justify-center space-x-2">
+                    <i class="fas fa-times"></i>
+                    <span>Réinitialiser</span>
+                </a>
+                {% endif %}
+            </div>
         </form>
     </div>
 
@@ -39,7 +93,14 @@
     {% if patients %}
     <div class="medical-card rounded-lg overflow-hidden fade-in">
         <div class="p-6 border-b border-gray-200">
-            <h2 class="text-lg font-semibold text-primary-dark">Patients</h2>
+            <h2 class="text-lg font-semibold text-primary-dark">
+                Patients
+                {% if current_filters.search or current_filters.pathologie %}
+                <span class="text-sm font-normal text-gray-500">
+                    ({{ total_patients }} résultat{{ total_patients|pluralize }} trouvé{{ total_patients|pluralize }})
+                </span>
+                {% endif %}
+            </h2>
         </div>
         
         {% for patient in patients %}
@@ -61,12 +122,54 @@
                             {{ patient.age }} ans
                         </span>
                         {% endif %}
+                        {% if patient.derniere_observation %}
+                        <span class="flex items-center">
+                            <i class="fas fa-file-medical mr-1"></i>
+                            Dernière obs: {{ patient.derniere_observation|date:"d/m/Y" }}
+                        </span>
+                        {% endif %}
                     </div>
                     <div class="flex items-center space-x-2 mt-2">
                         <span class="px-3 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-700">
-                            {{ patient.observations.count }} observation{{ patient.observations.count|pluralize }}
+                            {{ patient.observations_count }} observation{{ patient.observations_count|pluralize }}
                         </span>
+                        {% if patient.observations_terminees_count %}
+                        <span class="px-3 py-1 text-xs font-medium rounded-full bg-green-100 text-green-700">
+                            {{ patient.observations_terminees_count }} terminée{{ patient.observations_terminees_count|pluralize }}
+                        </span>
+                        {% endif %}
+                        
+                        <!-- Pathologie dominante -->
+                        {% if patient.pathologie_dominante %}
+                        <span class="px-3 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-700">
+                            <i class="fas fa-stethoscope mr-1"></i>
+                            {{ patient.pathologie_dominante.nom }}
+                            {% if patient.pathologie_dominante.count > 1 %}
+                            ({{ patient.pathologie_dominante.count }}x)
+                            {% endif %}
+                        </span>
+                        {% endif %}
                     </div>
+                    
+                    <!-- Toutes les pathologies si plusieurs -->
+                    {% if patient.pathologies_principales|length > 1 %}
+                    <div class="mt-2">
+                        <details class="text-xs">
+                            <summary class="text-gray-500 cursor-pointer hover:text-gray-700">
+                                <i class="fas fa-list mr-1"></i>
+                                Voir toutes les pathologies ({{ patient.pathologies_principales|length }})
+                            </summary>
+                            <div class="mt-2 space-y-1">
+                                {% for pathologie in patient.pathologies_principales %}
+                                <div class="flex items-center justify-between bg-gray-50 rounded px-2 py-1">
+                                    <span class="text-gray-700">{{ pathologie.nom }}</span>
+                                    <span class="text-gray-500">{{ pathologie.count }}x ({{ pathologie.pourcentage }}%)</span>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </details>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
             
@@ -102,11 +205,11 @@
     <div class="flex justify-center fade-in">
         <nav class="flex items-center space-x-2">
             {% if page_obj.has_previous %}
-                <a href="?page=1{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" 
+                <a href="?page=1{% if current_filters.search %}&search={{ current_filters.search }}{% endif %}{% if current_filters.pathologie %}&pathologie={{ current_filters.pathologie }}{% endif %}{% if current_filters.tri %}&tri={{ current_filters.tri }}{% endif %}" 
                    class="medical-card hover:bg-gray-50 border border-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm transition-colors">
                     <i class="fas fa-angle-double-left"></i>
                 </a>
-                <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" 
+                <a href="?page={{ page_obj.previous_page_number }}{% if current_filters.search %}&search={{ current_filters.search }}{% endif %}{% if current_filters.pathologie %}&pathologie={{ current_filters.pathologie }}{% endif %}{% if current_filters.tri %}&tri={{ current_filters.tri }}{% endif %}" 
                    class="medical-card hover:bg-gray-50 border border-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm transition-colors">
                     <i class="fas fa-angle-left"></i>
                 </a>
@@ -117,11 +220,11 @@
             </span>
 
             {% if page_obj.has_next %}
-                <a href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" 
+                <a href="?page={{ page_obj.next_page_number }}{% if current_filters.search %}&search={{ current_filters.search }}{% endif %}{% if current_filters.pathologie %}&pathologie={{ current_filters.pathologie }}{% endif %}{% if current_filters.tri %}&tri={{ current_filters.tri }}{% endif %}" 
                    class="medical-card hover:bg-gray-50 border border-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm transition-colors">
                     <i class="fas fa-angle-right"></i>
                 </a>
-                <a href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" 
+                <a href="?page={{ page_obj.paginator.num_pages }}{% if current_filters.search %}&search={{ current_filters.search }}{% endif %}{% if current_filters.pathologie %}&pathologie={{ current_filters.pathologie }}{% endif %}{% if current_filters.tri %}&tri={{ current_filters.tri }}{% endif %}" 
                    class="medical-card hover:bg-gray-50 border border-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm transition-colors">
                     <i class="fas fa-angle-double-right"></i>
                 </a>
@@ -137,27 +240,54 @@
             <i class="fas fa-users text-3xl text-gray-400"></i>
         </div>
         <h3 class="text-xl font-semibold text-primary-dark mb-4">
-            {% if request.GET.search %}
+            {% if current_filters.search or current_filters.pathologie %}
                 Aucun patient trouvé
             {% else %}
                 Aucun patient enregistré
             {% endif %}
         </h3>
         <p class="text-gray-600 mb-8">
-            {% if request.GET.search %}
-                Essayez avec d'autres termes de recherche.
+            {% if current_filters.search or current_filters.pathologie %}
+                Essayez avec d'autres critères de recherche ou filtres.
             {% else %}
                 Commencez par ajouter votre premier patient au système.
             {% endif %}
         </p>
-        {% if not request.GET.search %}
+        {% if not current_filters.search and not current_filters.pathologie %}
         <a href="{% url 'med_assistant:patient_create' %}" 
            class="btn-primary px-8 py-3 rounded-lg font-medium inline-flex items-center space-x-2">
             <i class="fas fa-plus"></i>
             <span>Créer un patient</span>
         </a>
+        {% else %}
+        <a href="{% url 'med_assistant:patient_list' %}" 
+           class="btn-secondary px-8 py-3 rounded-lg font-medium inline-flex items-center space-x-2">
+            <i class="fas fa-times"></i>
+            <span>Réinitialiser les filtres</span>
+        </a>
         {% endif %}
     </div>
     {% endif %}
 </div>
+
+<style>
+/* Amélioration de l'affichage des détails */
+details[open] summary {
+    margin-bottom: 0.5rem;
+}
+
+details summary::-webkit-details-marker {
+    display: none;
+}
+
+details summary::before {
+    content: '▶';
+    margin-right: 0.25rem;
+    transition: transform 0.2s;
+}
+
+details[open] summary::before {
+    transform: rotate(90deg);
+}
+</style>
 {% endblock %}
