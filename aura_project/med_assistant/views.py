@@ -1,6 +1,6 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
-from django.db.models import Q, Count, Max, Case, When, IntegerField, F
+from django.db.models import Q, Count, Max, Case, When, IntegerField
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.core.paginator import Paginator
@@ -108,7 +108,7 @@ def patient_list(request):
     patients = patients.annotate(
         age_calculated=Case(
             When(date_naissance__isnull=False, 
-                 then=today.year - F('date_naissance__year')),
+                 then=today.year - models.F('date_naissance__year')),
             default=0,
             output_field=IntegerField()
         )
