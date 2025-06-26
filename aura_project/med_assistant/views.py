@@ -29,7 +29,7 @@ def dashboard(request):
         theme_display = dict(Observation.THEME_CHOICES).get(item['theme_classe'], item['theme_classe'])
         themes_stats[theme_display] = item['count']
     
-    # Statistiques des entités RÉELLES (seulement si on a des vraies entités)
+    # Statistiques des entités RÉELLES (seulement si on a des vraies entités) avec noms compréhensibles
     entity_stats = defaultdict(int)
     observations_with_entities = Observation.objects.exclude(entites={})
     
@@ -386,12 +386,13 @@ def statistics(request):
                     entity_stats[entity_type][entities] += 1
                     total_real_entities += 1
     
-    # Top entités par catégorie (seulement si on a des vraies entités)
+    # Top entités par catégorie (seulement si on a des vraies entités) - CORRIGÉ
     top_entities = {}
     if total_real_entities > 0:
         for category, entities in entity_stats.items():
             sorted_entities = sorted(entities.items(), key=lambda x: x[1], reverse=True)[:5]
-            top_entities[category] = sorted_entities
+            if sorted_entities:  # Seulement si on a des entités
+                top_entities[category] = sorted_entities
     
     # Statut de la pipeline NLP
     nlp_status = nlp_pipeline.get_status()

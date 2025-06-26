@@ -140,22 +140,26 @@
                     <div class="flex items-center justify-between mb-4">
                         <div>
                             <h3 class="font-semibold text-primary-dark">{{ category_name }}</h3>
-                            <p class="text-sm text-gray-600">{{ category_code }}</p>
+                            <p class="text-sm text-gray-600">{{ entity_stats|length }} entités uniques</p>
                         </div>
                         <div class="w-12 h-12 bg-primary-steel rounded-lg flex items-center justify-center">
-                            <i class="fas fa-{% if category_code == 'DISO' %}heartbeat{% elif category_code == 'CHEM' %}pills{% elif category_code == 'ANAT' %}user{% elif category_code == 'PROC' %}cogs{% else %}tag{% endif %} text-white"></i>
+                            <i class="fas fa-{% if category_code == 'Maladies et Symptômes' %}heartbeat{% elif category_code == 'Médicaments' %}pills{% elif category_code == 'Anatomie' %}user{% elif category_code == 'Procédures Médicales' %}cogs{% else %}tag{% endif %} text-white"></i>
                         </div>
                     </div>
                     
                     {% if category_code in top_entities %}
                     <div class="space-y-2">
                         <h4 class="text-sm font-medium text-gray-700 mb-3">Top entités détectées :</h4>
-                        {% for entity, count in top_entities.category_code %}
+                        {% for entity, count in top_entities|get_item:category_code %}
                         <div class="flex items-center justify-between p-2 bg-white rounded-lg border border-gray-100">
                             <span class="text-sm text-gray-700">{{ entity }}</span>
                             <span class="text-sm font-semibold text-primary-steel">{{ count }}</span>
                         </div>
                         {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <p class="text-sm text-gray-500">Aucune entité de ce type détectée</p>
                     </div>
                     {% endif %}
                 </div>
@@ -270,4 +274,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
+
+<!-- Custom template filter for dictionary access -->
+{% load custom_filters %}
 {% endblock %}
