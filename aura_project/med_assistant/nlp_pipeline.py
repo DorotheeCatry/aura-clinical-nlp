@@ -39,7 +39,7 @@ logger = logging.getLogger(__name__)
 class NLPPipeline:
     """
     Pipeline de traitement NLP pour les observations médicales
-    Intègre : transcription Whisper, classification, extraction d'entités DrBERT-CASM2, résumé T5
+    Intègre : transcription Whisper, classification, extraction d'entités DrBERT, résumé T5
     Optimisé pour GPU avec mémoire limitée
     """
     
@@ -58,10 +58,10 @@ class NLPPipeline:
         self.drbert_pipeline = None
         self.t5_pipeline = None
         
-        # Configuration des modèles - NOUVEAU DrBERT-CASM2
+        # Configuration des modèles - RETOUR au modèle original
         self.models_config = {
             'classification': 'waelbensoltana/finetuned-medical-fr',
-            'entities': 'medkit/DrBERT-CASM2',  # NOUVEAU MODÈLE !
+            'entities': 'Thibeb/DrBert_generalized',  # RETOUR AU MODÈLE ORIGINAL !
             'summarization': 'plguillou/t5-base-fr-sum-cnndm'
         }
         
@@ -72,7 +72,7 @@ class NLPPipeline:
             2: 'diabete'
         }
         
-        # Mapping des entités DrBERT-CASM2 vers nos catégories
+        # Mapping des entités DrBERT vers nos catégories
         self.drbert_entity_mapping = {
             'DISO': 'DISO',  # Disorders/Maladies
             'CHEM': 'CHEM',  # Chemicals/Médicaments
@@ -119,7 +119,7 @@ class NLPPipeline:
                 logger.warning("⚠️ Whisper non disponible")
             
             # Les autres modèles seront chargés à la demande pour économiser la mémoire
-            logger.info("💡 Classification, DrBERT-CASM2 et T5 seront chargés à la demande pour optimiser la mémoire")
+            logger.info("💡 Classification, DrBERT et T5 seront chargés à la demande pour optimiser la mémoire")
             
             self.models_loaded = True
             logger.info("✅ Pipeline NLP initialisée avec succès")
@@ -167,7 +167,7 @@ class NLPPipeline:
             return False
     
     def _load_drbert_on_demand(self):
-        """Charge DrBERT-CASM2 à la demande et libère le modèle de classification si nécessaire"""
+        """Charge DrBERT à la demande et libère le modèle de classification si nécessaire"""
         if self.drbert_pipeline is not None:
             return True
             
@@ -175,19 +175,19 @@ class NLPPipeline:
             return False
             
         try:
-            logger.info("🧠 Chargement du modèle DrBERT-CASM2 à la demande...")
+            logger.info("🧠 Chargement du modèle DrBERT à la demande...")
             
             # Libérer le modèle de classification temporairement si nécessaire
             classification_was_loaded = self.classification_model is not None
             if classification_was_loaded and torch.cuda.is_available():
-                logger.info("🔄 Libération temporaire du modèle de classification pour DrBERT-CASM2...")
+                logger.info("🔄 Libération temporaire du modèle de classification pour DrBERT...")
                 del self.classification_model
                 del self.classification_tokenizer
                 self.classification_model = None
                 self.classification_tokenizer = None
                 self._clear_gpu_cache()
             
-            # Charger DrBERT-CASM2 avec optimisations mémoire
+            # Charger DrBERT avec optimisations mémoire
             tokenizer = AutoTokenizer.from_pretrained(self.models_config['entities'])
             model = AutoModelForTokenClassification.from_pretrained(
                 self.models_config['entities'],
@@ -205,18 +205,18 @@ class NLPPipeline:
                 torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32
             )
             
-            logger.info(f"✅ DrBERT-CASM2 chargé sur {self.device}")
+            logger.info(f"✅ DrBERT chargé sur {self.device}")
             
             # Afficher l'utilisation mémoire
             if torch.cuda.is_available():
                 memory_used = torch.cuda.memory_allocated() / 1024**3
                 memory_total = torch.cuda.get_device_properties(0).total_memory / 1024**3
-                logger.info(f"📊 Mémoire GPU après DrBERT-CASM2: {memory_used:.2f}GB / {memory_total:.2f}GB")
+                logger.info(f"📊 Mémoire GPU après DrBERT: {memory_used:.2f}GB / {memory_total:.2f}GB")
             
             return True
             
         except Exception as e:
-            logger.error(f"❌ Erreur chargement DrBERT-CASM2: {e}")
+            logger.error(f"❌ Erreur chargement DrBERT: {e}")
             self.transformers_available = False
             
             # Recharger le modèle de classification si il était chargé
@@ -239,7 +239,7 @@ class NLPPipeline:
             # Libérer DrBERT temporairement si nécessaire
             drbert_was_loaded = self.drbert_pipeline is not None
             if drbert_was_loaded:
-                logger.info("🔄 Libération temporaire de DrBERT-CASM2 pour T5...")
+                logger.info("🔄 Libération temporaire de DrBERT pour T5...")
                 del self.drbert_pipeline
                 self.drbert_pipeline = None
                 self._clear_gpu_cache()
@@ -293,10 +293,10 @@ class NLPPipeline:
     def clean_entities(self, entities: List[Dict]) -> List[Dict]:
         """
         Votre fonction clean_entities exactement comme vous l'avez écrite !
-        Post-traitement pour nettoyer les entités DrBERT-CASM2
+        Post-traitement pour nettoyer les entités DrBERT
         
         Args:
-            entities: Liste des entités brutes de DrBERT-CASM2
+            entities: Liste des entités brutes de DrBERT
             
         Returns:
             Liste des entités nettoyées
@@ -475,7 +475,7 @@ class NLPPipeline:
     
     def extract_entities_drbert(self, text: str) -> Dict[str, List[str]]:
         """
-        Extrait les entités médicales avec DrBERT-CASM2 en utilisant votre fonction clean_entities
+        Extrait les entités médicales avec DrBERT en utilisant votre fonction clean_entities
         
         Args:
             text: Texte à analyser
@@ -484,17 +484,17 @@ class NLPPipeline:
             Dictionnaire des entités extraites par catégorie
         """
         try:
-            # Charger DrBERT-CASM2 à la demande
+            # Charger DrBERT à la demande
             if not self._load_drbert_on_demand():
-                logger.warning("⚠️ DrBERT-CASM2 non disponible")
+                logger.warning("⚠️ DrBERT non disponible")
                 return {}
             
-            logger.info(f"🔍 Extraction d'entités DrBERT-CASM2 pour: {text[:50]}...")
+            logger.info(f"🔍 Extraction d'entités DrBERT pour: {text[:50]}...")
             
-            # Utiliser le pipeline NER de DrBERT-CASM2 avec aggregation_strategy="simple"
+            # Utiliser le pipeline NER de DrBERT avec aggregation_strategy="simple"
             entities = self.drbert_pipeline(text)
             
-            logger.info(f"🔍 DrBERT-CASM2 a trouvé {len(entities)} entités brutes")
+            logger.info(f"🔍 DrBERT a trouvé {len(entities)} entités brutes")
             
             # DEBUG: Afficher quelques entités brutes
             for i, ent in enumerate(entities[:5]):
@@ -535,7 +535,7 @@ class NLPPipeline:
             # Nettoyer les catégories vides
             categorized_entities = {k: v for k, v in categorized_entities.items() if v}
             
-            logger.info(f"✅ DrBERT-CASM2: {sum(len(v) for v in categorized_entities.values())} entités extraites et nettoyées")
+            logger.info(f"✅ DrBERT: {sum(len(v) for v in categorized_entities.values())} entités extraites et nettoyées")
             
             # DEBUG: Afficher le résultat final
             for category, entities_list in categorized_entities.items():
@@ -543,7 +543,7 @@ class NLPPipeline:
             
             # Libérer DrBERT après utilisation pour économiser la mémoire
             if self.drbert_pipeline is not None:
-                logger.info("🔄 Libération de DrBERT-CASM2 après utilisation")
+                logger.info("🔄 Libération de DrBERT après utilisation")
                 del self.drbert_pipeline
                 self.drbert_pipeline = None
                 self._clear_gpu_cache()
@@ -551,13 +551,13 @@ class NLPPipeline:
             return categorized_entities
             
         except Exception as e:
-            logger.error(f"❌ Erreur lors de l'extraction DrBERT-CASM2: {e}")
+            logger.error(f"❌ Erreur lors de l'extraction DrBERT: {e}")
             logger.exception("Détails de l'erreur:")
             return {}
     
     def extract_entities(self, text: str) -> Dict[str, Any]:
         """
-        Extrait les entités médicales (utilise DrBERT-CASM2 maintenant)
+        Extrait les entités médicales (utilise DrBERT maintenant)
         
         Args:
             text: Texte à analyser
@@ -673,7 +673,7 @@ class NLPPipeline:
                 results['model_prediction'] = prediction
                 logger.info(f"🏷️ Thème classifié: {theme} (prédiction: {prediction})")
             
-            # 4. Extraction d'entités (DrBERT-CASM2 avec votre fonction clean_entities)
+            # 4. Extraction d'entités (DrBERT avec votre fonction clean_entities)
             entities = self.extract_entities(text_source)
             results['entites'] = entities
             logger.info(f"🔍 Entités extraites avec clean_entities: {len(entities)} catégories")
@@ -708,7 +708,7 @@ class NLPPipeline:
             'classification_available': self.transformers_available,
             'available_models': [
                 'waelbensoltana/finetuned-medical-fr',
-                'medkit/DrBERT-CASM2',  # NOUVEAU MODÈLE !
+                'Thibeb/DrBert_generalized',  # RETOUR AU MODÈLE ORIGINAL !
                 'plguillou/t5-base-fr-sum-cnndm'
             ] if self.transformers_available else [],
             'models_loaded': self.models_loaded,
