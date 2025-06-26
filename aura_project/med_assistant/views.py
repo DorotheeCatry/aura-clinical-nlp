@@ -1,6 +1,6 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
-from django.db.models import Q, Count, Max, Case, When, IntegerField
+from django.db.models import Q, Count
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.core.paginator import Paginator
@@ -12,7 +12,7 @@ import json
 from collections import defaultdict
 from faster_whisper import WhisperModel
 import tempfile, subprocess, json
-from datetime import date
+
 
 
 def dashboard(request):
@@ -92,92 +92,26 @@ def dashboard(request):
 
 
 def patient_list(request):
-    """Liste des patients avec recherche, filtrage par pathologie et tri"""
+    """Liste des patients avec recherche"""
     form = PatientSearchForm(request.GET)
     patients = Patient.objects.all()
     
-    # Annoter avec des informations supplémentaires
-    patients = patients.annotate(
-        observations_count=Count('observations'),
-        observations_terminees_count=Count('observations', filter=Q(observations__traitement_termine=True)),
-        derniere_observation=Max('observations__date')
-    )
-    
-    # Calculer l'âge pour le tri
-    today = date.today()
-    patients = patients.annotate(
-        age_calculated=Case(
-            When(date_naissance__isnull=False, 
-                 then=today.year - models.F('date_naissance__year')),
-            default=0,
-            output_field=IntegerField()
+    if form.is_valid() and form.cleaned_data['search']:
+        search_term = form.cleaned_data['search']
+        patients = patients.filter(
+            Q(nom__icontains=search_term) | 
+            Q(prenom__icontains=search_term)
         )
-    )
-    
-    if form.is_valid():
-        # Recherche par nom/prénom
-        if form.cleaned_data.get('search'):
-            search_term = form.cleaned_data['search']
-            patients = patients.filter(
-                Q(nom__icontains=search_term) | 
-                Q(prenom__icontains=search_term)
-            )
-        
-        # Filtrage par pathologie
-        if form.cleaned_data.get('pathologie'):
-            pathologie = form.cleaned_data['pathologie']
-            # Filtrer les patients qui ont au moins une observation avec cette pathologie
-            patients = patients.filter(
-                observations__theme_classe=pathologie,
-                observations__traitement_termine=True
-            ).distinct()
-        
-        # Tri
-        tri = form.cleaned_data.get('tri', 'nom')
-        if tri == 'age':
-            patients = patients.order_by('age_calculated', 'nom', 'prenom')
-        elif tri == '-age':
-            patients = patients.order_by('-age_calculated', 'nom', 'prenom')
-        elif tri == '-derniere_observation':
-            patients = patients.order_by('-derniere_observation', 'nom', 'prenom')
-        elif tri == '-observations_count':
-            patients = patients.order_by('-observations_count', 'nom', 'prenom')
-        elif tri == '-nom':
-            patients = patients.order_by('-nom', '-prenom')
-        else:  # tri == 'nom' par défaut
-            patients = patients.order_by('nom', 'prenom')
-    else:
-        # Tri par défaut
-        patients = patients.order_by('nom', 'prenom')
     
     # Pagination
     paginator = Paginator(patients, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
-    # Statistiques pour l'affichage
-    total_patients = patients.count()
-    pathologies_stats = {}
-    
-    if total_patients > 0:
-        # Compter les pathologies dominantes
-        for patient in patients:
-            pathologie_dominante = patient.pathologie_dominante
-            if pathologie_dominante:
-                pathologie_nom = pathologie_dominante['nom']
-                pathologies_stats[pathologie_nom] = pathologies_stats.get(pathologie_nom, 0) + 1
-    
     context = {
         'form': form,
         'page_obj': page_obj,
         'patients': page_obj,
-        'total_patients': total_patients,
-        'pathologies_stats': pathologies_stats,
-        'current_filters': {
-            'search': form.cleaned_data.get('search', '') if form.is_valid() else '',
-            'pathologie': form.cleaned_data.get('pathologie', '') if form.is_valid() else '',
-            'tri': form.cleaned_data.get('tri', 'nom') if form.is_valid() else 'nom',
-        }
     }
     
     return render(request, 'med_assistant/patient_list.html', context)

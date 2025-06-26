@@ -90,7 +90,7 @@ class ObservationEditForm(forms.ModelForm):
 
 
 class PatientSearchForm(forms.Form):
-    """Formulaire de recherche et filtrage de patients"""
+    """Formulaire de recherche de patients"""
     
     search = forms.CharField(
         required=False,
@@ -99,35 +99,3 @@ class PatientSearchForm(forms.Form):
             'placeholder': 'Rechercher un patient (nom, prénom)...'
         })
     )
-    
-    pathologie = forms.ChoiceField(
-        required=False,
-        widget=forms.Select(attrs={
-            'class': 'w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors'
-        })
-    )
-    
-    tri = forms.ChoiceField(
-        required=False,
-        choices=[
-            ('nom', 'Nom (A-Z)'),
-            ('-nom', 'Nom (Z-A)'),
-            ('age', 'Âge (croissant)'),
-            ('-age', 'Âge (décroissant)'),
-            ('-derniere_observation', 'Dernière observation'),
-            ('-observations_count', 'Nombre d\'observations'),
-        ],
-        initial='nom',
-        widget=forms.Select(attrs={
-            'class': 'w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors'
-        })
-    )
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        
-        # Construire dynamiquement les choix de pathologies
-        from .models import Observation
-        pathologie_choices = [('', 'Toutes les pathologies')]
-        pathologie_choices.extend(Observation.THEME_CHOICES)
-        self.fields['pathologie'].choices = pathologie_choices

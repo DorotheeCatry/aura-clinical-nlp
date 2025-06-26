@@ -29,53 +29,6 @@ class Patient(models.Model):
         today = date.today()
         return today.year - self.date_naissance.year - ((today.month, today.day) < (self.date_naissance.month, self.date_naissance.day))
 
-    @property
-    def pathologies_principales(self):
-        """Retourne les pathologies principales du patient basées sur ses observations"""
-        from collections import Counter
-        
-        # Récupérer toutes les observations avec classification
-        observations = self.observations.filter(
-            theme_classe__isnull=False,
-            traitement_termine=True
-        ).values_list('theme_classe', flat=True)
-        
-        if not observations:
-            return []
-        
-        # Compter les occurrences
-        counter = Counter(observations)
-        
-        # Retourner les pathologies avec leur nom d'affichage et fréquence
-        pathologies = []
-        for theme_code, count in counter.most_common():
-            theme_display = dict(Observation.THEME_CHOICES).get(theme_code, theme_code)
-            pathologies.append({
-                'code': theme_code,
-                'nom': theme_display,
-                'count': count,
-                'pourcentage': round((count / len(observations)) * 100, 1)
-            })
-        
-        return pathologies
-
-    @property
-    def pathologie_dominante(self):
-        """Retourne la pathologie la plus fréquente du patient"""
-        pathologies = self.pathologies_principales
-        return pathologies[0] if pathologies else None
-
-    @property
-    def derniere_observation_date(self):
-        """Retourne la date de la dernière observation"""
-        derniere = self.observations.order_by('-date').first()
-        return derniere.date if derniere else None
-
-    @property
-    def observations_terminees_count(self):
-        """Nombre d'observations terminées avec succès"""
-        return self.observations.filter(traitement_termine=True).count()
-
 
 class Observation(models.Model):
     """Modèle représentant une observation médicale avec traitement NLP"""
