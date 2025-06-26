@@ -444,20 +444,3 @@ def api_nlp_status(request):
     """API pour récupérer le statut de la pipeline NLP"""
     status = nlp_pipeline.get_status()
     return JsonResponse(status)
-
-
-def api_fastapi_models(request):
-    """API pour récupérer les modèles disponibles (maintenant Hugging Face)"""
-    try:
-        status = nlp_pipeline.get_status()
-        return JsonResponse({
-            'success': True,
-            'models': status.get('available_models', []),
-            'api_available': status.get('transformers_available', False)
-        })
-    except Exception as e:
-        return JsonResponse({
-            'success': False,
-            'error': str(e),
-            'api_available': False
-        })

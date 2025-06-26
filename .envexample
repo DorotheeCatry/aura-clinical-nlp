@@ -1,10 +1,6 @@
 SECRET_KEY="l%y2^0w+nf$g9o&$uju=51fsc@e0g!tjdbgc**_brn6w6ch*l-"
 DEBUG=True
 
-# FastAPI Integration
-FASTAPI_BASE_URL=http://127.0.0.1:8001
-FASTAPI_TIMEOUT=30
-
 # NLP Pipeline Configuration
-NLP_USE_FASTAPI=True
+NLP_USE_HUGGINGFACE=True
 NLP_FALLBACK_TO_LOCAL=True

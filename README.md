@@ -1,6 +1,6 @@
 # AURA - Assistant Médical IA
 
-Assistant intelligent pour la surveillance hospitalière avec analyse NLP avancée.
+Assistant intelligent pour la surveillance hospitalière avec analyse NLP avancée utilisant des modèles Hugging Face.
 
 ## 🚀 Démarrage rapide
 
@@ -11,7 +11,7 @@ Assistant intelligent pour la surveillance hospitalière avec analyse NLP avanc�
 cp .envexample .env
 
 # Modifier les variables selon vos besoins
-# FASTAPI_BASE_URL=http://127.0.0.1:8001
+# NLP_USE_HUGGINGFACE=True
 ```
 
 ### 2. Installation des dépendances
@@ -33,21 +33,15 @@ python manage.py migrate
 python manage.py createsuperuser
 ```
 
-### 4. Démarrage des services
+### 4. Démarrage du service Django
 
-#### Terminal 1 - FastAPI (Port 8001)
-```bash
-cd AURA-fastapi
-uvicorn main:app --reload --port 8001
-```
-
-#### Terminal 2 - Django (Port 8000)
 ```bash
 cd aura_project
 python manage.py runserver
 ```
 
-#### Terminal 3 - Tailwind (développement)
+### 5. Démarrage de Tailwind (développement)
+
 ```bash
 cd aura_project
 python manage.py tailwind start
@@ -55,29 +49,25 @@ python manage.py tailwind start
 
 ## 🔧 Architecture
 
-### FastAPI (Port 8001)
-- **Endpoints disponibles :**
-  - `GET /get_available_models` - Liste des modèles IA
-  - `POST /process_text` - Traitement de texte par IA
-
 ### Django (Port 8000)
 - **Interface web complète**
 - **API de transcription audio**
 - **Gestion des patients et observations**
-- **Intégration automatique avec FastAPI**
+- **Modèles Hugging Face intégrés**
 
 ## 🧠 Pipeline NLP
 
-### Mode FastAPI (Recommandé)
-- Classification thématique via vos modèles
-- Extraction d'entités médicales
-- Génération de résumés automatiques
-- Transcription audio locale (Whisper)
+### Modèles Hugging Face Directs
+- **Classification thématique** : `waelbensoltana/finetuned-medical-fr`
+- **Extraction d'entités médicales** : `Thibeb/DrBert_generalized`
+- **Génération de résumés automatiques** : `plguillou/t5-base-fr-sum-cnndm`
+- **Transcription audio** : `openai/whisper-small`
 
-### Mode Local (Fallback)
-- Simulation intelligente si FastAPI indisponible
-- Transcription audio toujours fonctionnelle
-- Robustesse maximale
+### Optimisations mémoire
+- Chargement à la demande des modèles
+- Libération automatique après utilisation
+- Gestion intelligente du GPU limité
+- Fallback en simulation si problème
 
 ## 📊 Fonctionnalités
 
@@ -88,25 +78,30 @@ python manage.py tailwind start
 - ✅ **Extraction d'entités** - Médicaments, symptômes, etc.
 - ✅ **Résumés automatiques** - Synthèse intelligente
 - ✅ **Dashboard avancé** - Statistiques et monitoring
-- ✅ **API REST** - Intégration FastAPI transparente
+- ✅ **Pipeline optimisée** - Gestion mémoire GPU
 
 ## 🔗 URLs importantes
 
 - **Django App :** http://127.0.0.1:8000
-- **FastAPI Docs :** http://127.0.0.1:8001/docs
 - **Admin Django :** http://127.0.0.1:8000/admin
 
 ## 🛠️ Développement
 
-### Ajouter un nouveau modèle FastAPI
-
-1. Créer votre manager dans `AURA-fastapi/pre_trained_models/`
-2. L'ajouter à `AVAILABLE_MODELS` dans `main.py`
-3. Redémarrer FastAPI
-
 ### Personnaliser la pipeline NLP
 
-Modifier `aura_project/med_assistant/nlp_pipeline.py` pour adapter les traitements.
+Modifier `aura_project/med_assistant/nlp_pipeline.py` pour adapter les traitements ou changer les modèles utilisés.
+
+### Configuration des modèles
+
+Les modèles sont configurés dans la classe `NLPPipeline` :
+
+```python
+self.models_config = {
+    'classification': 'waelbensoltana/finetuned-medical-fr',
+    'entities': 'Thibeb/DrBert_generalized', 
+    'summarization': 'plguillou/t5-base-fr-sum-cnndm'
+}
+```
 
 ## 📝 Licence
 

@@ -12,7 +12,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-white/80 text-sm font-medium">Précision IA</p>
-                    <p class="text-3xl font-bold mt-1">{% if nlp_status.fastapi_available and nlp_status.drbert_available and nlp_status.t5_available %}97.5%{% elif nlp_status.fastapi_available or nlp_status.drbert_available or nlp_status.t5_available %}93.2%{% else %}85.0%{% endif %}</p>
+                    <p class="text-3xl font-bold mt-1">{% if nlp_status.classification_available and nlp_status.drbert_available and nlp_status.t5_available %}97.5%{% elif nlp_status.classification_available or nlp_status.drbert_available or nlp_status.t5_available %}93.2%{% else %}85.0%{% endif %}</p>
                 </div>
                 <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
                     <i class="fas fa-bullseye text-white"></i>
@@ -20,7 +20,7 @@
             </div>
             <div class="mt-4">
                 <div class="w-full bg-white/20 rounded-full h-2">
-                    <div class="bg-white h-2 rounded-full" style="width: {% if nlp_status.fastapi_available and nlp_status.drbert_available and nlp_status.t5_available %}97.5%{% elif nlp_status.fastapi_available or nlp_status.drbert_available or nlp_status.t5_available %}93.2%{% else %}85.0%{% endif %}"></div>
+                    <div class="bg-white h-2 rounded-full" style="width: {% if nlp_status.classification_available and nlp_status.drbert_available and nlp_status.t5_available %}97.5%{% elif nlp_status.classification_available or nlp_status.drbert_available or nlp_status.t5_available %}93.2%{% else %}85.0%{% endif %}"></div>
                 </div>
             </div>
         </div>
@@ -59,7 +59,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-white/80 text-sm font-medium">Taux succès</p>
-                    <p class="text-3xl font-bold mt-1">{% if nlp_status.fastapi_available and nlp_status.drbert_available and nlp_status.t5_available %}99.5%{% elif nlp_status.fastapi_available or nlp_status.drbert_available or nlp_status.t5_available %}96.8%{% else %}88.0%{% endif %}</p>
+                    <p class="text-3xl font-bold mt-1">{% if nlp_status.classification_available and nlp_status.drbert_available and nlp_status.t5_available %}99.5%{% elif nlp_status.classification_available or nlp_status.drbert_available or nlp_status.t5_available %}96.8%{% else %}88.0%{% endif %}</p>
                 </div>
                 <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
                     <i class="fas fa-check-circle text-white"></i>
@@ -67,7 +67,7 @@
             </div>
             <div class="mt-4">
                 <div class="w-full bg-white/20 rounded-full h-2">
-                    <div class="bg-white h-2 rounded-full" style="width: {% if nlp_status.fastapi_available and nlp_status.drbert_available and nlp_status.t5_available %}99.5%{% elif nlp_status.fastapi_available or nlp_status.drbert_available or nlp_status.t5_available %}96.8%{% else %}88.0%{% endif %}"></div>
+                    <div class="bg-white h-2 rounded-full" style="width: {% if nlp_status.classification_available and nlp_status.drbert_available and nlp_status.t5_available %}99.5%{% elif nlp_status.classification_available or nlp_status.drbert_available or nlp_status.t5_available %}96.8%{% else %}88.0%{% endif %}"></div>
                 </div>
             </div>
         </div>
@@ -208,7 +208,7 @@
             <i class="fas fa-robot mr-3 text-primary-steel"></i>
             Modèles d'Intelligence Artificielle
         </h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div class="bg-gray-50 rounded-lg p-6 border border-gray-200 hover:shadow-md transition-all duration-300">
                 <div class="w-12 h-12 bg-primary-steel rounded-lg flex items-center justify-center mb-4">
                     <i class="fas fa-volume-up text-white"></i>
@@ -226,8 +226,8 @@
                 </div>
                 <h3 class="font-semibold text-primary-dark mb-2">Classification</h3>
                 <p class="text-sm text-gray-600 mb-3">Classification thématique</p>
-                <div class="text-xs {% if nlp_status.fastapi_available %}text-green-600{% else %}text-yellow-600{% endif %} font-medium">
-                    {% if nlp_status.fastapi_available %}FastAPI • Actif{% else %}Simulation • Local{% endif %}
+                <div class="text-xs {% if nlp_status.classification_available %}text-green-600{% else %}text-yellow-600{% endif %} font-medium">
+                    {% if nlp_status.classification_available %}waelbensoltana • Actif{% else %}Simulation • Local{% endif %}
                 </div>
             </div>
 
@@ -250,17 +250,6 @@
                 <p class="text-sm text-gray-600 mb-3">Génération de résumés</p>
                 <div class="text-xs {% if nlp_status.t5_available %}text-green-600{% else %}text-yellow-600{% endif %} font-medium">
                     plguillou • {% if nlp_status.t5_available %}Actif{% else %}Simulation{% endif %}
-                </div>
-            </div>
-
-            <div class="bg-gray-50 rounded-lg p-6 border border-gray-200 hover:shadow-md transition-all duration-300">
-                <div class="w-12 h-12 bg-primary-steel rounded-lg flex items-center justify-center mb-4">
-                    <i class="fas fa-cogs text-white"></i>
-                </div>
-                <h3 class="font-semibold text-primary-dark mb-2">Pipeline</h3>
-                <p class="text-sm text-gray-600 mb-3">Orchestration complète</p>
-                <div class="text-xs {% if nlp_status.fastapi_available and nlp_status.drbert_available and nlp_status.t5_available %}text-green-600{% elif nlp_status.fastapi_available or nlp_status.drbert_available or nlp_status.t5_available %}text-yellow-600{% else %}text-red-600{% endif %} font-medium">
-                    AURA • {% if nlp_status.fastapi_available and nlp_status.drbert_available and nlp_status.t5_available %}Optimal{% elif nlp_status.fastapi_available or nlp_status.drbert_available or nlp_status.t5_available %}Partiel{% else %}Simulation{% endif %}
                 </div>
             </div>
         </div>
