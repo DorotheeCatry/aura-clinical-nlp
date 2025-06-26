@@ -4,7 +4,7 @@ import torch
 class MyFinetunedModelManager:
     def __init__(self):
         self.model_name = "FinetunedMedicalModel"
-        self.model_path = "results"  # chemin relatif à ton fichier main.py
+        self.model_path = "waelbensoltana/finetuned-medical-fr"
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_path)
         self.model = AutoModelForSequenceClassification.from_pretrained(self.model_path)
 
