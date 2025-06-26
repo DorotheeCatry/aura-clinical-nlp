@@ -1,0 +1,307 @@
+{% extends 'med_assistant/base.html' %}
+
+{% block title %}Nouvelle observation - AURA Medical AI{% endblock %}
+{% block page_title %}Nouvelle observation{% endblock %}
+{% block page_subtitle %}Créer une nouvelle observation médicale{% endblock %}
+
+{% block content %}
+<div class="h-full flex flex-col">
+    <!-- NLP Status Info -->
+    {% if nlp_status %}
+    <div class="medical-card rounded-lg p-4 mb-4 {% if nlp_status.fastapi_available and nlp_status.drbert_available and nlp_status.t5_available %}border-l-4 border-green-500{% elif nlp_status.fastapi_available or nlp_status.drbert_available or nlp_status.t5_available %}border-l-4 border-yellow-500{% else %}border-l-4 border-red-500{% endif %}">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-8 h-8 {% if nlp_status.fastapi_available and nlp_status.drbert_available and nlp_status.t5_available %}bg-green-100{% elif nlp_status.fastapi_available or nlp_status.drbert_available or nlp_status.t5_available %}bg-yellow-100{% else %}bg-red-100{% endif %} rounded-lg flex items-center justify-center">
+                    <i class="fas fa-robot {% if nlp_status.fastapi_available and nlp_status.drbert_available and nlp_status.t5_available %}text-green-600{% elif nlp_status.fastapi_available or nlp_status.drbert_available or nlp_status.t5_available %}text-yellow-600{% else %}text-red-600{% endif %}"></i>
+                </div>
+                <div>
+                    <h3 class="text-sm font-semibold {% if nlp_status.fastapi_available and nlp_status.drbert_available and nlp_status.t5_available %}text-green-800{% elif nlp_status.fastapi_available or nlp_status.drbert_available or nlp_status.t5_available %}text-yellow-800{% else %}text-red-800{% endif %}">
+                        {% if nlp_status.fastapi_available and nlp_status.drbert_available and nlp_status.t5_available %}
+                            Pipeline complète active
+                        {% elif nlp_status.fastapi_available and nlp_status.drbert_available %}
+                            FastAPI + DrBERT connectés, T5 en simulation
+                        {% elif nlp_status.fastapi_available and nlp_status.t5_available %}
+                            FastAPI + T5 connectés, DrBERT en simulation
+                        {% elif nlp_status.drbert_available and nlp_status.t5_available %}
+                            DrBERT + T5 connectés, FastAPI non disponible
+                        {% elif nlp_status.fastapi_available %}
+                            FastAPI connecté, DrBERT et T5 en simulation
+                        {% elif nlp_status.drbert_available %}
+                            DrBERT connecté, FastAPI et T5 en simulation
+                        {% elif nlp_status.t5_available %}
+                            T5 connecté, FastAPI et DrBERT en simulation
+                        {% else %}
+                            Mode simulation complet
+                        {% endif %}
+                    </h3>
+                    <p class="text-xs {% if nlp_status.fastapi_available and nlp_status.drbert_available and nlp_status.t5_available %}text-green-600{% elif nlp_status.fastapi_available or nlp_status.drbert_available or nlp_status.t5_available %}text-yellow-600{% else %}text-red-600{% endif %}">
+                        {% if nlp_status.fastapi_available and nlp_status.drbert_available and nlp_status.t5_available %}
+                            Classification + entités + résumés réels
+                        {% elif nlp_status.fastapi_available and nlp_status.drbert_available %}
+                            Classification + entités réelles, résumés simulés
+                        {% elif nlp_status.fastapi_available and nlp_status.t5_available %}
+                            Classification + résumés réels, entités simulées
+                        {% elif nlp_status.drbert_available and nlp_status.t5_available %}
+                            Entités + résumés réels, classification simulée
+                        {% elif nlp_status.fastapi_available %}
+                            Classification réelle, entités et résumés simulés
+                        {% elif nlp_status.drbert_available %}
+                            Entités réelles, classification et résumés simulés
+                        {% elif nlp_status.t5_available %}
+                            Résumés réels, classification et entités simulées
+                        {% else %}
+                            Traitement local avec simulation complète
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+            <div class="text-xs {% if nlp_status.fastapi_available and nlp_status.drbert_available and nlp_status.t5_available %}text-green-600{% elif nlp_status.fastapi_available or nlp_status.drbert_available or nlp_status.t5_available %}text-yellow-600{% else %}text-red-600{% endif %}">
+                Whisper: {% if nlp_status.whisper_available %}✓{% else %}✗{% endif %} | DrBERT: {% if nlp_status.drbert_available %}✓{% else %}✗{% endif %} | T5: {% if nlp_status.t5_available %}✓{% else %}✗{% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <form method="post" enctype="multipart/form-data" class="flex-1 flex flex-col space-y-4">
+        {% csrf_token %}
+
+        <!-- Patient Selection - Compact -->
+        <div class="medical-card rounded-lg p-4">
+            <div class="flex items-center justify-between">
+                <div class="flex-1 max-w-md">
+                    <label for="{{ form.patient.id_for_label }}"
+                        class="block text-sm font-medium text-primary-dark mb-2">
+                        <i class="fas fa-user mr-2 text-primary-steel"></i>
+                        Patient
+                    </label>
+                    {{ form.patient }}
+                    {% if form.patient.errors %}
+                    <div class="mt-1 text-xs text-red-600">
+                        {% for error in form.patient.errors %}
+                        <p><i class="fas fa-exclamation-circle mr-1"></i>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="ml-4">
+                    <a href="{% url 'med_assistant:patient_create' %}"
+                        class="btn-secondary px-4 py-2 rounded-lg text-sm font-medium inline-flex items-center space-x-2">
+                        <i class="fas fa-plus"></i>
+                        <span>Nouveau patient</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content - Flexible Height -->
+        <div class="medical-card rounded-lg flex-1 flex flex-col p-6">
+
+            <!-- Header with Recording Controls - Compact -->
+            <div class="flex items-center justify-between mb-4 pb-4 border-b border-gray-200">
+                <div>
+                    <h2 class="text-lg font-semibold text-primary-dark">
+                        <i class="fas fa-file-medical mr-2 text-primary-steel"></i>
+                        Observation médicale
+                    </h2>
+                    <p class="text-sm text-gray-600">Dictez ou saisissez votre observation</p>
+                </div>
+
+                <!-- Recording Controls -->
+                <div class="flex items-center space-x-3">
+                    <!-- Bouton d'enregistrement -->
+                    <button type="button" id="recordBtn"
+                        class="w-12 h-12 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center transition-all shadow-md hover:shadow-lg">
+                        <i class="fas fa-microphone text-lg"></i>
+                    </button>
+
+                    <!-- Bouton d'arrêt - TOUJOURS VISIBLE -->
+                    <button type="button" id="stopBtn"
+                        class="w-12 h-12 bg-gray-400 text-white rounded-full flex items-center justify-center transition-all shadow-md cursor-not-allowed"
+                        disabled>
+                        <i class="fas fa-stop text-lg"></i>
+                    </button>
+
+                    <!-- Informations d'enregistrement -->
+                    <div id="recordingInfo" class="hidden text-center">
+                        <div id="timer" class="text-lg font-mono font-bold text-red-600">00:00</div>
+                        <div class="text-xs text-gray-600">Enregistrement...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Audio Player (when recording is done) - Compact -->
+            <div id="audioSection" class="hidden mb-4 p-3 bg-primary-light/10 rounded-lg border border-primary-light">
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="text-sm font-medium text-primary-dark">
+                        <i class="fas fa-volume-up mr-2"></i>
+                        Enregistrement terminé
+                    </h3>
+                    <button type="button" id="transcribeBtn" class="btn-primary px-3 py-1 rounded text-sm font-medium">
+                        <i class="fas fa-magic mr-1"></i>
+                        Transcrire
+                    </button>
+                </div>
+                <audio id="audioPlayer" controls class="w-full h-8"></audio>
+            </div>
+
+            <!-- GRANDE ZONE DE TEXTE - Prend tout l'espace restant -->
+            <div class="flex-1 flex flex-col">
+                <div class="flex items-center justify-between mb-3">
+                    <label for="{{ form.texte_saisi.id_for_label }}" class="text-sm font-medium text-primary-dark">
+                        <i class="fas fa-edit mr-2 text-primary-steel"></i>
+                        Note médicale
+                    </label>
+                    <div class="text-xs text-gray-500">
+                        <span id="charCount">0 caractères</span>
+                    </div>
+                </div>
+
+                <!-- TEXTAREA QUI PREND TOUT L'ESPACE DISPONIBLE -->
+                <textarea name="{{ form.texte_saisi.name }}" id="{{ form.texte_saisi.id_for_label }}"
+                    class="flex-1 w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-steel focus:border-primary-steel transition-colors resize-none"
+                    style="min-height: 300px; font-family: 'Inter', sans-serif; font-size: 14px; line-height: 1.5;"
+                    placeholder="Saisissez ou dictez votre observation médicale ici...
+
+Vous pouvez :
+• Utiliser l'enregistrement vocal (bouton microphone)
+• Saisir directement au clavier
+• Importer un fichier audio ci-dessous
+
+Structure suggérée :
+• Motif de consultation
+• Antécédents médicaux
+• Examen clinique
+• Diagnostic
+• Traitement prescrit
+• Suivi recommandé">{{ form.texte_saisi.value|default_if_none:"" }}</textarea>
+
+                {% if form.texte_saisi.errors %}
+                <div class="mt-2 text-xs text-red-600">
+                    {% for error in form.texte_saisi.errors %}
+                    <p><i class="fas fa-exclamation-circle mr-1"></i>{{ error }}</p>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- File Upload - Compact et bien intégré -->
+        <div class="medical-card rounded-lg p-4">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 bg-primary-steel/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <i class="fas fa-file-audio text-primary-steel"></i>
+                </div>
+                <div class="flex-1">
+                    <h3 class="text-sm font-medium text-primary-dark mb-1">Importer un fichier audio</h3>
+                    <div class="flex items-center space-x-3">
+                        {{ form.audio_file }}
+                        <span class="text-xs text-gray-500">MP3, WAV, OGG, M4A, WebM</span>
+                    </div>
+                    {% if form.audio_file.errors %}
+                    <div class="mt-1 text-xs text-red-600">
+                        {% for error in form.audio_file.errors %}
+                        <p><i class="fas fa-exclamation-circle mr-1"></i>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Info - Compact avec les bonnes couleurs et info FastAPI + DrBERT + T5 -->
+        <div class="stat-card rounded-lg p-4 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="text-sm font-semibold mb-1 flex items-center">
+                        <i class="fas fa-robot mr-2"></i>
+                        Analyse automatique AURA
+                        {% if nlp_status.fastapi_available %}
+                            <span class="ml-2 px-2 py-1 bg-green-500 text-xs rounded-full">FastAPI</span>
+                        {% else %}
+                            <span class="ml-2 px-2 py-1 bg-yellow-500 text-xs rounded-full">Local</span>
+                        {% endif %}
+                        {% if nlp_status.drbert_available %}
+                            <span class="ml-1 px-2 py-1 bg-blue-500 text-xs rounded-full">DrBERT</span>
+                        {% else %}
+                            <span class="ml-1 px-2 py-1 bg-gray-500 text-xs rounded-full">Sim</span>
+                        {% endif %}
+                        {% if nlp_status.t5_available %}
+                            <span class="ml-1 px-2 py-1 bg-purple-500 text-xs rounded-full">T5</span>
+                        {% else %}
+                            <span class="ml-1 px-2 py-1 bg-gray-500 text-xs rounded-full">Sim</span>
+                        {% endif %}
+                    </h3>
+                    <p class="text-xs text-white/90">
+                        {% if nlp_status.fastapi_available and nlp_status.drbert_available and nlp_status.t5_available %}
+                            L'IA analysera automatiquement votre observation avec classification FastAPI, extraction d'entités DrBERT et résumés T5
+                        {% elif nlp_status.fastapi_available and nlp_status.drbert_available %}
+                            L'IA analysera automatiquement votre observation avec classification FastAPI, entités DrBERT et résumés simulés
+                        {% elif nlp_status.fastapi_available and nlp_status.t5_available %}
+                            L'IA analysera automatiquement votre observation avec classification FastAPI, résumés T5 et entités simulées
+                        {% elif nlp_status.drbert_available and nlp_status.t5_available %}
+                            L'IA analysera automatiquement votre observation avec entités DrBERT, résumés T5 et classification simulée
+                        {% elif nlp_status.fastapi_available %}
+                            L'IA analysera automatiquement votre observation avec classification FastAPI et entités/résumés simulés
+                        {% elif nlp_status.drbert_available %}
+                            L'IA analysera automatiquement votre observation avec entités DrBERT et classification/résumés simulés
+                        {% elif nlp_status.t5_available %}
+                            L'IA analysera automatiquement votre observation avec résumés T5 et classification/entités simulées
+                        {% else %}
+                            L'IA analysera automatiquement votre observation en mode simulation complète
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="flex space-x-2">
+                    <div class="bg-white/20 rounded px-2 py-1 text-xs">Whisper</div>
+                    {% if nlp_status.fastapi_available %}
+                        {% for model in nlp_status.available_models %}
+                        <div class="bg-white/20 rounded px-2 py-1 text-xs">{{ model }}</div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="bg-white/20 rounded px-2 py-1 text-xs">CamemBERT</div>
+                    {% endif %}
+                    {% if nlp_status.drbert_available %}
+                        <div class="bg-white/20 rounded px-2 py-1 text-xs">DrBERT</div>
+                    {% else %}
+                        <div class="bg-white/20 rounded px-2 py-1 text-xs">Sim-NER</div>
+                    {% endif %}
+                    {% if nlp_status.t5_available %}
+                        <div class="bg-white/20 rounded px-2 py-1 text-xs">T5-Sum</div>
+                    {% else %}
+                        <div class="bg-white/20 rounded px-2 py-1 text-xs">Sim-Sum</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Form Errors -->
+        {% if form.non_field_errors %}
+        <div class="p-3 bg-red-50 border border-red-200 rounded-lg">
+            {% for error in form.non_field_errors %}
+            <p class="text-sm text-red-600">
+                <i class="fas fa-exclamation-circle mr-1"></i>{{ error }}
+            </p>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Action Buttons - Fixed at bottom -->
+        <div class="flex justify-between items-center pt-4 border-t border-gray-200">
+            <a href="{% url 'med_assistant:dashboard' %}"
+                class="btn-secondary px-6 py-2 rounded-lg text-sm font-medium">
+                <i class="fas fa-times mr-2"></i>
+                Annuler
+            </a>
+            <button type="submit"
+                class="btn-primary px-8 py-2 rounded-lg text-sm font-medium shadow-md hover:shadow-lg">
+                <i class="fas fa-save mr-2"></i>
+                Créer et analyser
+                {% if nlp_status.fastapi_available and nlp_status.drbert_available and nlp_status.t5_available %}(Pipeline complète){% elif nlp_status.fastapi_available or nlp_status.drbert_available or nlp_status.t5_available %}(Hybride){% else %}(Local){% endif %}
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Chargement du script JavaScript -->
+<script src="{% load static %}{% static 'med_assistant/js/audio_recorder.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,379 @@
+{% load static tailwind_tags %}
+
+<!DOCTYPE html>
+<html lang="fr" class="h-full">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}AURA - Assistant Médical IA{% endblock %}</title>
+    {% tailwind_css %}
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        :root {
+            --primary-dark: #0B111A;
+            --primary-deep: #0D3B58;
+            --primary-steel: #306484;
+            --primary-light: #9AB5C5;
+        }
+
+        body {
+            background-color: #FAFBFC;
+            color: var(--primary-dark);
+        }
+
+        .bg-primary-dark {
+            background-color: var(--primary-dark);
+        }
+
+        .bg-primary-deep {
+            background-color: var(--primary-deep);
+        }
+
+        .bg-primary-steel {
+            background-color: var(--primary-steel);
+        }
+
+        .bg-primary-light {
+            background-color: var(--primary-light);
+        }
+
+        .text-primary-dark {
+            color: var(--primary-dark);
+        }
+
+        .text-primary-deep {
+            color: var(--primary-deep);
+        }
+
+        .text-primary-steel {
+            color: var(--primary-steel);
+        }
+
+        .text-primary-light {
+            color: var(--primary-light);
+        }
+
+        .border-primary-light {
+            border-color: var(--primary-light);
+        }
+
+        .border-primary-steel {
+            border-color: var(--primary-steel);
+        }
+
+        .medical-card {
+            background: white;
+            border: 1px solid #E5E7EB;
+            box-shadow: 0 1px 3px rgba(11, 17, 26, 0.1);
+            transition: all 0.2s ease;
+        }
+
+        .medical-card:hover {
+            box-shadow: 0 4px 12px rgba(11, 17, 26, 0.15);
+            border-color: var(--primary-light);
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, var(--primary-deep) 0%, var(--primary-steel) 100%);
+            color: white;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-deep);
+            color: white;
+            border: none;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-steel);
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background-color: white;
+            color: var(--primary-deep);
+            border: 1px solid var(--primary-light);
+            transition: all 0.2s ease;
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--primary-light);
+            color: white;
+        }
+
+        .sidebar {
+            background: linear-gradient(180deg, var(--primary-dark) 0%, var(--primary-deep) 100%);
+            width: 280px;
+            min-height: 100vh;
+        }
+
+        .nav-item {
+            color: rgba(255, 255, 255, 0.8);
+            transition: all 0.2s ease;
+            border-radius: 8px;
+            margin: 4px 0;
+        }
+
+        .nav-item:hover,
+        .nav-item.active {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .content-area {
+            margin-left: 280px;
+            min-height: 100vh;
+            background-color: #FAFBFC;
+        }
+
+        .header-bar {
+            background: white;
+            border-bottom: 1px solid #E5E7EB;
+            box-shadow: 0 1px 3px rgba(11, 17, 26, 0.1);
+        }
+
+        .theme-cardio {
+            background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
+        }
+
+        .theme-psy {
+            background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);
+        }
+
+        .theme-diabete {
+            background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+        }
+
+        .theme-neuro {
+            background: linear-gradient(135deg, #06B6D4 0%, #0891B2 100%);
+        }
+
+        .theme-pneumo {
+            background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+        }
+
+        .theme-gastro {
+            background: linear-gradient(135deg, #84CC16 0%, #65A30D 100%);
+        }
+
+        .theme-general {
+            background: linear-gradient(135deg, #6B7280 0%, #4B5563 100%);
+        }
+
+        .fade-in {
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .progress-bar {
+            background: linear-gradient(90deg, var(--primary-deep) 0%, var(--primary-steel) 100%);
+            height: 6px;
+            border-radius: 3px;
+            transition: width 1s ease-in-out;
+        }
+
+        @media (max-width: 1024px) {
+            .sidebar {
+                transform: translateX(-100%);
+                position: fixed;
+                z-index: 50;
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .content-area {
+                margin-left: 0;
+            }
+        }
+    </style>
+</head>
+
+<body class="h-full">
+    <!-- Sidebar -->
+    <div id="sidebar" class="sidebar fixed left-0 top-0 z-40">
+        <div class="p-6">
+            <!-- Logo -->
+            <div class="flex items-center space-x-3 mb-8">
+                <div class="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
+                    <i class="fas fa-stethoscope text-primary-deep text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-white">AURA</h1>
+                    <p class="text-xs text-gray-300">Assistant Médical IA</p>
+                </div>
+            </div>
+
+            <!-- Navigation -->
+            <nav class="space-y-2">
+                <a href="{% url 'med_assistant:dashboard' %}"
+                    class="nav-item flex items-center space-x-3 px-4 py-3 {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                    <i class="fas fa-chart-line w-5"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="{% url 'med_assistant:patient_list' %}"
+                    class="nav-item flex items-center space-x-3 px-4 py-3 {% if 'patient' in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="fas fa-users w-5"></i>
+                    <span>Patients</span>
+                </a>
+                <a href="{% url 'med_assistant:observation_create' %}"
+                    class="nav-item flex items-center space-x-3 px-4 py-3">
+                    <i class="fas fa-file-medical w-5"></i>
+                    <span>Nouvelle Observation</span>
+                </a>
+                <a href="{% url 'med_assistant:statistics' %}"
+                    class="nav-item flex items-center space-x-3 px-4 py-3 {% if request.resolver_match.url_name == 'statistics' %}active{% endif %}">
+                    <i class="fas fa-chart-pie w-5"></i>
+                    <span>Statistiques</span>
+                </a>
+            </nav>
+        </div>
+
+        <!-- Footer Sidebar -->
+        <div class="absolute bottom-0 left-0 right-0 p-6">
+            <div class="text-xs text-gray-400 space-y-1">
+                <div class="flex items-center">
+                    <i class="fas fa-shield-alt mr-2 text-green-400"></i>
+                    <span>Conforme RGPD</span>
+                </div>
+                <div class="flex items-center">
+                    <i class="fas fa-lock mr-2 text-blue-400"></i>
+                    <span>Données sécurisées</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="content-area">
+        <!-- Header -->
+        <header class="header-bar sticky top-0 z-30">
+            <div class="flex items-center justify-between px-6 py-4">
+                <div class="flex items-center space-x-4">
+                    <button id="sidebar-toggle" class="lg:hidden p-2 rounded-lg hover:bg-gray-100">
+                        <i class="fas fa-bars text-primary-dark"></i>
+                    </button>
+                    <div>
+                        <h2 class="text-lg font-semibold text-primary-dark">
+                            {% block page_title %}Dashboard{% endblock %}
+                        </h2>
+                        <p class="text-sm text-gray-600">
+                            {% block page_subtitle %}Vue d'ensemble du système{% endblock %}
+                        </p>
+                    </div>
+                </div>
+
+                <div class="flex items-center space-x-4">
+                    <div class="text-sm text-gray-600">
+                        <i class="fas fa-calendar mr-2"></i>
+                        {{ "now"|date:"d/m/Y" }}
+                    </div>
+                    <div class="text-sm text-gray-600">
+                        <i class="fas fa-clock mr-2"></i>
+                        {{ "now"|date:"H:i" }}
+                    </div>
+                    <div class="flex items-center text-sm text-green-600">
+                        <div class="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                        Système opérationnel
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Messages -->
+        {% if messages %}
+        <div class="px-6 pt-4">
+            {% for message in messages %}
+            <div
+                class="mb-4 p-4 rounded-lg medical-card fade-in {% if message.tags == 'success' %}border-l-4 border-green-500{% elif message.tags == 'error' %}border-l-4 border-red-500{% elif message.tags == 'warning' %}border-l-4 border-yellow-500{% else %}border-l-4 border-blue-500{% endif %}">
+                <div class="flex items-center">
+                    <i
+                        class="fas {% if message.tags == 'success' %}fa-check-circle text-green-500{% elif message.tags == 'error' %}fa-exclamation-circle text-red-500{% elif message.tags == 'warning' %}fa-exclamation-triangle text-yellow-500{% else %}fa-info-circle text-blue-500{% endif %} mr-3"></i>
+                    <span class="text-gray-800">{{ message }}</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Page Content -->
+        <main class="p-6">
+            {% block content %}
+            {% endblock %}
+        </main>
+    </div>
+
+    <!-- Mobile Overlay -->
+    <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden lg:hidden"></div>
+
+    <!-- Scripts -->
+    <script>
+        // Sidebar toggle for mobile
+        const sidebarToggle = document.getElementById('sidebar-toggle');
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebar-overlay');
+
+        sidebarToggle?.addEventListener('click', function () {
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('hidden');
+        });
+
+        overlay?.addEventListener('click', function () {
+            sidebar.classList.remove('open');
+            overlay.classList.add('hidden');
+        });
+
+        // Auto-hide messages
+        setTimeout(function () {
+            const messages = document.querySelectorAll('.fade-in');
+            messages.forEach(function (message) {
+                if (message.classList.contains('border-l-4')) {
+                    message.style.transition = 'all 0.5s ease-out';
+                    message.style.opacity = '0';
+                    message.style.transform = 'translateY(-20px)';
+                    setTimeout(function () {
+                        message.remove();
+                    }, 500);
+                }
+            });
+        }, 5000);
+
+        // Progress bars animation
+        document.addEventListener('DOMContentLoaded', function () {
+            const progressBars = document.querySelectorAll('.progress-bar');
+            progressBars.forEach(bar => {
+                const width = bar.getAttribute('data-width') || bar.style.width;
+                if (width) {
+                    bar.style.width = '0%';
+                    setTimeout(() => {
+                        bar.style.width = width;
+                    }, 500);
+                }
+            });
+        });
+    </script>
+
+    {% block extra_js %}
+    {% endblock %}
+</body>
+
+</html>

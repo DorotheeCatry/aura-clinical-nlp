@@ -1,0 +1,108 @@
+{% extends 'med_assistant/base.html' %}
+
+{% block title %}
+    {% if is_edit %}Modifier {{ patient.nom_complet }}{% else %}Nouveau patient{% endif %} - AURA
+{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <div class="bg-white rounded-xl p-8 shadow-sm border border-slate-200">
+        <!-- En-tête -->
+        <div class="mb-8">
+            <h1 class="text-2xl font-bold text-slate-800 flex items-center">
+                <i class="fas fa-user-{% if is_edit %}edit{% else %}plus{% endif %} mr-3 text-blue-600"></i>
+                {% if is_edit %}
+                    Modifier {{ patient.nom_complet }}
+                {% else %}
+                    Nouveau patient
+                {% endif %}
+            </h1>
+            <p class="text-slate-600 mt-2">
+                {% if is_edit %}
+                    Modifiez les informations du patient
+                {% else %}
+                    Ajoutez un nouveau patient à votre base de données
+                {% endif %}
+            </p>
+        </div>
+
+        <!-- Formulaire -->
+        <form method="post" class="space-y-6">
+            {% csrf_token %}
+            
+            <!-- Nom -->
+            <div>
+                <label for="{{ form.nom.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">
+                    <i class="fas fa-user mr-1"></i>
+                    Nom *
+                </label>
+                {{ form.nom }}
+                {% if form.nom.errors %}
+                    <div class="mt-1 text-sm text-red-600">
+                        {% for error in form.nom.errors %}
+                            <p><i class="fas fa-exclamation-circle mr-1"></i>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Prénom -->
+            <div>
+                <label for="{{ form.prenom.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">
+                    <i class="fas fa-user mr-1"></i>
+                    Prénom *
+                </label>
+                {{ form.prenom }}
+                {% if form.prenom.errors %}
+                    <div class="mt-1 text-sm text-red-600">
+                        {% for error in form.prenom.errors %}
+                            <p><i class="fas fa-exclamation-circle mr-1"></i>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Date de naissance -->
+            <div>
+                <label for="{{ form.date_naissance.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">
+                    <i class="fas fa-calendar mr-1"></i>
+                    Date de naissance *
+                </label>
+                {{ form.date_naissance }}
+                {% if form.date_naissance.errors %}
+                    <div class="mt-1 text-sm text-red-600">
+                        {% for error in form.date_naissance.errors %}
+                            <p><i class="fas fa-exclamation-circle mr-1"></i>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Erreurs générales du formulaire -->
+            {% if form.non_field_errors %}
+                <div class="p-4 bg-red-50 border border-red-200 rounded-lg">
+                    {% for error in form.non_field_errors %}
+                        <p class="text-sm text-red-600">
+                            <i class="fas fa-exclamation-circle mr-1"></i>{{ error }}
+                        </p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <!-- Boutons d'action -->
+            <div class="flex flex-col sm:flex-row sm:justify-end space-y-3 sm:space-y-0 sm:space-x-3 pt-6 border-t border-slate-200">
+                <a href="{% if is_edit %}{% url 'med_assistant:patient_detail' patient.id %}{% else %}{% url 'med_assistant:patient_list' %}{% endif %}" 
+                   class="px-6 py-3 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors text-center">
+                    <i class="fas fa-times mr-2"></i>
+                    Annuler
+                </a>
+                <button type="submit" 
+                        class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                    <i class="fas fa-save mr-2"></i>
+                    {% if is_edit %}Modifier{% else %}Créer{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

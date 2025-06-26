@@ -1,0 +1,283 @@
+{% extends 'med_assistant/base.html' %}
+
+{% block title %}Dashboard - AURA Medical AI{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block page_subtitle %}Vue d'ensemble du système médical{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- NLP Status Banner -->
+    {% if nlp_status %}
+    <div class="medical-card rounded-lg p-4 fade-in {% if nlp_status.fastapi_available and nlp_status.drbert_available and nlp_status.t5_available %}border-l-4 border-green-500{% elif nlp_status.fastapi_available or nlp_status.drbert_available or nlp_status.t5_available %}border-l-4 border-yellow-500{% else %}border-l-4 border-red-500{% endif %}">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 {% if nlp_status.fastapi_available and nlp_status.drbert_available and nlp_status.t5_available %}bg-green-100{% elif nlp_status.fastapi_available or nlp_status.drbert_available or nlp_status.t5_available %}bg-yellow-100{% else %}bg-red-100{% endif %} rounded-lg flex items-center justify-center">
+                    <i class="fas fa-robot {% if nlp_status.fastapi_available and nlp_status.drbert_available and nlp_status.t5_available %}text-green-600{% elif nlp_status.fastapi_available or nlp_status.drbert_available or nlp_status.t5_available %}text-yellow-600{% else %}text-red-600{% endif %}"></i>
+                </div>
+                <div>
+                    <h3 class="font-semibold {% if nlp_status.fastapi_available and nlp_status.drbert_available and nlp_status.t5_available %}text-green-800{% elif nlp_status.fastapi_available or nlp_status.drbert_available or nlp_status.t5_available %}text-yellow-800{% else %}text-red-800{% endif %}">
+                        Statut Pipeline NLP
+                    </h3>
+                    <p class="text-sm {% if nlp_status.fastapi_available and nlp_status.drbert_available and nlp_status.t5_available %}text-green-600{% elif nlp_status.fastapi_available or nlp_status.drbert_available or nlp_status.t5_available %}text-yellow-600{% else %}text-red-600{% endif %}">
+                        {% if nlp_status.fastapi_available and nlp_status.drbert_available and nlp_status.t5_available %}
+                            FastAPI + DrBERT + T5 connectés - Pipeline complète active
+                        {% elif nlp_status.fastapi_available and nlp_status.drbert_available %}
+                            FastAPI + DrBERT connectés, T5 en simulation
+                        {% elif nlp_status.fastapi_available and nlp_status.t5_available %}
+                            FastAPI + T5 connectés, DrBERT en simulation
+                        {% elif nlp_status.drbert_available and nlp_status.t5_available %}
+                            DrBERT + T5 connectés, FastAPI non disponible
+                        {% elif nlp_status.fastapi_available %}
+                            FastAPI connecté, DrBERT et T5 en simulation
+                        {% elif nlp_status.drbert_available %}
+                            DrBERT connecté, FastAPI et T5 en simulation
+                        {% elif nlp_status.t5_available %}
+                            T5 connecté, FastAPI et DrBERT en simulation
+                        {% else %}
+                            Mode simulation complet
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+            <div class="text-right">
+                <div class="text-xs {% if nlp_status.fastapi_available and nlp_status.drbert_available and nlp_status.t5_available %}text-green-600{% elif nlp_status.fastapi_available or nlp_status.drbert_available or nlp_status.t5_available %}text-yellow-600{% else %}text-red-600{% endif %}">
+                    Whisper: {% if nlp_status.whisper_available %}✓{% else %}✗{% endif %} | 
+                    DrBERT: {% if nlp_status.drbert_available %}✓{% else %}✗{% endif %} | 
+                    T5: {% if nlp_status.t5_available %}✓{% else %}✗{% endif %} | 
+                    Device: {{ nlp_status.device|upper }}
+                </div>
+                {% if nlp_status.available_models %}
+                <div class="text-xs text-gray-500 mt-1">
+                    Modèles: {{ nlp_status.available_models|join:", " }}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Statistics Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <!-- Total Patients -->
+        <div class="stat-card rounded-lg p-6 text-white fade-in">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-white/80 text-sm font-medium uppercase tracking-wide">Patients totaux</p>
+                    <p class="text-3xl font-bold mt-2">{{ total_patients }}</p>
+                    {% if patients_recents %}
+                    <p class="text-white/90 text-sm mt-1 flex items-center">
+                        <i class="fas fa-arrow-up mr-1"></i>
+                        +{{ patients_recents|length }} ce mois
+                    </p>
+                    {% endif %}
+                </div>
+                <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-users text-xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Observations -->
+        <div class="stat-card rounded-lg p-6 text-white fade-in">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-white/80 text-sm font-medium uppercase tracking-wide">Observations</p>
+                    <p class="text-3xl font-bold mt-2">{{ total_observations }}</p>
+                    <p class="text-white/90 text-sm mt-1 flex items-center">
+                        <i class="fas fa-robot mr-1"></i>
+                        {% if nlp_status.fastapi_available %}FastAPI{% else %}Local{% endif %} actif
+                    </p>
+                </div>
+                <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-file-medical-alt text-xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Real Entities (DrBERT) -->
+        <div class="medical-card rounded-lg p-6 fade-in">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-600 text-sm font-medium uppercase tracking-wide">Entités DrBERT</p>
+                    <p class="text-3xl font-bold mt-2 text-primary-dark">
+                        {{ real_entities_count|default:0 }}
+                    </p>
+                    <p class="text-gray-500 text-sm mt-1 flex items-center">
+                        <i class="fas fa-brain mr-1"></i>
+                        {% if nlp_status.drbert_available %}DrBERT actif{% else %}Simulation{% endif %}
+                    </p>
+                </div>
+                <div class="w-12 h-12 bg-primary-light/20 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-search-plus text-xl text-primary-steel"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Performance -->
+        <div class="stat-card rounded-lg p-6 text-white fade-in">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-white/80 text-sm font-medium uppercase tracking-wide">Statut système</p>
+                    <p class="text-3xl font-bold mt-2">
+                        {% if nlp_status.fastapi_available and nlp_status.drbert_available and nlp_status.t5_available %}99.9%{% elif nlp_status.fastapi_available or nlp_status.drbert_available or nlp_status.t5_available %}92.0%{% else %}80.0%{% endif %}
+                    </p>
+                    <p class="text-white/90 text-sm mt-1 flex items-center">
+                        <i class="fas fa-{% if nlp_status.fastapi_available and nlp_status.drbert_available and nlp_status.t5_available %}check-circle{% elif nlp_status.fastapi_available or nlp_status.drbert_available or nlp_status.t5_available %}exclamation-triangle{% else %}times-circle{% endif %} mr-1"></i>
+                        {% if nlp_status.fastapi_available and nlp_status.drbert_available and nlp_status.t5_available %}Optimal{% elif nlp_status.fastapi_available or nlp_status.drbert_available or nlp_status.t5_available %}Partiel{% else %}Simulation{% endif %}
+                    </p>
+                </div>
+                <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-bullseye text-xl"></i>
+                </div>
+            </div>
+            <div class="mt-4">
+                <div class="w-full bg-white/20 rounded-full h-2">
+                    <div class="progress-bar bg-white h-2 rounded-full" data-width="{% if nlp_status.fastapi_available and nlp_status.drbert_available and nlp_status.t5_available %}99.9%{% elif nlp_status.fastapi_available or nlp_status.drbert_available or nlp_status.t5_available %}92.0%{% else %}80.0%{% endif %}"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Specialty Distribution -->
+        {% if themes_stats %}
+        <div class="medical-card rounded-lg p-6 fade-in">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-semibold text-primary-dark">Répartition par spécialité</h2>
+                <i class="fas fa-chart-pie text-xl text-primary-steel"></i>
+            </div>
+            <div class="space-y-4">
+                {% for theme, count in themes_stats.items %}
+                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-4 h-4 rounded-full {% if 'Cardio' in theme %}bg-red-500{% elif 'Psy' in theme %}bg-purple-500{% elif 'Diabète' in theme or 'Métabolique' in theme %}bg-yellow-500{% else %}bg-gray-500{% endif %}"></div>
+                        <span class="font-medium text-gray-700">{{ theme }}</span>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <div class="w-24 bg-gray-200 rounded-full h-2">
+                            <div class="progress-bar h-2 rounded-full" data-width="{{ count|floatformat:0 }}%"></div>
+                        </div>
+                        <span class="text-lg font-bold text-primary-dark min-w-[2rem]">{{ count }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Monthly Evolution -->
+        {% if monthly_stats %}
+        <div class="medical-card rounded-lg p-6 fade-in">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-semibold text-primary-dark">Évolution mensuelle</h2>
+                <i class="fas fa-chart-line text-xl text-primary-steel"></i>
+            </div>
+            <div class="space-y-4">
+                {% for stat in monthly_stats %}
+                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <span class="font-medium text-gray-700">{{ stat.month }}</span>
+                    <div class="flex items-center space-x-4">
+                        <div class="w-24 bg-gray-200 rounded-full h-2">
+                            <div class="progress-bar h-2 rounded-full" data-width="{% if stat.count > 0 %}{{ stat.count|add:10 }}%{% else %}5%{% endif %}"></div>
+                        </div>
+                        <span class="text-lg font-bold text-primary-dark min-w-[2rem]">{{ stat.count }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Recent Observations -->
+    {% if observations_recentes %}
+    <div class="medical-card rounded-lg overflow-hidden fade-in">
+        <div class="p-6 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+                <h2 class="text-xl font-semibold text-primary-dark">Observations récentes</h2>
+                <span class="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">{{ observations_recentes|length }} dernières</span>
+            </div>
+        </div>
+        <div class="divide-y divide-gray-100">
+            {% for observation in observations_recentes %}
+            <div class="flex items-center justify-between p-6 hover:bg-gray-50 transition-colors">
+                <div class="flex items-center space-x-4">
+                    <div class="w-12 h-12 bg-primary-steel rounded-lg flex items-center justify-center">
+                        <i class="fas fa-user-md text-white"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-primary-dark">{{ observation.patient.nom_complet }}</h3>
+                        <p class="text-sm text-gray-500">{{ observation.date|date:"d/m/Y à H:i" }}</p>
+                        {% if observation.patient.age %}
+                        <p class="text-xs text-gray-400">{{ observation.patient.age }} ans</p>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="flex-1 mx-6">
+                    {% if observation.resume %}
+                    <p class="text-sm text-gray-600 line-clamp-2">{{ observation.resume }}</p>
+                    {% else %}
+                    <p class="text-sm text-gray-400 italic">En cours d'analyse...</p>
+                    {% endif %}
+                </div>
+                
+                <div class="flex items-center space-x-3">
+                    {% if observation.theme_classe %}
+                    <span class="px-3 py-1 text-xs font-medium rounded-full {% if observation.theme_classe == 'cardiovasculaire' %}theme-cardio{% elif observation.theme_classe == 'psy' %}theme-psy{% elif observation.theme_classe == 'diabete' %}theme-diabete{% else %}theme-general{% endif %} text-white">
+                        {{ observation.get_theme_classe_display }}
+                    </span>
+                    {% endif %}
+                    
+                    {% if not observation.traitement_termine %}
+                    <span class="flex items-center text-yellow-600 text-sm">
+                        <i class="fas fa-clock mr-1"></i>
+                        <span class="hidden sm:inline">En cours</span>
+                    </span>
+                    {% elif observation.traitement_erreur %}
+                    <span class="flex items-center text-red-600 text-sm">
+                        <i class="fas fa-exclamation-triangle mr-1"></i>
+                        <span class="hidden sm:inline">Erreur</span>
+                    </span>
+                    {% else %}
+                    <span class="flex items-center text-green-600 text-sm">
+                        <i class="fas fa-check-circle mr-1"></i>
+                        <span class="hidden sm:inline">Terminé</span>
+                    </span>
+                    {% endif %}
+                    
+                    <a href="{% url 'med_assistant:observation_detail' observation.id %}" 
+                       class="btn-primary px-4 py-2 rounded-lg text-sm">
+                        <i class="fas fa-eye"></i>
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="p-6 bg-gray-50 text-center">
+            <a href="{% url 'med_assistant:patient_list' %}" 
+               class="text-primary-steel hover:text-primary-deep text-sm font-medium transition-colors">
+                Voir toutes les observations
+            </a>
+        </div>
+    </div>
+    {% else %}
+    <!-- Empty State -->
+    <div class="medical-card rounded-lg p-12 text-center fade-in">
+        <div class="w-24 h-24 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-6">
+            <i class="fas fa-file-medical text-3xl text-gray-400"></i>
+        </div>
+        <h3 class="text-xl font-semibold text-primary-dark mb-4">Aucune observation</h3>
+        <p class="text-gray-600 mb-8 max-w-md mx-auto">
+            Commencez par créer votre première observation médicale pour voir la puissance de l'analyse IA d'AURA avec DrBERT et T5.
+        </p>
+        <a href="{% url 'med_assistant:observation_create' %}" 
+           class="btn-primary px-8 py-3 rounded-lg font-medium inline-flex items-center space-x-2">
+            <i class="fas fa-plus"></i>
+            <span>Créer une observation</span>
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
