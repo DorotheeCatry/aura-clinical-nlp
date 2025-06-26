@@ -290,6 +290,56 @@ class NLPPipeline:
         except Exception as e:
             logger.error(f"❌ Erreur rechargement Whisper: {e}")
     
+    def regroup_entities_pro(self, entities, original_text, max_gap=2):
+        """
+        Nettoie et regroupe les entités extraites par DrBERT
+        
+        Args:
+            entities: Liste des entités brutes de DrBERT
+            original_text: Texte original pour récupérer le vrai texte
+            max_gap: Écart maximum entre entités pour les regrouper
+            
+        Returns:
+            Liste des entités nettoyées et regroupées
+        """
+        grouped = []
+        current = None
+
+        for ent in entities:
+            # Nettoyage du sous-token
+            word = ent['word'].lstrip('#')
+
+            if (current is None 
+                or ent['entity_group'] != current['entity_group'] 
+                or ent['start'] - current['end'] > max_gap):
+                # On ferme l'entité précédente
+                if current:
+                    # Récupère le vrai texte dans l'original (pour être 100% propre)
+                    current['text'] = original_text[current['start']:current['end']].strip()
+                    current['score'] = float(sum(current['score']) / len(current['score']))
+                    grouped.append(current)
+
+                # Nouvelle entité
+                current = {
+                    'entity_group': ent['entity_group'],
+                    'start': ent['start'],
+                    'end': ent['end'],
+                    'score': [ent['score']],
+                }
+
+            else:
+                # On prolonge l'entité en cours
+                current['end'] = ent['end']
+                current['score'].append(ent['score'])
+
+        # Ajouter la dernière
+        if current:
+            current['text'] = original_text[current['start']:current['end']].strip()
+            current['score'] = float(sum(current['score']) / len(current['score']))
+            grouped.append(current)
+
+        return grouped
+    
     def transcribe_audio(self, audio_file_path: str) -> Optional[str]:
         """
         Transcrit un fichier audio en texte avec Whisper
@@ -447,7 +497,7 @@ class NLPPipeline:
     
     def extract_entities_drbert(self, text: str) -> Dict[str, List[str]]:
         """
-        Extrait les entités médicales avec DrBERT (chargé à la demande)
+        Extrait les entités médicales avec DrBERT (chargé à la demande) et les nettoie
         
         Args:
             text: Texte à analyser
@@ -463,8 +513,11 @@ class NLPPipeline:
             
             logger.info(f"🔍 Extraction d'entités DrBERT pour: {text[:50]}...")
             
-            # Utiliser le pipeline NER de DrBERT
-            entities = self.drbert_pipeline(text)
+            # Utiliser le pipeline NER de DrBERT avec aggregation_strategy="none" pour avoir les tokens bruts
+            raw_entities = self.drbert_pipeline(text, aggregation_strategy="none")
+            
+            # Nettoyer et regrouper les entités avec votre fonction
+            clean_entities = self.regroup_entities_pro(raw_entities, text)
             
             # Organiser les entités par catégorie
             categorized_entities = {
@@ -474,16 +527,16 @@ class NLPPipeline:
                 'PROC': [],  # Procedures
             }
             
-            for entity in entities:
+            for entity in clean_entities:
                 entity_label = entity['entity_group']
-                entity_text = entity['word']
+                entity_text = entity['text']
                 confidence = entity['score']
                 
                 # Mapper vers nos catégories
                 mapped_category = self.drbert_entity_mapping.get(entity_label, 'PROC')
                 
-                # Filtrer par confiance (seuil à 0.5)
-                if confidence > 0.5:
+                # Filtrer par confiance (seuil à 0.5) et longueur minimale
+                if confidence > 0.5 and len(entity_text.strip()) > 2:
                     # Éviter les doublons
                     if entity_text not in categorized_entities[mapped_category]:
                         categorized_entities[mapped_category].append(entity_text)
@@ -492,7 +545,7 @@ class NLPPipeline:
             # Nettoyer les catégories vides
             categorized_entities = {k: v for k, v in categorized_entities.items() if v}
             
-            logger.info(f"✅ DrBERT: {sum(len(v) for v in categorized_entities.values())} entités extraites")
+            logger.info(f"✅ DrBERT: {sum(len(v) for v in categorized_entities.values())} entités extraites et nettoyées")
             
             # Libérer DrBERT après utilisation pour économiser la mémoire
             if self.drbert_pipeline is not None:
@@ -625,10 +678,10 @@ class NLPPipeline:
                 results['model_prediction'] = prediction
                 logger.info(f"🏷️ Thème classifié: {theme} (prédiction: {prediction})")
             
-            # 4. Extraction d'entités (DrBERT local à la demande)
+            # 4. Extraction d'entités (DrBERT local à la demande avec nettoyage)
             entities = self.extract_entities(text_source)
             results['entites'] = entities
-            logger.info(f"🔍 Entités extraites: {len(entities)} catégories")
+            logger.info(f"🔍 Entités extraites et nettoyées: {len(entities)} catégories")
             
             # 5. Génération du résumé (T5 local à la demande)
             summary = self.generate_summary(text_source)
