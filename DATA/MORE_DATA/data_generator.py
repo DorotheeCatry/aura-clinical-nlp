@@ -40,8 +40,8 @@ class DataGenerator:
         self.all_data.extend(self.data100.generate_134())
 
         # Création du DataFrame
-        df_medical = pd.DataFrame(self.all_data, columns=['phrase', 'pathologie'])
-        df_medical['nom_pathologie'] = df_medical['pathologie'].map(self.pathology_mapping)
+        df_medical = pd.DataFrame(self.all_data, columns=['text', 'labe'])
+        #df_medical['nom_pathologie'] = df_medical['pathologie'].map(self.pathology_mapping)
 
         return df_medical
 
