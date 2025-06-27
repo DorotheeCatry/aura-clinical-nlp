@@ -20,13 +20,13 @@
                 </div>
             </div>
             <div class="mt-4 sm:mt-0 flex flex-wrap gap-2">
-                <a href="{% url 'med_assistant:patient_edit' patient.id %}"
-                    class="inline-flex items-center px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors ml-4">
+                <a href="{% url 'med_assistant:observation_create' %}?patient_id={{ patient.id }}"
+                    class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
                     <i class="fas fa-plus mr-2"></i>
                     Nouvelle observation
                 </a>
                 <a href="{% url 'med_assistant:patient_edit' patient.id %}"
-                    class="inline-flex items-center px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors ml-4">
+                    class="inline-flex items-center px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors">
                     <i class="fas fa-edit mr-2"></i>
                     Modifier
                 </a>
@@ -81,23 +81,19 @@
                         <div class="mb-3">
                             <h4 class="text-sm font-medium text-slate-700 mb-2">Entités extraites</h4>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                                {% for type, items in observation.entites_formatees.items %}
-                                {% if items %}
+                                {% for category_name, entities_list in observation.entites_formatees.items %}
+                                {% if entities_list %}
                                 <div>
-                                    <span class="font-medium text-slate-600 capitalize">{{ type|title }}:</span>
+                                    <span class="font-medium text-slate-600 flex items-center mb-1">
+                                        <i class="fas fa-{% if category_name == 'Maladies et Symptômes' %}heartbeat{% elif category_name == 'Médicaments' %}pills{% elif category_name == 'Anatomie' %}user{% elif category_name == 'Procédures Médicales' %}cogs{% else %}tag{% endif %} mr-1 text-xs"></i>
+                                        {{ category_name }}:
+                                    </span>
                                     <div class="mt-1">
-                                        {% if items|length == 1 and items.0.valeur %}
-                                        <span class="text-slate-700">{{ items.0.valeur }} {{ items.0.unite|default:""
-                                            }}</span>
-                                        {% else %}
-                                        {% for item in items %}
-                                        <span
-                                            class="inline-block bg-slate-100 text-slate-700 px-2 py-1 rounded text-xs mr-1 mb-1">
-                                            {% if item.valeur %}{{ item.valeur }} {{ item.unite|default:"" }}{% else
-                                            %}{{ item }}{% endif %}
+                                        {% for entity in entities_list %}
+                                        <span class="inline-block bg-slate-100 text-slate-700 px-2 py-1 rounded text-xs mr-1 mb-1">
+                                            {{ entity }}
                                         </span>
                                         {% endfor %}
-                                        {% endif %}
                                     </div>
                                 </div>
                                 {% endif %}
@@ -115,6 +111,11 @@
                         <div class="flex items-center text-red-600 text-sm">
                             <i class="fas fa-exclamation-triangle mr-1"></i>
                             Erreur de traitement
+                        </div>
+                        {% else %}
+                        <div class="flex items-center text-green-600 text-sm">
+                            <i class="fas fa-check-circle mr-1"></i>
+                            Traitement terminé
                         </div>
                         {% endif %}
                     </div>
