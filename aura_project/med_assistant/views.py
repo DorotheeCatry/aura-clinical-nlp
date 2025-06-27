@@ -76,7 +76,13 @@ def dashboard(request):
     monthly_stats.reverse()
     
     # Statut de la pipeline NLP
-    nlp_status = nlp_pipeline.get_status()
+    raw_status = nlp_pipeline.get_status()
+    nlp_status = NLPStatus(
+        classification=raw_status.get("classification_available"),
+        drbert=raw_status.get("drbert_available"),
+        t5=raw_status.get("t5_available"),
+        whisper=raw_status.get("whisper_available"),
+    )
     
     context = {
         'total_patients': total_patients,
@@ -260,14 +266,15 @@ def observation_create(request):
             except Patient.DoesNotExist:
                 pass
     
-    # Ajouter le statut de la pipeline au contexte
+    # Ajouter le statut de la pipeline au contexte avec NLPStatus
     raw_status = nlp_pipeline.get_status()
     nlp_status = NLPStatus(
         classification=raw_status.get("classification_available"),
         drbert=raw_status.get("drbert_available"),
         t5=raw_status.get("t5_available"),
         whisper=raw_status.get("whisper_available"),
-        )
+    )
+    
     context = {
         'form': form,
         'nlp_status': nlp_status
@@ -519,8 +526,14 @@ def statistics(request):
             if sorted_entities:  # Seulement si on a des entités
                 top_entities[category] = sorted_entities
     
-    # Statut de la pipeline NLP
-    nlp_status = nlp_pipeline.get_status()
+    # Statut de la pipeline NLP avec NLPStatus
+    raw_status = nlp_pipeline.get_status()
+    nlp_status = NLPStatus(
+        classification=raw_status.get("classification_available"),
+        drbert=raw_status.get("drbert_available"),
+        t5=raw_status.get("t5_available"),
+        whisper=raw_status.get("whisper_available"),
+    )
     
     # Catégories d'entités DrBERT avec noms compréhensibles
     drbert_categories = [

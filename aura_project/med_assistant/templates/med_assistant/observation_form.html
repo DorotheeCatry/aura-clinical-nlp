@@ -6,13 +6,13 @@
 
 {% block content %}
 <div class="h-full flex flex-col">
-    <!-- NLP Status Info -->
+    <!-- NLP Status Info - Utilisation robuste de NLPStatus -->
     {% if nlp_status %}
-    <div class="medical-card rounded-lg p-4 mb-4 {% if nlp_status.classification_available and nlp_status.drbert_available and nlp_status.t5_available %}border-l-4 border-green-500{% elif nlp_status.classification_available or nlp_status.drbert_available or nlp_status.t5_available %}border-l-4 border-yellow-500{% else %}border-l-4 border-red-500{% endif %}">
+    <div class="medical-card rounded-lg p-4 mb-4 border-l-4 {{ nlp_status.border_class }}">
         <div class="flex items-center justify-between">
             <div class="flex items-center space-x-3">
-                <div class="w-8 h-8 {% if nlp_status.classification_available and nlp_status.drbert_available and nlp_status.t5_available %}bg-green-100{% elif nlp_status.classification_available or nlp_status.drbert_available or nlp_status.t5_available %}bg-yellow-100{% else %}bg-red-100{% endif %} rounded-lg flex items-center justify-center">
-                    <i class="fas fa-robot {% if nlp_status.classification_available and nlp_status.drbert_available and nlp_status.t5_available %}text-green-600{% elif nlp_status.classification_available or nlp_status.drbert_available or nlp_status.t5_available %}text-yellow-600{% else %}text-red-600{% endif %}"></i>
+                <div class="w-8 h-8 {{ nlp_status.bg_class }} rounded-lg flex items-center justify-center">
+                    <i class="fas fa-robot {{ nlp_status.text_class }}"></i>
                 </div>
                 <div>
                     <h3 class="text-sm font-semibold {{ nlp_status.text_class_title }}">
@@ -179,7 +179,7 @@ Structure suggérée :
             </div>
         </div>
 
-        <!-- AI Info - Compact avec les bonnes couleurs et info HuggingFace -->
+        <!-- AI Info - Utilisation robuste de NLPStatus -->
         <div class="stat-card rounded-lg p-4 text-white">
             <div class="flex items-center justify-between">
                 <div>
@@ -203,23 +203,7 @@ Structure suggérée :
                         {% endif %}
                     </h3>
                     <p class="text-xs text-white/90">
-                        {% if nlp_status.classification_available and nlp_status.drbert_available and nlp_status.t5_available %}
-                            L'IA analysera automatiquement votre observation avec classification HuggingFace, extraction d'entités DrBERT et résumés T5
-                        {% elif nlp_status.classification_available and nlp_status.drbert_available %}
-                            L'IA analysera automatiquement votre observation avec classification HuggingFace, entités DrBERT et résumés simulés
-                        {% elif nlp_status.classification_available and nlp_status.t5_available %}
-                            L'IA analysera automatiquement votre observation avec classification HuggingFace, résumés T5 et entités simulées
-                        {% elif nlp_status.drbert_available and nlp_status.t5_available %}
-                            L'IA analysera automatiquement votre observation avec entités DrBERT, résumés T5 et classification simulée
-                        {% elif nlp_status.classification_available %}
-                            L'IA analysera automatiquement votre observation avec classification HuggingFace et entités/résumés simulés
-                        {% elif nlp_status.drbert_available %}
-                            L'IA analysera automatiquement votre observation avec entités DrBERT et classification/résumés simulés
-                        {% elif nlp_status.t5_available %}
-                            L'IA analysera automatiquement votre observation avec résumés T5 et classification/entités simulées
-                        {% else %}
-                            L'IA analysera automatiquement votre observation en mode simulation complète
-                        {% endif %}
+                        {{ nlp_status.description_label }}
                     </p>
                 </div>
                 <div class="flex space-x-2">
@@ -264,8 +248,7 @@ Structure suggérée :
             <button type="submit"
                 class="btn-primary px-8 py-2 rounded-lg text-sm font-medium shadow-md hover:shadow-lg">
                 <i class="fas fa-save mr-2"></i>
-                Créer et analyser
-                {% if nlp_status.classification_available and nlp_status.drbert_available and nlp_status.t5_available %}(Pipeline complète){% elif nlp_status.classification_available or nlp_status.drbert_available or nlp_status.t5_available %}(Hybride){% else %}(Local){% endif %}
+                Créer et analyser ({{ nlp_status.pipeline_mode }})
             </button>
         </div>
     </form>
