@@ -13,6 +13,7 @@ from collections import defaultdict
 from faster_whisper import WhisperModel
 import tempfile, subprocess, json
 from datetime import date
+from med_assistant.utils.nlp_status import NLPStatus
 
 
 
@@ -260,7 +261,13 @@ def observation_create(request):
                 pass
     
     # Ajouter le statut de la pipeline au contexte
-    nlp_status = nlp_pipeline.get_status()
+    raw_status = nlp_pipeline.get_status()
+    nlp_status = NLPStatus(
+        classification=raw_status.get("classification_available"),
+        drbert=raw_status.get("drbert_available"),
+        t5=raw_status.get("t5_available"),
+        whisper=raw_status.get("whisper_available"),
+        )
     context = {
         'form': form,
         'nlp_status': nlp_status
