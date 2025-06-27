@@ -20,21 +20,24 @@ class DataGenerator:
         #self.pathology_mapping[1]= "Hypertension artérielle : HTA secondaire", 
         #self.pathology_mapping[2]= "Hypertension artérielle : Complications cardiovasculaires de l'HTA"
 
-        self.pathology_mapping[0]= "Hypertension artérielle",
+
+        mapping_number = 0
+        self.pathology_mapping[mapping_number]= "Hypertension artérielle",
 
 
-        self.all_data = self.data100.generate_111(0)
-        self.all_data.extend(self.data100.generate_112(0))
-        self.all_data.extend(self.data100.generate_113(0))
+        self.all_data = self.data100.generate_111(mapping_number)
+        self.all_data.extend(self.data100.generate_112(mapping_number))
+        self.all_data.extend(self.data100.generate_113(mapping_number))
 
         # 120 : Diabete
         # self.pathology_mapping[3] = "Diabète de type 2" # plus fréquent donc en premier
         # self.pathology_mapping[4] = "Diabète de type 1"
 
-        self.pathology_mapping[2] = "Diabète"
+        mapping_number= 2
+        self.pathology_mapping[mapping_number] = "Diabète"
 
-        self.all_data.extend(self.data100.generate_121(1))
-        self.all_data.extend(self.data100.generate_122(1))
+        self.all_data.extend(self.data100.generate_121(mapping_number))
+        self.all_data.extend(self.data100.generate_122(mapping_number))
 
         # 130 : Troubles de l'humeur et psychiques
         # self.pathology_mapping[5] = "Troubles de l'humeur et psychiques : Dépression majeure"
@@ -42,12 +45,13 @@ class DataGenerator:
         # self.pathology_mapping[7] = "Troubles de l'humeur et psychiques : Troubles bipolaires "
         # self.pathology_mapping[8] = "Troubles de l'humeur et psychiques : Troubles du sommeil associés"
 
-        self.pathology_mapping[3] = "Troubles psychiques"
+        mapping_number = 1
+        self.pathology_mapping[mapping_number] = "Troubles psychiques"
 
-        self.all_data.extend(self.data100.generate_131(2))
-        self.all_data.extend(self.data100.generate_132(2))
-        self.all_data.extend(self.data100.generate_133(2))
-        self.all_data.extend(self.data100.generate_134(2))
+        self.all_data.extend(self.data100.generate_131(mapping_number))
+        self.all_data.extend(self.data100.generate_132(mapping_number))
+        self.all_data.extend(self.data100.generate_133(mapping_number))
+        self.all_data.extend(self.data100.generate_134(mapping_number))
 
         # Création du DataFrame
         df_medical = pd.DataFrame(self.all_data, columns=['text', 'label'])
