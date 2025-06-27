@@ -34,13 +34,17 @@
         timerDisplay.textContent = '00:00';
         recordingInfo.classList.add('hidden');
 
-        // StopBtn devient invisible
+        // StopBtn devient invisible et désactivé
         stopBtn.classList.add('hidden');
         stopBtn.disabled = true;
         stopBtn.classList.remove('bg-red-600', 'hover:bg-red-600', 'cursor-pointer');
         stopBtn.classList.add('bg-gray-400', 'cursor-not-allowed');
 
+        // RecordBtn redevient actif
         recordBtn.disabled = false;
+        recordBtn.classList.remove('bg-gray-400', 'cursor-not-allowed');
+        recordBtn.classList.add('bg-red-500', 'hover:bg-red-600', 'cursor-pointer');
+        
         isRecording = false;
     };
 
@@ -49,7 +53,7 @@
         try {
             if (isRecording) return;
 
-            // 🔊 Demande d’accès au micro
+            // 🔊 Demande d'accès au micro
             mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
             // 🧠 Choix du format MIME (webm/opus si supporté)
@@ -69,7 +73,11 @@
 
             // 🎨 MAJ interface
             isRecording = true;
+            
+            // RecordBtn devient inactif
             recordBtn.disabled = true;
+            recordBtn.classList.remove('bg-red-500', 'hover:bg-red-600', 'cursor-pointer');
+            recordBtn.classList.add('bg-gray-400', 'cursor-not-allowed');
 
             // StopBtn devient visible et actif
             stopBtn.classList.remove('hidden');
@@ -89,7 +97,7 @@
         }
     }
 
-    // ⏹️ Arrêter l’enregistrement proprement
+    // ⏹️ Arrêter l'enregistrement proprement
     function stopRecording() {
         if (!isRecording) return;
         if (mediaRecorder?.state === 'recording') mediaRecorder.stop();
@@ -98,7 +106,7 @@
         resetUI();
     }
 
-    // 🎧 Créer le fichier audio à partir du blob et l’injecter dans l’input file
+    // 🎧 Créer le fichier audio à partir du blob et l'injecter dans l'input file
     function buildAudioFile() {
         if (!audioChunks.length) return;
         const blob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
@@ -115,7 +123,7 @@
         audioInput.files = dt.files;
     }
 
-    // ✨ Transcrire l'audio via l’API Django
+    // ✨ Transcrire l'audio via l'API Django
     async function transcribeAudio() {
         if (!audioInput.files.length) {
             alert('Aucun fichier audio à transcrire.');
@@ -131,7 +139,7 @@
             formData.append('audio', file, file.name);
             const csrftoken = document.querySelector('input[name="csrfmiddlewaretoken"]').value;
 
-            const resp = await fetch('/api/transcribe/', {
+            const resp = await fetch('/aura/api/transcribe/', {
                 method: 'POST',
                 headers: { 'X-CSRFToken': csrftoken },
                 body: formData
@@ -177,5 +185,22 @@
     // 🔁 On quitte la page = on coupe proprement
     window.addEventListener('beforeunload', stopRecording);
 
-    updateCharCount(); // maj dès le chargement
+    // 🚀 Initialisation au chargement
+    function initializeUI() {
+        // S'assurer que le bouton stop est caché au démarrage
+        stopBtn.classList.add('hidden');
+        stopBtn.disabled = true;
+        stopBtn.classList.remove('bg-red-600', 'hover:bg-red-600', 'cursor-pointer');
+        stopBtn.classList.add('bg-gray-400', 'cursor-not-allowed');
+        
+        // S'assurer que le bouton record est actif au démarrage
+        recordBtn.disabled = false;
+        recordBtn.classList.remove('bg-gray-400', 'cursor-not-allowed');
+        recordBtn.classList.add('bg-red-500', 'hover:bg-red-600', 'cursor-pointer');
+        
+        updateCharCount(); // maj dès le chargement
+    }
+
+    // Initialiser l'interface au chargement
+    initializeUI();
 })();
