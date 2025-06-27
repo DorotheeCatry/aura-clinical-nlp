@@ -1,7 +1,6 @@
 (function () {
     // 🎯 Sélection des éléments HTML
-    const recordBtn = document.getElementById('recordBtn');         // bouton micro (start)
-    const stopBtn = document.getElementById('stopBtn');             // bouton stop (arrêt)
+    const recordBtn = document.getElementById('recordBtn');         // bouton micro (start/stop toggle)
     const transcribeBtn = document.getElementById('transcribeBtn'); // bouton transcrire
     const audioPlayer = document.getElementById('audioPlayer');     // lecteur audio
     const audioSection = document.getElementById('audioSection');   // bloc audio visible après enregistrement
@@ -27,23 +26,19 @@
     // ⏱️ Format du timer (ex: 01:24)
     const formatTime = (s) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 
-    // 🧹 Reset UI après enregistrement (boutons, timer, etc.)
+    // 🧹 Reset UI après enregistrement
     const resetUI = () => {
         clearInterval(timerInterval);
         timerInterval = null;
         timerDisplay.textContent = '00:00';
         recordingInfo.classList.add('hidden');
 
-        // StopBtn devient invisible et désactivé
-        stopBtn.classList.add('hidden');
-        stopBtn.disabled = true;
-        stopBtn.classList.remove('bg-red-600', 'hover:bg-red-600', 'cursor-pointer');
-        stopBtn.classList.add('bg-gray-400', 'cursor-not-allowed');
-
-        // RecordBtn redevient actif
+        // Bouton redevient "record" (rouge)
+        recordBtn.innerHTML = '<i class="fas fa-microphone text-lg"></i>';
+        recordBtn.classList.remove('bg-red-700', 'bg-gray-600');
+        recordBtn.classList.add('bg-red-500', 'hover:bg-red-600');
         recordBtn.disabled = false;
-        recordBtn.classList.remove('bg-gray-400', 'cursor-not-allowed');
-        recordBtn.classList.add('bg-red-500', 'hover:bg-red-600', 'cursor-pointer');
+        recordBtn.title = 'Démarrer l\'enregistrement';
         
         isRecording = false;
     };
@@ -71,19 +66,12 @@
             mediaRecorder.onstop = buildAudioFile;
             mediaRecorder.start();
 
-            // 🎨 MAJ interface
+            // 🎨 MAJ interface - Bouton devient "stop" (gris foncé)
             isRecording = true;
-            
-            // RecordBtn devient inactif
-            recordBtn.disabled = true;
-            recordBtn.classList.remove('bg-red-500', 'hover:bg-red-600', 'cursor-pointer');
-            recordBtn.classList.add('bg-gray-400', 'cursor-not-allowed');
-
-            // StopBtn devient visible et actif
-            stopBtn.classList.remove('hidden');
-            stopBtn.disabled = false;
-            stopBtn.classList.remove('bg-gray-400', 'cursor-not-allowed');
-            stopBtn.classList.add('bg-red-600', 'hover:bg-red-600', 'cursor-pointer');
+            recordBtn.innerHTML = '<i class="fas fa-stop text-lg"></i>';
+            recordBtn.classList.remove('bg-red-500', 'hover:bg-red-600');
+            recordBtn.classList.add('bg-red-700', 'hover:bg-red-800');
+            recordBtn.title = 'Arrêter l\'enregistrement';
 
             // Timer actif
             recordingInfo.classList.remove('hidden');
@@ -163,18 +151,26 @@
         }
     }
 
+    // 🎮 Toggle record/stop avec un seul bouton
+    function toggleRecording() {
+        if (isRecording) {
+            stopRecording();
+        } else {
+            startRecording();
+        }
+    }
+
     // 🎮 Bind des événements
-    recordBtn.addEventListener('click', startRecording);
-    stopBtn.addEventListener('click', stopRecording);
+    recordBtn.addEventListener('click', toggleRecording);
     if (transcribeBtn) transcribeBtn.addEventListener('click', transcribeAudio);
 
     texteField.addEventListener('input', updateCharCount);
 
-    // ⌨️ Raccourcis clavier (espace pour start/stop, Échap pour stop)
+    // ⌨️ Raccourcis clavier (espace pour toggle, Échap pour stop)
     document.addEventListener('keydown', e => {
         if (e.code === 'Space' && !e.target.matches('input,textarea')) {
             e.preventDefault();
-            isRecording ? stopRecording() : startRecording();
+            toggleRecording();
         }
         if (e.code === 'Escape' && isRecording) {
             e.preventDefault();
@@ -187,16 +183,12 @@
 
     // 🚀 Initialisation au chargement
     function initializeUI() {
-        // S'assurer que le bouton stop est caché au démarrage
-        stopBtn.classList.add('hidden');
-        stopBtn.disabled = true;
-        stopBtn.classList.remove('bg-red-600', 'hover:bg-red-600', 'cursor-pointer');
-        stopBtn.classList.add('bg-gray-400', 'cursor-not-allowed');
-        
-        // S'assurer que le bouton record est actif au démarrage
-        recordBtn.disabled = false;
-        recordBtn.classList.remove('bg-gray-400', 'cursor-not-allowed');
+        // S'assurer que le bouton est en mode "record" au démarrage
+        recordBtn.innerHTML = '<i class="fas fa-microphone text-lg"></i>';
+        recordBtn.classList.remove('bg-red-700', 'bg-gray-600', 'bg-gray-400', 'cursor-not-allowed');
         recordBtn.classList.add('bg-red-500', 'hover:bg-red-600', 'cursor-pointer');
+        recordBtn.disabled = false;
+        recordBtn.title = 'Démarrer l\'enregistrement';
         
         updateCharCount(); // maj dès le chargement
     }
