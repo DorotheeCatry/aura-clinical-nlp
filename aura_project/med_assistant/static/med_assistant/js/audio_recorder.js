@@ -20,7 +20,9 @@
 
     // 🔠 Affiche le nombre de caractères du champ texte
     const updateCharCount = () => {
-        charCount.textContent = `${texteField.value.length} caractères`;
+        if (charCount && texteField) {
+            charCount.textContent = `${texteField.value.length} caractères`;
+        }
     };
 
     // ⏱️ Format du timer (ex: 01:24)
@@ -30,15 +32,17 @@
     const resetUI = () => {
         clearInterval(timerInterval);
         timerInterval = null;
-        timerDisplay.textContent = '00:00';
-        recordingInfo.classList.add('hidden');
+        if (timerDisplay) timerDisplay.textContent = '00:00';
+        if (recordingInfo) recordingInfo.classList.add('hidden');
 
         // Bouton redevient "record" (rouge)
-        recordBtn.innerHTML = '<i class="fas fa-microphone text-lg"></i>';
-        recordBtn.classList.remove('bg-red-700', 'bg-gray-600');
-        recordBtn.classList.add('bg-red-500', 'hover:bg-red-600');
-        recordBtn.disabled = false;
-        recordBtn.title = 'Démarrer l\'enregistrement';
+        if (recordBtn) {
+            recordBtn.innerHTML = '<i class="fas fa-microphone text-lg"></i>';
+            recordBtn.classList.remove('bg-red-700', 'hover:bg-red-800', 'bg-gray-600');
+            recordBtn.classList.add('bg-red-500', 'hover:bg-red-600');
+            recordBtn.disabled = false;
+            recordBtn.title = 'Démarrer l\'enregistrement';
+        }
         
         isRecording = false;
     };
@@ -47,6 +51,8 @@
     async function startRecording() {
         try {
             if (isRecording) return;
+
+            console.log('🎤 Démarrage de l\'enregistrement...');
 
             // 🔊 Demande d'accès au micro
             mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -66,20 +72,27 @@
             mediaRecorder.onstop = buildAudioFile;
             mediaRecorder.start();
 
-            // 🎨 MAJ interface - Bouton devient "stop" (gris foncé)
+            // 🎨 MAJ interface - Bouton devient "stop" (rouge foncé)
             isRecording = true;
-            recordBtn.innerHTML = '<i class="fas fa-stop text-lg"></i>';
-            recordBtn.classList.remove('bg-red-500', 'hover:bg-red-600');
-            recordBtn.classList.add('bg-red-700', 'hover:bg-red-800');
-            recordBtn.title = 'Arrêter l\'enregistrement';
+            if (recordBtn) {
+                recordBtn.innerHTML = '<i class="fas fa-stop text-lg"></i>';
+                recordBtn.classList.remove('bg-red-500', 'hover:bg-red-600');
+                recordBtn.classList.add('bg-red-700', 'hover:bg-red-800');
+                recordBtn.title = 'Arrêter l\'enregistrement';
+            }
 
             // Timer actif
-            recordingInfo.classList.remove('hidden');
+            if (recordingInfo) recordingInfo.classList.remove('hidden');
             startTimestamp = Date.now();
             timerInterval = setInterval(() => {
-                timerDisplay.textContent = formatTime(Math.floor((Date.now() - startTimestamp) / 1000));
+                if (timerDisplay) {
+                    timerDisplay.textContent = formatTime(Math.floor((Date.now() - startTimestamp) / 1000));
+                }
             }, 1000);
+
+            console.log('✅ Enregistrement démarré');
         } catch (err) {
+            console.error('❌ Erreur enregistrement:', err);
             alert('Accès microphone impossible : ' + err.message);
             resetUI();
         }
@@ -88,45 +101,68 @@
     // ⏹️ Arrêter l'enregistrement proprement
     function stopRecording() {
         if (!isRecording) return;
+        
+        console.log('⏹️ Arrêt de l\'enregistrement...');
+        
         if (mediaRecorder?.state === 'recording') mediaRecorder.stop();
-        mediaStream?.getTracks().forEach(t => t.stop());
-        mediaStream = null;
+        if (mediaStream) {
+            mediaStream.getTracks().forEach(t => t.stop());
+            mediaStream = null;
+        }
         resetUI();
+        
+        console.log('✅ Enregistrement arrêté');
     }
 
     // 🎧 Créer le fichier audio à partir du blob et l'injecter dans l'input file
     function buildAudioFile() {
         if (!audioChunks.length) return;
+        
+        console.log('🎧 Construction du fichier audio...');
+        
         const blob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
         const url = URL.createObjectURL(blob);
 
         // Prévisualisation
-        audioPlayer.src = url;
-        audioSection.classList.remove('hidden');
+        if (audioPlayer) {
+            audioPlayer.src = url;
+        }
+        if (audioSection) {
+            audioSection.classList.remove('hidden');
+        }
 
         // Injection dans input[type="file"]
-        const file = new File([blob], 'recording.webm', { type: blob.type });
-        const dt = new DataTransfer();
-        dt.items.add(file);
-        audioInput.files = dt.files;
+        if (audioInput) {
+            const file = new File([blob], 'recording.webm', { type: blob.type });
+            const dt = new DataTransfer();
+            dt.items.add(file);
+            audioInput.files = dt.files;
+        }
+        
+        console.log('✅ Fichier audio créé et injecté');
     }
 
     // ✨ Transcrire l'audio via l'API Django
     async function transcribeAudio() {
-        if (!audioInput.files.length) {
+        if (!audioInput?.files.length) {
             alert('Aucun fichier audio à transcrire.');
             return;
         }
 
         const file = audioInput.files[0];
-        transcribeBtn.disabled = true;
-        transcribeBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Transcription...';
+        console.log('🔤 Début transcription...', file.name);
+        
+        if (transcribeBtn) {
+            transcribeBtn.disabled = true;
+            transcribeBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Transcription...';
+        }
 
         try {
             const formData = new FormData();
             formData.append('audio', file, file.name);
-            const csrftoken = document.querySelector('input[name="csrfmiddlewaretoken"]').value;
+            const csrftoken = document.querySelector('input[name="csrfmiddlewaretoken"]')?.value;
 
+            // 🔧 URL CORRIGÉE : /aura/api/transcribe/
             const resp = await fetch('/aura/api/transcribe/', {
                 method: 'POST',
                 headers: { 'X-CSRFToken': csrftoken },
@@ -138,21 +174,32 @@
             const data = await resp.json();
             if (!data.text) throw new Error('Réponse invalide');
 
-            texteField.value += `\n\n--- Transcription ---\n${data.text}`;
-            updateCharCount();
+            if (texteField) {
+                texteField.value += `\n\n--- Transcription ---\n${data.text}`;
+                updateCharCount();
+            }
 
-            transcribeBtn.innerHTML = '<i class="fas fa-check mr-1"></i> Transcrit';
+            if (transcribeBtn) {
+                transcribeBtn.innerHTML = '<i class="fas fa-check mr-1"></i> Transcrit';
+            }
+            
+            console.log('✅ Transcription réussie');
         } catch (err) {
-            console.error(err);
+            console.error('❌ Erreur transcription:', err);
             alert('Transcription échouée : ' + err.message);
-            transcribeBtn.innerHTML = '<i class="fas fa-times mr-1"></i> Erreur';
+            if (transcribeBtn) {
+                transcribeBtn.innerHTML = '<i class="fas fa-times mr-1"></i> Erreur';
+            }
         } finally {
-            transcribeBtn.disabled = false;
+            if (transcribeBtn) {
+                transcribeBtn.disabled = false;
+            }
         }
     }
 
     // 🎮 Toggle record/stop avec un seul bouton
     function toggleRecording() {
+        console.log('🎮 Toggle recording, état actuel:', isRecording);
         if (isRecording) {
             stopRecording();
         } else {
@@ -160,11 +207,40 @@
         }
     }
 
-    // 🎮 Bind des événements
-    recordBtn.addEventListener('click', toggleRecording);
-    if (transcribeBtn) transcribeBtn.addEventListener('click', transcribeAudio);
+    // 🚀 Initialisation au chargement
+    function initializeUI() {
+        console.log('🚀 Initialisation de l\'interface audio...');
+        
+        // S'assurer que le bouton est en mode "record" au démarrage
+        if (recordBtn) {
+            recordBtn.innerHTML = '<i class="fas fa-microphone text-lg"></i>';
+            recordBtn.classList.remove('bg-red-700', 'hover:bg-red-800', 'bg-gray-600', 'bg-gray-400', 'cursor-not-allowed');
+            recordBtn.classList.add('bg-red-500', 'hover:bg-red-600', 'cursor-pointer');
+            recordBtn.disabled = false;
+            recordBtn.title = 'Démarrer l\'enregistrement';
+            
+            // 🎮 Bind du toggle
+            recordBtn.addEventListener('click', toggleRecording);
+            console.log('✅ Bouton d\'enregistrement configuré');
+        } else {
+            console.warn('⚠️ Bouton d\'enregistrement non trouvé');
+        }
 
-    texteField.addEventListener('input', updateCharCount);
+        // Bind du bouton de transcription
+        if (transcribeBtn) {
+            transcribeBtn.addEventListener('click', transcribeAudio);
+            console.log('✅ Bouton de transcription configuré');
+        }
+
+        // Bind du compteur de caractères
+        if (texteField) {
+            texteField.addEventListener('input', updateCharCount);
+            updateCharCount(); // maj dès le chargement
+            console.log('✅ Compteur de caractères configuré');
+        }
+
+        console.log('✅ Interface audio initialisée');
+    }
 
     // ⌨️ Raccourcis clavier (espace pour toggle, Échap pour stop)
     document.addEventListener('keydown', e => {
@@ -181,18 +257,10 @@
     // 🔁 On quitte la page = on coupe proprement
     window.addEventListener('beforeunload', stopRecording);
 
-    // 🚀 Initialisation au chargement
-    function initializeUI() {
-        // S'assurer que le bouton est en mode "record" au démarrage
-        recordBtn.innerHTML = '<i class="fas fa-microphone text-lg"></i>';
-        recordBtn.classList.remove('bg-red-700', 'bg-gray-600', 'bg-gray-400', 'cursor-not-allowed');
-        recordBtn.classList.add('bg-red-500', 'hover:bg-red-600', 'cursor-pointer');
-        recordBtn.disabled = false;
-        recordBtn.title = 'Démarrer l\'enregistrement';
-        
-        updateCharCount(); // maj dès le chargement
+    // 🚀 Initialiser quand le DOM est prêt
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initializeUI);
+    } else {
+        initializeUI();
     }
-
-    // Initialiser l'interface au chargement
-    initializeUI();
 })();
