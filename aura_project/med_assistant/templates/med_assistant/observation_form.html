@@ -77,13 +77,20 @@
                     <p class="text-sm text-gray-600">Dictez ou saisissez votre observation</p>
                 </div>
 
-                <!-- Recording Controls - UN SEUL BOUTON TOGGLE -->
+                <!-- Recording Controls - DEUX BOUTONS SÉPARÉS -->
                 <div class="flex items-center space-x-3">
-                    <!-- Bouton d'enregistrement/arrêt TOGGLE -->
+                    <!-- Bouton d'enregistrement -->
                     <button type="button" id="recordBtn"
                         class="w-12 h-12 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center transition-all shadow-md hover:shadow-lg"
                         title="Démarrer l'enregistrement">
                         <i class="fas fa-microphone text-lg"></i>
+                    </button>
+
+                    <!-- Bouton d'arrêt - CACHÉ PAR DÉFAUT -->
+                    <button type="button" id="stopBtn"
+                        class="hidden w-12 h-12 bg-red-700 hover:bg-red-800 text-white rounded-full flex items-center justify-center transition-all shadow-md hover:shadow-lg"
+                        title="Arrêter l'enregistrement">
+                        <i class="fas fa-stop text-lg"></i>
                     </button>
 
                     <!-- Informations d'enregistrement -->
@@ -128,7 +135,8 @@
                     placeholder="Saisissez ou dictez votre observation médicale ici...
 
 Vous pouvez :
-• Cliquer sur le microphone pour démarrer/arrêter l'enregistrement
+• Cliquer sur le microphone pour démarrer l'enregistrement
+• Cliquer sur stop pour arrêter
 • Saisir directement au clavier
 • Importer un fichier audio ci-dessous
 
