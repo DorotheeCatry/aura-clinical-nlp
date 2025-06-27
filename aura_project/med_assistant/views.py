@@ -106,11 +106,11 @@ def patient_list(request):
                 Q(prenom__icontains=search_term)
             )
         
-        # Filtre par pathologie
-        if form.cleaned_data['pathologie']:
-            pathologie = form.cleaned_data['pathologie']
+        # Filtre par thème médical (utilise THEME_CHOICES)
+        if form.cleaned_data['theme_classe']:
+            theme_classe = form.cleaned_data['theme_classe']
             patients = patients.filter(
-                observations__theme_classe=pathologie
+                observations__theme_classe=theme_classe
             ).distinct()
     
     # Précharger les observations pour optimiser les requêtes

@@ -100,7 +100,7 @@ class PatientSearchForm(forms.Form):
         })
     )
     
-    pathologie = forms.ChoiceField(
+    theme_classe = forms.ChoiceField(
         required=False,
         widget=forms.Select(attrs={
             'class': 'w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors'
@@ -110,19 +110,6 @@ class PatientSearchForm(forms.Form):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         
-        # Récupérer toutes les pathologies existantes
-        pathologies_choices = [('', 'Toutes les pathologies')]
-        
-        # Ajouter les pathologies depuis les observations existantes
-        from django.db.models import Q
-        pathologies_existantes = Observation.objects.filter(
-            theme_classe__isnull=False
-        ).values_list('theme_classe', flat=True).distinct()
-        
-        theme_dict = dict(Observation.THEME_CHOICES)
-        for pathologie in pathologies_existantes:
-            if pathologie:
-                display_name = theme_dict.get(pathologie, pathologie)
-                pathologies_choices.append((pathologie, display_name))
-        
-        self.fields['pathologie'].choices = pathologies_choices
+        # Utiliser directement les THEME_CHOICES du modèle
+        theme_choices = [('', 'Toutes les spécialités')] + list(Observation.THEME_CHOICES)
+        self.fields['theme_classe'].choices = theme_choices
