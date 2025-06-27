@@ -58,6 +58,7 @@
         updateCharCount();
         
         console.log('✅ Interface audio initialisée avec succès');
+        console.log('🔍 État initial - Record:', recordBtn.disabled, 'Stop:', stopBtn.disabled);
     }
 
     // 🔠 Affiche le nombre de caractères du champ texte
@@ -72,14 +73,19 @@
 
     // 🧹 Reset UI après enregistrement (boutons, timer, etc.)
     const resetUI = () => {
+        console.log('🧹 Reset de l\'interface...');
+        
         clearInterval(timerInterval);
         timerInterval = null;
         if (timerDisplay) timerDisplay.textContent = '00:00';
         if (recordingInfo) recordingInfo.classList.add('hidden');
 
-        // Cacher le bouton stop
+        // Remettre le bouton stop en état désactivé
         if (stopBtn) {
-            stopBtn.classList.add('hidden');
+            stopBtn.disabled = true;
+            stopBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            stopBtn.classList.remove('bg-red-700', 'hover:bg-red-800');
+            stopBtn.classList.add('bg-gray-400');
         }
 
         // Réactiver le bouton record
@@ -89,6 +95,7 @@
         }
 
         isRecording = false;
+        console.log('✅ Interface remise à zéro');
     };
 
     // 🔴 Démarrer l'enregistrement
@@ -125,9 +132,11 @@
                 recordBtn.classList.add('opacity-50', 'cursor-not-allowed');
             }
 
-            // Afficher le bouton stop
+            // Activer le bouton stop
             if (stopBtn) {
-                stopBtn.classList.remove('hidden');
+                stopBtn.disabled = false;
+                stopBtn.classList.remove('opacity-50', 'cursor-not-allowed', 'bg-gray-400');
+                stopBtn.classList.add('bg-red-700', 'hover:bg-red-800');
             }
 
             // Timer actif
@@ -139,7 +148,7 @@
                 }
             }, 1000);
 
-            console.log('✅ Enregistrement démarré');
+            console.log('✅ Enregistrement démarré - Stop button activé');
         } catch (err) {
             console.error('❌ Erreur enregistrement:', err);
             alert('Accès microphone impossible : ' + err.message);
