@@ -1,4 +1,5 @@
 {% extends 'med_assistant/base.html' %}
+{% load custom_filters %}
 
 {% block title %}Dashboard - AURA Medical{% endblock %}
 {% block page_title %}Dashboard{% endblock %}
@@ -70,9 +71,9 @@
                     <!-- Axe Y (valeurs) -->
                     <div class="absolute left-0 top-0 h-48 flex flex-col justify-between text-xs text-gray-500 -ml-8">
                         <span>{{ max_consultations }}</span>
-                        <span>{{ max_consultations|floatformat:0|add:"0"|floatformat:0|mul:0.75|floatformat:0 }}</span>
-                        <span>{{ max_consultations|floatformat:0|add:"0"|floatformat:0|mul:0.5|floatformat:0 }}</span>
-                        <span>{{ max_consultations|floatformat:0|add:"0"|floatformat:0|mul:0.25|floatformat:0 }}</span>
+                        <span>{{ max_consultations|mul:0.75|floatformat:0 }}</span>
+                        <span>{{ max_consultations|mul:0.5|floatformat:0 }}</span>
+                        <span>{{ max_consultations|mul:0.25|floatformat:0 }}</span>
                         <span>0</span>
                     </div>
                     
@@ -90,7 +91,7 @@
                         {% for day, count in weekly_consultations.items %}
                         <div class="flex flex-col items-center flex-1">
                             <div class="w-full bg-blue-500 rounded-t transition-all duration-1000 hover:bg-blue-600 relative group" 
-                                 style="height: {% if max_consultations > 0 %}{{ count|mul:100|div:max_consultations }}%{% else %}2%{% endif %}; min-height: 4px;">
+                                 style="height: {% if max_consultations > 0 %}{{ count|mul:100|div:max_consultations|floatformat:1 }}%{% else %}2%{% endif %}; min-height: 4px;">
                                 <!-- Tooltip -->
                                 <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
                                     {{ count }} consultation{{ count|pluralize }}
@@ -134,9 +135,9 @@
                     <!-- Axe Y (valeurs) -->
                     <div class="absolute left-0 top-0 h-48 flex flex-col justify-between text-xs text-gray-500 -ml-8">
                         <span>{{ max_patients_service }}</span>
-                        <span>{{ max_patients_service|floatformat:0|add:"0"|floatformat:0|mul:0.75|floatformat:0 }}</span>
-                        <span>{{ max_patients_service|floatformat:0|add:"0"|floatformat:0|mul:0.5|floatformat:0 }}</span>
-                        <span>{{ max_patients_service|floatformat:0|add:"0"|floatformat:0|mul:0.25|floatformat:0 }}</span>
+                        <span>{{ max_patients_service|mul:0.75|floatformat:0 }}</span>
+                        <span>{{ max_patients_service|mul:0.5|floatformat:0 }}</span>
+                        <span>{{ max_patients_service|mul:0.25|floatformat:0 }}</span>
                         <span>0</span>
                     </div>
                     
@@ -154,7 +155,7 @@
                         {% for service, count in service_patients.items %}
                         <div class="flex flex-col items-center flex-1">
                             <div class="w-full bg-green-500 rounded-t transition-all duration-1000 hover:bg-green-600 relative group" 
-                                 style="height: {% if max_patients_service > 0 %}{{ count|mul:100|div:max_patients_service }}%{% else %}2%{% endif %}; min-height: 4px;">
+                                 style="height: {% if max_patients_service > 0 %}{{ count|mul:100|div:max_patients_service|floatformat:1 }}%{% else %}2%{% endif %}; min-height: 4px;">
                                 <!-- Tooltip -->
                                 <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
                                     {{ count }} patient{{ count|pluralize }}
