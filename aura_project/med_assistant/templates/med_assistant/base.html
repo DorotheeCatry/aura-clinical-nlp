@@ -248,39 +248,44 @@
             </nav>
         </div>
 
-        <!-- Footer Sidebar -->
+        <!-- Footer Sidebar - COMPLÈTEMENT REFAIT -->
         <div class="absolute bottom-0 left-0 right-0 p-6">
-            <!-- Informations utilisateur -->
+            <!-- Informations utilisateur - NOUVEAU DESIGN -->
             {% if user.is_authenticated %}
-            <div class="bg-white/10 rounded-lg p-4 mb-4">
-                <div class="flex items-center space-x-3">
-                    <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0">
+            <div class="bg-white/10 backdrop-blur-sm rounded-xl p-4 mb-4 border border-white/20">
+                <!-- En-tête avec avatar et nom -->
+                <div class="flex items-center space-x-3 mb-3">
+                    <div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0">
                         <i class="fas fa-user-md text-white text-lg"></i>
                     </div>
                     <div class="flex-1 min-w-0">
-                        <!-- Nom complet en BLANC -->
-                        <p class="text-sm font-semibold text-white truncate">
+                        <!-- Nom complet en BLANC et plus gros -->
+                        <h3 class="text-base font-semibold text-white truncate">
                             {{ user.get_full_name|default:user.username }}
-                        </p>
+                        </h3>
                         <!-- Rôle professionnel en BLANC avec opacité -->
                         {% if user.profile.role %}
-                        <p class="text-xs text-white/80 truncate">
+                        <p class="text-sm text-white/90 truncate">
                             {{ user.profile.get_role_display }}
-                        </p>
-                        {% endif %}
-                        <!-- Établissement en BLANC avec plus d'opacité -->
-                        {% if user.profile.etablissement %}
-                        <p class="text-xs text-white/60 truncate">
-                            {{ user.profile.etablissement }}
                         </p>
                         {% endif %}
                     </div>
                 </div>
                 
-                <!-- Bouton de déconnexion -->
-                <div class="mt-3 pt-3 border-t border-white/20">
+                <!-- Établissement si disponible -->
+                {% if user.profile.etablissement %}
+                <div class="mb-3 px-3 py-2 bg-white/10 rounded-lg">
+                    <p class="text-xs text-white/80 truncate flex items-center">
+                        <i class="fas fa-hospital mr-2 text-white/60"></i>
+                        {{ user.profile.etablissement }}
+                    </p>
+                </div>
+                {% endif %}
+                
+                <!-- Bouton de déconnexion - PLUS VISIBLE -->
+                <div class="pt-3 border-t border-white/20">
                     <a href="{% url 'med_assistant:logout' %}" 
-                       class="flex items-center text-xs text-white/80 hover:text-white transition-colors">
+                       class="flex items-center justify-center w-full px-3 py-2 text-sm text-white/90 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-200">
                         <i class="fas fa-sign-out-alt mr-2"></i>
                         Se déconnecter
                     </a>
@@ -288,15 +293,17 @@
             </div>
             {% endif %}
             
-            <!-- Footer sécurité en BLANC -->
-            <div class="text-xs text-white/60 space-y-1">
-                <div class="flex items-center">
-                    <i class="fas fa-shield-alt mr-2 text-green-400"></i>
-                    <span>Conforme RGPD</span>
-                </div>
-                <div class="flex items-center">
-                    <i class="fas fa-lock mr-2 text-blue-400"></i>
-                    <span>Données sécurisées</span>
+            <!-- Footer sécurité - PLUS COMPACT -->
+            <div class="text-xs text-white/50 space-y-1">
+                <div class="flex items-center justify-center space-x-4">
+                    <span class="flex items-center">
+                        <i class="fas fa-shield-alt mr-1 text-green-400"></i>
+                        RGPD
+                    </span>
+                    <span class="flex items-center">
+                        <i class="fas fa-lock mr-1 text-blue-400"></i>
+                        Sécurisé
+                    </span>
                 </div>
             </div>
         </div>

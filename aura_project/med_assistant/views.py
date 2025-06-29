@@ -45,14 +45,9 @@ class CustomLoginView(LoginView):
         return reverse_lazy('med_assistant:dashboard')
 
 
-@login_required
 def custom_logout(request):
-    """Vue de déconnexion personnalisée qui fonctionne"""
-    if request.user.is_authenticated:
-        user_name = request.user.get_full_name() or request.user.username
-        logout(request)
-        messages.success(request, f'Au revoir {user_name} ! Vous avez été déconnecté avec succès.')
-    
+    """Vue de déconnexion personnalisée sans message"""
+    logout(request)
     return redirect('med_assistant:login')
 
 
