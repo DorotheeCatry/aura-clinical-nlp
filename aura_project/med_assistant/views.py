@@ -18,8 +18,10 @@ import json
 from collections import defaultdict
 from faster_whisper import WhisperModel
 import tempfile, subprocess, json
-from datetime import date
+from datetime import date, datetime, timedelta
+from django.utils import timezone
 from med_assistant.utils.nlp_status import NLPStatus
+import calendar
 
 
 class UsernameBackend(ModelBackend):
@@ -53,46 +55,68 @@ def custom_logout(request):
 
 @login_required
 def dashboard(request):
-    """Vue principale du dashboard AURA avec statistiques avancées"""
+    """Dashboard hospitalier avec métriques médicales"""
     # Statistiques générales
     total_patients = Patient.objects.count()
     total_observations = Observation.objects.count()
-    observations_recentes = Observation.objects.select_related('patient', 'created_by')[:5]
     
-    # Répartition par thème avec mapping des pathologies
-    themes_stats = {}
-    theme_counts = Observation.objects.filter(theme_classe__isnull=False).values('theme_classe').annotate(count=Count('theme_classe'))
-    for item in theme_counts:
-        theme_display = dict(Observation.THEME_CHOICES).get(item['theme_classe'], item['theme_classe'])
-        themes_stats[theme_display] = item['count']
+    # Patients par tranche d'âge
+    today = date.today()
+    age_groups = {
+        'Enfants (0-17 ans)': 0,
+        'Adultes (18-64 ans)': 0,
+        'Seniors (65+ ans)': 0
+    }
     
-    # Statistiques des entités RÉELLES (seulement si on a des vraies entités) avec noms compréhensibles
-    entity_stats = defaultdict(int)
+    for patient in Patient.objects.all():
+        age = today.year - patient.date_naissance.year - ((today.month, today.day) < (patient.date_naissance.month, patient.date_naissance.day))
+        if age < 18:
+            age_groups['Enfants (0-17 ans)'] += 1
+        elif age < 65:
+            age_groups['Adultes (18-64 ans)'] += 1
+        else:
+            age_groups['Seniors (65+ ans)'] += 1
+    
+    # Activité des 7 derniers jours
+    seven_days_ago = timezone.now() - timedelta(days=7)
+    observations_semaine = Observation.objects.filter(date__gte=seven_days_ago).count()
+    nouveaux_patients_semaine = Patient.objects.filter(created_at__gte=seven_days_ago).count()
+    
+    # Répartition par spécialité médicale
+    specialites_stats = {}
+    specialite_counts = Observation.objects.filter(theme_classe__isnull=False).values('theme_classe').annotate(count=Count('theme_classe'))
+    for item in specialite_counts:
+        specialite_display = dict(Observation.THEME_CHOICES).get(item['theme_classe'], item['theme_classe'])
+        specialites_stats[specialite_display] = item['count']
+    
+    # Top médicaments mentionnés (entités)
+    medicaments_stats = defaultdict(int)
     observations_with_entities = Observation.objects.exclude(entites={})
     
-    # Compter seulement les vraies entités DrBERT avec noms compréhensibles
-    real_entities_count = 0
     for obs in observations_with_entities:
-        if obs.entites:
-            for entity_type, entities in obs.entites.items():
-                if isinstance(entities, list) and entities:  # Vérifier que la liste n'est pas vide
-                    entity_stats[entity_type] += len(entities)
-                    real_entities_count += len(entities)
-                elif entities:  # Si c'est une string non vide
-                    entity_stats[entity_type] += 1
-                    real_entities_count += 1
+        if obs.entites and 'Médicaments' in obs.entites:
+            medicaments = obs.entites['Médicaments']
+            if isinstance(medicaments, list):
+                for med in medicaments:
+                    medicaments_stats[med] += 1
     
-    # Patients récents
-    patients_recents = Patient.objects.order_by('-created_at')[:5]
+    # Top 10 médicaments
+    top_medicaments = dict(sorted(medicaments_stats.items(), key=lambda x: x[1], reverse=True)[:10])
     
-    # Statistiques par mois (derniers 6 mois)
-    from django.utils import timezone
-    from datetime import timedelta
-    import calendar
+    # Pathologies fréquentes (entités maladies)
+    pathologies_stats = defaultdict(int)
+    for obs in observations_with_entities:
+        if obs.entites and 'Maladies et Symptômes' in obs.entites:
+            pathologies = obs.entites['Maladies et Symptômes']
+            if isinstance(pathologies, list):
+                for path in pathologies:
+                    pathologies_stats[path] += 1
     
-    six_months_ago = timezone.now() - timedelta(days=180)
-    monthly_stats = []
+    # Top 10 pathologies
+    top_pathologies = dict(sorted(pathologies_stats.items(), key=lambda x: x[1], reverse=True)[:10])
     
+    # Évolution mensuelle des consultations (6 derniers mois)
+    monthly_consultations = []
     for i in range(6):
         month_start = timezone.now().replace(day=1) - timedelta(days=30*i)
         month_end = month_start.replace(day=1) + timedelta(days=32)
@@ -103,14 +127,17 @@ def dashboard(request):
             date__lte=month_end
         ).count()
         
-        monthly_stats.append({
+        monthly_consultations.append({
             'month': calendar.month_name[month_start.month],
             'count': count
         })
     
-    monthly_stats.reverse()
+    monthly_consultations.reverse()
     
-    # Statut de la pipeline NLP
+    # Observations récentes
+    observations_recentes = Observation.objects.select_related('patient', 'created_by')[:5]
+    
+    # Statut de la pipeline (pour le traitement en arrière-plan)
     raw_status = nlp_pipeline.get_status()
     nlp_status = NLPStatus(
         classification=raw_status.get("classification_available"),
@@ -122,13 +149,15 @@ def dashboard(request):
     context = {
         'total_patients': total_patients,
         'total_observations': total_observations,
+        'age_groups': age_groups,
+        'observations_semaine': observations_semaine,
+        'nouveaux_patients_semaine': nouveaux_patients_semaine,
+        'specialites_stats': specialites_stats,
+        'top_medicaments': top_medicaments,
+        'top_pathologies': top_pathologies,
+        'monthly_consultations': monthly_consultations,
         'observations_recentes': observations_recentes,
-        'themes_stats': themes_stats,
-        'entity_stats': dict(entity_stats) if real_entities_count > 0 else {},  # Vide si pas de vraies entités
-        'real_entities_count': real_entities_count,  # Nouveau : nombre total d'entités réelles
-        'patients_recents': patients_recents,
-        'monthly_stats': monthly_stats,
-        'nlp_status': nlp_status,
+        'nlp_status': nlp_status,  # Pour le traitement en arrière-plan
     }
     
     return render(request, 'med_assistant/dashboard.html', context)
@@ -273,24 +302,12 @@ def observation_create(request):
                     observation.entites = results['entites']
                     observation.traitement_termine = True
                     
-                    # Message de succès avec info sur les méthodes utilisées
-                    methods_used = []
-                    if results.get('classification_used'):
-                        methods_used.append("Classification HF")
-                    if results.get('drbert_used'):
-                        methods_used.append("DrBERT")
-                    if results.get('t5_used'):
-                        methods_used.append("T5")
-                    if not methods_used:
-                        methods_used.append("Local")
-                    
-                    pred_info = f" (Prédiction: {results['model_prediction']})" if results['model_prediction'] is not None else ""
-                    entities_info = f" - {sum(len(v) for v in results['entites'].values())} entités extraites" if results['entites'] else ""
-                    
-                    messages.success(request, f'Observation créée et traitée avec succès via {", ".join(methods_used)}{pred_info}{entities_info}.')
+                    # Message de succès simplifié
+                    entities_info = f" - {sum(len(v) for v in results['entites'].values())} éléments extraits" if results['entites'] else ""
+                    messages.success(request, f'Observation créée et analysée avec succès{entities_info}.')
                 else:
                     observation.traitement_erreur = results['error']
-                    messages.warning(request, f'Observation créée mais erreur lors du traitement NLP: {results["error"]}')
+                    messages.warning(request, f'Observation créée mais erreur lors de l\'analyse: {results["error"]}')
                 
                 observation.save()
                 
@@ -515,21 +532,9 @@ def observation_reprocess(request, observation_id):
             observation.entites = results['entites']
             observation.traitement_termine = True
             
-            # Message avec info sur les méthodes utilisées
-            methods_used = []
-            if results.get('classification_used'):
-                methods_used.append("Classification HF")
-            if results.get('drbert_used'):
-                methods_used.append("DrBERT")
-            if results.get('t5_used'):
-                methods_used.append("T5")
-            if not methods_used:
-                methods_used.append("Local")
-            
-            pred_info = f" (Prédiction: {results['model_prediction']})" if results['model_prediction'] is not None else ""
-            entities_info = f" - {sum(len(v) for v in results['entites'].values())} entités extraites" if results['entites'] else ""
-            
-            messages.success(request, f'Observation retraitée avec succès via {", ".join(methods_used)}{pred_info}{entities_info}.')
+            # Message simplifié
+            entities_info = f" - {sum(len(v) for v in results['entites'].values())} éléments extraits" if results['entites'] else ""
+            messages.success(request, f'Observation retraitée avec succès{entities_info}.')
         else:
             observation.traitement_erreur = results['error']
             messages.error(request, f'Erreur lors du retraitement: {results["error"]}')
@@ -544,70 +549,130 @@ def observation_reprocess(request, observation_id):
 
 @login_required
 def statistics(request):
-    """Vue des statistiques avancées avec info modèles Hugging Face et prédictions"""
-    # Statistiques par thème avec mapping des pathologies
-    theme_stats = {}
-    theme_counts = Observation.objects.filter(theme_classe__isnull=False).values('theme_classe').annotate(count=Count('theme_classe'))
-    for item in theme_counts:
-        theme_display = dict(Observation.THEME_CHOICES).get(item['theme_classe'], item['theme_classe'])
-        theme_stats[theme_display] = item['count']
+    """Statistiques hospitalières détaillées"""
+    # Statistiques générales
+    total_patients = Patient.objects.count()
+    total_observations = Observation.objects.count()
     
-    # Statistiques des prédictions du modèle
-    prediction_stats = {}
-    prediction_counts = Observation.objects.filter(model_prediction__isnull=False).values('model_prediction').annotate(count=Count('model_prediction'))
-    for item in prediction_counts:
-        pathology_name = Observation.get_pathology_display_name(item['model_prediction'])
-        prediction_stats[f"Classe {item['model_prediction']} - {pathology_name}"] = item['count']
+    # Répartition par âge
+    today = date.today()
+    age_groups = {
+        'Enfants (0-17 ans)': 0,
+        'Adultes (18-64 ans)': 0,
+        'Seniors (65+ ans)': 0
+    }
     
-    # Statistiques des entités RÉELLES par catégorie DrBERT avec noms compréhensibles
-    entity_stats = defaultdict(lambda: defaultdict(int))
+    for patient in Patient.objects.all():
+        age = today.year - patient.date_naissance.year - ((today.month, patient.date_naissance.day) > (today.month, today.day))
+        if age < 18:
+            age_groups['Enfants (0-17 ans)'] += 1
+        elif age < 65:
+            age_groups['Adultes (18-64 ans)'] += 1
+        else:
+            age_groups['Seniors (65+ ans)'] += 1
+    
+    # Statistiques par spécialité médicale
+    specialites_stats = {}
+    specialite_counts = Observation.objects.filter(theme_classe__isnull=False).values('theme_classe').annotate(count=Count('theme_classe'))
+    for item in specialite_counts:
+        specialite_display = dict(Observation.THEME_CHOICES).get(item['theme_classe'], item['theme_classe'])
+        specialites_stats[specialite_display] = item['count']
+    
+    # Analyse des médicaments
+    medicaments_stats = defaultdict(int)
     observations_with_entities = Observation.objects.exclude(entites={})
     
-    total_real_entities = 0
     for obs in observations_with_entities:
-        if obs.entites:
-            for entity_type, entities in obs.entites.items():
-                if isinstance(entities, list) and entities:
-                    for entity in entities:
-                        entity_stats[entity_type][entity] += 1
-                        total_real_entities += 1
-                elif entities:  # String non vide
-                    entity_stats[entity_type][entities] += 1
-                    total_real_entities += 1
+        if obs.entites and 'Médicaments' in obs.entites:
+            medicaments = obs.entites['Médicaments']
+            if isinstance(medicaments, list):
+                for med in medicaments:
+                    medicaments_stats[med] += 1
     
-    # Top entités par catégorie (seulement si on a des vraies entités) - CORRIGÉ
-    top_entities = {}
-    if total_real_entities > 0:
-        for category, entities in entity_stats.items():
-            sorted_entities = sorted(entities.items(), key=lambda x: x[1], reverse=True)[:5]
-            if sorted_entities:  # Seulement si on a des entités
-                top_entities[category] = sorted_entities
+    # Top 15 médicaments
+    top_medicaments = dict(sorted(medicaments_stats.items(), key=lambda x: x[1], reverse=True)[:15])
     
-    # Statut de la pipeline NLP avec NLPStatus
-    raw_status = nlp_pipeline.get_status()
-    nlp_status = NLPStatus(
-        classification=raw_status.get("classification_available"),
-        drbert=raw_status.get("drbert_available"),
-        t5=raw_status.get("t5_available"),
-        whisper=raw_status.get("whisper_available"),
-    )
+    # Analyse des pathologies
+    pathologies_stats = defaultdict(int)
+    for obs in observations_with_entities:
+        if obs.entites and 'Maladies et Symptômes' in obs.entites:
+            pathologies = obs.entites['Maladies et Symptômes']
+            if isinstance(pathologies, list):
+                for path in pathologies:
+                    pathologies_stats[path] += 1
     
-    # Catégories d'entités DrBERT avec noms compréhensibles
-    drbert_categories = [
-        ('Maladies et Symptômes', 'Maladies et Symptômes'),
-        ('Médicaments', 'Médicaments'),
-        ('Anatomie', 'Anatomie'),
-        ('Procédures Médicales', 'Procédures Médicales'),
-    ]
+    # Top 15 pathologies
+    top_pathologies = dict(sorted(pathologies_stats.items(), key=lambda x: x[1], reverse=True)[:15])
+    
+    # Analyse des gestes/procédures médicales
+    procedures_stats = defaultdict(int)
+    for obs in observations_with_entities:
+        if obs.entites and 'Procédures Médicales' in obs.entites:
+            procedures = obs.entites['Procédures Médicales']
+            if isinstance(procedures, list):
+                for proc in procedures:
+                    procedures_stats[proc] += 1
+    
+    # Top 15 procédures
+    top_procedures = dict(sorted(procedures_stats.items(), key=lambda x: x[1], reverse=True)[:15])
+    
+    # Évolution mensuelle des consultations (12 derniers mois)
+    monthly_evolution = []
+    for i in range(12):
+        month_start = timezone.now().replace(day=1) - timedelta(days=30*i)
+        month_end = month_start.replace(day=1) + timedelta(days=32)
+        month_end = month_end.replace(day=1) - timedelta(days=1)
+        
+        observations_count = Observation.objects.filter(
+            date__gte=month_start,
+            date__lte=month_end
+        ).count()
+        
+        patients_count = Patient.objects.filter(
+            created_at__gte=month_start,
+            created_at__lte=month_end
+        ).count()
+        
+        monthly_evolution.append({
+            'month': f"{calendar.month_name[month_start.month]} {month_start.year}",
+            'observations': observations_count,
+            'nouveaux_patients': patients_count
+        })
+    
+    monthly_evolution.reverse()
+    
+    # Activité par jour de la semaine
+    weekday_stats = {
+        'Lundi': 0, 'Mardi': 0, 'Mercredi': 0, 'Jeudi': 0, 
+        'Vendredi': 0, 'Samedi': 0, 'Dimanche': 0
+    }
+    
+    weekday_names = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche']
+    for obs in Observation.objects.all():
+        weekday = weekday_names[obs.date.weekday()]
+        weekday_stats[weekday] += 1
+    
+    # Statistiques par praticien
+    practitioner_stats = {}
+    practitioner_counts = Observation.objects.filter(created_by__isnull=False).values('created_by__first_name', 'created_by__last_name').annotate(count=Count('created_by'))
+    for item in practitioner_counts:
+        name = f"{item['created_by__first_name']} {item['created_by__last_name']}"
+        practitioner_stats[name] = item['count']
     
     context = {
-        'theme_stats': theme_stats,
-        'prediction_stats': prediction_stats,
-        'entity_stats': dict(entity_stats) if total_real_entities > 0 else {},
-        'top_entities': top_entities,
-        'total_real_entities': total_real_entities,
-        'entity_categories': drbert_categories,
-        'nlp_status': nlp_status,
+        'total_patients': total_patients,
+        'total_observations': total_observations,
+        'age_groups': age_groups,
+        'specialites_stats': specialites_stats,
+        'top_medicaments': top_medicaments,
+        'top_pathologies': top_pathologies,
+        'top_procedures': top_procedures,
+        'monthly_evolution': monthly_evolution,
+        'weekday_stats': weekday_stats,
+        'practitioner_stats': practitioner_stats,
+        'total_medicaments': len(medicaments_stats),
+        'total_pathologies': len(pathologies_stats),
+        'total_procedures': len(procedures_stats),
     }
     
     return render(request, 'med_assistant/statistics.html', context)

@@ -1,33 +1,36 @@
 {% extends 'med_assistant/base.html' %}
 
-{% block title %}Nouvelle observation - AURA Medical AI{% endblock %}
+{% block title %}Nouvelle observation - AURA Medical{% endblock %}
 {% block page_title %}Nouvelle observation{% endblock %}
 {% block page_subtitle %}Créer une nouvelle observation médicale{% endblock %}
 
 {% block content %}
 <div class="h-full flex flex-col">
-    <!-- NLP Status Info - Utilisation robuste de NLPStatus -->
+    <!-- Status Info - Simplifié -->
     {% if nlp_status %}
     <div class="medical-card rounded-lg p-4 mb-4 border-l-4 {{ nlp_status.border_class }}">
         <div class="flex items-center justify-between">
             <div class="flex items-center space-x-3">
                 <div class="w-8 h-8 {{ nlp_status.bg_class }} rounded-lg flex items-center justify-center">
-                    <i class="fas fa-robot {{ nlp_status.text_class }}"></i>
+                    <i class="fas fa-cogs {{ nlp_status.text_class }}"></i>
                 </div>
                 <div>
                     <h3 class="text-sm font-semibold {{ nlp_status.text_class_title }}">
-                        {{ nlp_status.pipeline_label }}
+                        Système d'analyse automatique
                     </h3>
                     <p class="text-xs {{ nlp_status.text_class }}">
-                        {{ nlp_status.description_label }}
+                        Transcription, classification et extraction d'éléments médicaux
                     </p>
                 </div>
             </div>
             <div class="text-xs {{ nlp_status.text_class }}">
-                Whisper : {% if nlp_status.whisper_available %}✓{% else %}✗{% endif %} |
-                Classification : {% if nlp_status.classification_available %}✓{% else %}✗{% endif %} |
-                DrBERT : {% if nlp_status.drbert_available %}✓{% else %}✗{% endif %} |
-                T5 : {% if nlp_status.t5_available %}✓{% else %}✗{% endif %}
+                {% if nlp_status.classification_available and nlp_status.drbert_available and nlp_status.t5_available %}
+                    Système complet actif
+                {% elif nlp_status.classification_available or nlp_status.drbert_available or nlp_status.t5_available %}
+                    Système partiellement actif
+                {% else %}
+                    Mode local
+                {% endif %}
             </div>
         </div>
     </div>
@@ -182,50 +185,23 @@ Structure suggérée :
             </div>
         </div>
 
-        <!-- AI Info - Utilisation robuste de NLPStatus -->
+        <!-- System Info - Simplifié -->
         <div class="stat-card rounded-lg p-4 text-white">
             <div class="flex items-center justify-between">
                 <div>
                     <h3 class="text-sm font-semibold mb-1 flex items-center">
-                        <i class="fas fa-robot mr-2"></i>
-                        Analyse automatique AURA
-                        {% if nlp_status.classification_available %}
-                            <span class="ml-2 px-2 py-1 bg-green-500 text-xs rounded-full">Classification</span>
-                        {% else %}
-                            <span class="ml-2 px-2 py-1 bg-gray-500 text-xs rounded-full">Sim</span>
-                        {% endif %}
-                        {% if nlp_status.drbert_available %}
-                            <span class="ml-1 px-2 py-1 bg-blue-500 text-xs rounded-full">DrBERT</span>
-                        {% else %}
-                            <span class="ml-1 px-2 py-1 bg-gray-500 text-xs rounded-full">Sim</span>
-                        {% endif %}
-                        {% if nlp_status.t5_available %}
-                            <span class="ml-1 px-2 py-1 bg-purple-500 text-xs rounded-full">T5</span>
-                        {% else %}
-                            <span class="ml-1 px-2 py-1 bg-gray-500 text-xs rounded-full">Sim</span>
-                        {% endif %}
+                        <i class="fas fa-cogs mr-2"></i>
+                        Analyse automatique
                     </h3>
                     <p class="text-xs text-white/90">
-                        {{ nlp_status.description_label }}
+                        Le système analysera automatiquement votre observation pour extraire les éléments médicaux pertinents
                     </p>
                 </div>
                 <div class="flex space-x-2">
-                    <div class="bg-white/20 rounded px-2 py-1 text-xs">Whisper</div>
-                    {% if nlp_status.classification_available %}
-                        <div class="bg-white/20 rounded px-2 py-1 text-xs">waelbensoltana</div>
-                    {% else %}
-                        <div class="bg-white/20 rounded px-2 py-1 text-xs">Sim-Class</div>
-                    {% endif %}
-                    {% if nlp_status.drbert_available %}
-                        <div class="bg-white/20 rounded px-2 py-1 text-xs">Thibeb</div>
-                    {% else %}
-                        <div class="bg-white/20 rounded px-2 py-1 text-xs">Sim-NER</div>
-                    {% endif %}
-                    {% if nlp_status.t5_available %}
-                        <div class="bg-white/20 rounded px-2 py-1 text-xs">plguillou</div>
-                    {% else %}
-                        <div class="bg-white/20 rounded px-2 py-1 text-xs">Sim-Sum</div>
-                    {% endif %}
+                    <div class="bg-white/20 rounded px-2 py-1 text-xs">Transcription</div>
+                    <div class="bg-white/20 rounded px-2 py-1 text-xs">Classification</div>
+                    <div class="bg-white/20 rounded px-2 py-1 text-xs">Extraction</div>
+                    <div class="bg-white/20 rounded px-2 py-1 text-xs">Résumé</div>
                 </div>
             </div>
         </div>
@@ -251,7 +227,7 @@ Structure suggérée :
             <button type="submit"
                 class="btn-primary px-8 py-2 rounded-lg text-sm font-medium shadow-md hover:shadow-lg">
                 <i class="fas fa-save mr-2"></i>
-                Créer et analyser ({{ nlp_status.pipeline_mode }})
+                Créer et analyser
             </button>
         </div>
     </form>
