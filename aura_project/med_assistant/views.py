@@ -22,6 +22,8 @@ from datetime import date, datetime, timedelta
 from django.utils import timezone
 from med_assistant.utils.nlp_status import NLPStatus
 import calendar
+import re
+from difflib import SequenceMatcher
 
 
 class UsernameBackend(ModelBackend):
@@ -51,6 +53,69 @@ def custom_logout(request):
     """Vue de déconnexion personnalisée sans message"""
     logout(request)
     return redirect('med_assistant:login')
+
+
+def normalize_entity(entity):
+    """Normalise une entité pour le regroupement (supprime accents, pluriels, etc.)"""
+    # Convertir en minuscules
+    normalized = entity.lower().strip()
+    
+    # Supprimer les accents
+    accents = {
+        'à': 'a', 'á': 'a', 'â': 'a', 'ã': 'a', 'ä': 'a', 'å': 'a',
+        'è': 'e', 'é': 'e', 'ê': 'e', 'ë': 'e',
+        'ì': 'i', 'í': 'i', 'î': 'i', 'ï': 'i',
+        'ò': 'o', 'ó': 'o', 'ô': 'o', 'õ': 'o', 'ö': 'o',
+        'ù': 'u', 'ú': 'u', 'û': 'u', 'ü': 'u',
+        'ý': 'y', 'ÿ': 'y',
+        'ç': 'c', 'ñ': 'n'
+    }
+    for accent, letter in accents.items():
+        normalized = normalized.replace(accent, letter)
+    
+    # Gérer les pluriels français courants
+    pluriel_patterns = [
+        (r'aux$', 'al'),      # chevaux -> cheval
+        (r'eux$', 'eu'),      # cheveux -> cheveu
+        (r'oux$', 'ou'),      # genoux -> genou
+        (r'ies$', 'ie'),      # allergies -> allergie
+        (r'es$', 'e'),        # maladies -> maladie (si se termine par 'e')
+        (r'([^s])s$', r'\1'), # médicaments -> médicament (mais pas 'stress')
+    ]
+    
+    for pattern, replacement in pluriel_patterns:
+        if re.search(pattern, normalized):
+            normalized = re.sub(pattern, replacement, normalized)
+            break
+    
+    return normalized
+
+
+def group_similar_entities(entities_dict, similarity_threshold=0.8):
+    """Regroupe les entités similaires avec un seuil de similarité"""
+    grouped = defaultdict(int)
+    entity_mapping = {}  # Pour garder trace des regroupements
+    
+    for entity, count in entities_dict.items():
+        normalized = normalize_entity(entity)
+        
+        # Chercher une entité similaire déjà groupée
+        found_group = None
+        for existing_normalized in entity_mapping.keys():
+            similarity = SequenceMatcher(None, normalized, existing_normalized).ratio()
+            if similarity >= similarity_threshold:
+                found_group = existing_normalized
+                break
+        
+        if found_group:
+            # Ajouter au groupe existant
+            grouped[entity_mapping[found_group]] += count
+        else:
+            # Créer un nouveau groupe
+            entity_mapping[normalized] = entity
+            grouped[entity] += count
+    
+    return dict(grouped)
 
 
 @login_required
@@ -562,7 +627,7 @@ def observation_reprocess(request, observation_id):
 
 @login_required
 def statistics(request):
-    """Statistiques médicales focalisées sur médicaments, pathologies et gestes avec filtre par spécialité"""
+    """Statistiques médicales focalisées avec regroupement intelligent des entités"""
     # Filtre par spécialité
     selected_specialty = request.GET.get('specialty', '')
     
@@ -571,7 +636,7 @@ def statistics(request):
     if selected_specialty:
         observations_query = observations_query.filter(theme_classe=selected_specialty)
     
-    # Analyse des médicaments
+    # Analyse des médicaments avec regroupement intelligent
     medicaments_stats = defaultdict(int)
     for obs in observations_query:
         if obs.entites and 'Médicaments' in obs.entites:
@@ -580,10 +645,11 @@ def statistics(request):
                 for med in medicaments:
                     medicaments_stats[med] += 1
     
-    # Top 20 médicaments
-    top_medicaments = dict(sorted(medicaments_stats.items(), key=lambda x: x[1], reverse=True)[:20])
+    # Regrouper les médicaments similaires
+    medicaments_grouped = group_similar_entities(medicaments_stats, similarity_threshold=0.85)
+    top_medicaments = dict(sorted(medicaments_grouped.items(), key=lambda x: x[1], reverse=True)[:15])
     
-    # Analyse des pathologies
+    # Analyse des pathologies avec regroupement intelligent
     pathologies_stats = defaultdict(int)
     for obs in observations_query:
         if obs.entites and 'Maladies et Symptômes' in obs.entites:
@@ -592,10 +658,11 @@ def statistics(request):
                 for path in pathologies:
                     pathologies_stats[path] += 1
     
-    # Top 20 pathologies
-    top_pathologies = dict(sorted(pathologies_stats.items(), key=lambda x: x[1], reverse=True)[:20])
+    # Regrouper les pathologies similaires
+    pathologies_grouped = group_similar_entities(pathologies_stats, similarity_threshold=0.85)
+    top_pathologies = dict(sorted(pathologies_grouped.items(), key=lambda x: x[1], reverse=True)[:15])
     
-    # Analyse des gestes/procédures médicales
+    # Analyse des gestes/procédures médicales avec regroupement intelligent
     procedures_stats = defaultdict(int)
     for obs in observations_query:
         if obs.entites and 'Procédures Médicales' in obs.entites:
@@ -604,8 +671,9 @@ def statistics(request):
                 for proc in procedures:
                     procedures_stats[proc] += 1
     
-    # Top 20 procédures
-    top_procedures = dict(sorted(procedures_stats.items(), key=lambda x: x[1], reverse=True)[:20])
+    # Regrouper les procédures similaires
+    procedures_grouped = group_similar_entities(procedures_stats, similarity_threshold=0.85)
+    top_procedures = dict(sorted(procedures_grouped.items(), key=lambda x: x[1], reverse=True)[:15])
     
     # Statistiques par spécialité médicale (seulement si pas de filtre)
     specialites_stats = {}
@@ -623,9 +691,9 @@ def statistics(request):
         'top_pathologies': top_pathologies,
         'top_procedures': top_procedures,
         'specialites_stats': specialites_stats,
-        'total_medicaments': len(medicaments_stats),
-        'total_pathologies': len(pathologies_stats),
-        'total_procedures': len(procedures_stats),
+        'total_medicaments': len(medicaments_grouped),
+        'total_pathologies': len(pathologies_grouped),
+        'total_procedures': len(procedures_grouped),
         'specialties_for_filter': specialties_for_filter,
         'selected_specialty': selected_specialty,
         'selected_specialty_display': dict(Observation.THEME_CHOICES).get(selected_specialty, 'Toutes les spécialités') if selected_specialty else None,
