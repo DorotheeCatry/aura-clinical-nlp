@@ -7,13 +7,46 @@
 
 {% block content %}
 <div class="space-y-6">
+    <!-- Filtre par spécialité -->
+    <div class="medical-card rounded-lg p-4 fade-in">
+        <form method="get" class="flex items-center space-x-4">
+            <div class="flex items-center space-x-2">
+                <i class="fas fa-filter text-primary-steel"></i>
+                <label for="specialty" class="text-sm font-medium text-gray-700">Filtrer par spécialité :</label>
+            </div>
+            <select name="specialty" id="specialty" 
+                    class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-steel focus:border-primary-steel transition-colors"
+                    onchange="this.form.submit()">
+                {% for value, display in specialties_for_filter %}
+                <option value="{{ value }}" {% if value == selected_specialty %}selected{% endif %}>
+                    {{ display }}
+                </option>
+                {% endfor %}
+            </select>
+            {% if selected_specialty %}
+            <a href="{% url 'med_assistant:dashboard' %}" 
+               class="text-sm text-gray-500 hover:text-gray-700 transition-colors">
+                <i class="fas fa-times mr-1"></i>Réinitialiser
+            </a>
+            {% endif %}
+        </form>
+        {% if selected_specialty %}
+        <div class="mt-2 text-sm text-gray-600">
+            <i class="fas fa-info-circle mr-1"></i>
+            Affichage filtré pour : <strong>{{ selected_specialty_display }}</strong>
+        </div>
+        {% endif %}
+    </div>
+
     <!-- Métriques principales - SIMPLIFIÉES -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <!-- Total Patients -->
         <div class="stat-card rounded-lg p-6 text-white fade-in">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-white/80 text-sm font-medium uppercase tracking-wide">Patients totaux</p>
+                    <p class="text-white/80 text-sm font-medium uppercase tracking-wide">
+                        {% if selected_specialty %}Patients {{ selected_specialty_display }}{% else %}Patients totaux{% endif %}
+                    </p>
                     <p class="text-3xl font-bold mt-2">{{ total_patients }}</p>
                     {% if nouveaux_patients_semaine %}
                     <p class="text-white/90 text-sm mt-1 flex items-center">
@@ -32,7 +65,9 @@
         <div class="stat-card rounded-lg p-6 text-white fade-in">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-white/80 text-sm font-medium uppercase tracking-wide">Consultations</p>
+                    <p class="text-white/80 text-sm font-medium uppercase tracking-wide">
+                        {% if selected_specialty %}Consultations {{ selected_specialty_display }}{% else %}Consultations totales{% endif %}
+                    </p>
                     <p class="text-3xl font-bold mt-2">{{ total_observations }}</p>
                     <p class="text-white/90 text-sm mt-1 flex items-center">
                         <i class="fas fa-calendar-week mr-1"></i>
@@ -49,13 +84,15 @@
     <!-- Graphiques en barres compacts côte à côte -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <!-- Consultations de la semaine - GRAPHIQUE EN BARRES COMPACT -->
-        {% if weekly_consultations %}
         <div class="medical-card rounded-lg p-6 fade-in">
             <h2 class="text-xl font-semibold text-primary-dark mb-4 flex items-center">
                 <i class="fas fa-chart-bar mr-3 text-primary-steel"></i>
                 Consultations de la semaine
+                {% if selected_specialty %}
+                <span class="ml-2 text-sm font-normal text-gray-500">({{ selected_specialty_display }})</span>
+                {% endif %}
             </h2>
-            <div class="bg-white border border-gray-200 rounded-lg p-4">
+            <div class="bg-white border border-gray-200 rounded-lg p-4" style="height: 350px;">
                 <!-- Titre du graphique -->
                 <div class="text-center mb-4">
                     <h3 class="text-lg font-semibold text-gray-800">Consultations par jour</h3>
@@ -67,9 +104,9 @@
                 </div>
                 
                 <!-- Graphique en barres -->
-                <div class="relative">
+                <div class="relative" style="height: 250px;">
                     <!-- Axe Y (valeurs) -->
-                    <div class="absolute left-0 top-0 h-48 flex flex-col justify-between text-xs text-gray-500 -ml-8">
+                    <div class="absolute left-0 top-0 h-full flex flex-col justify-between text-xs text-gray-500" style="margin-left: -30px;">
                         <span>{{ max_consultations }}</span>
                         <span>{{ max_consultations|mul:0.75|floatformat:0 }}</span>
                         <span>{{ max_consultations|mul:0.5|floatformat:0 }}</span>
@@ -78,7 +115,7 @@
                     </div>
                     
                     <!-- Grille horizontale -->
-                    <div class="absolute inset-0 flex flex-col justify-between h-48 ml-4">
+                    <div class="absolute inset-0 flex flex-col justify-between ml-8">
                         <div class="border-t border-gray-200"></div>
                         <div class="border-t border-gray-200"></div>
                         <div class="border-t border-gray-200"></div>
@@ -87,13 +124,13 @@
                     </div>
                     
                     <!-- Barres -->
-                    <div class="flex items-end justify-between h-48 ml-4 space-x-2">
+                    <div class="flex items-end justify-between h-full ml-8 space-x-2" style="height: 200px;">
                         {% for day, count in weekly_consultations.items %}
                         <div class="flex flex-col items-center flex-1">
-                            <div class="w-full bg-blue-500 rounded-t transition-all duration-1000 hover:bg-blue-600 relative group" 
+                            <div class="w-full bg-blue-500 rounded-t transition-all duration-1000 hover:bg-blue-600 relative group cursor-pointer" 
                                  style="height: {% if max_consultations > 0 %}{{ count|mul:100|div:max_consultations|floatformat:1 }}%{% else %}2%{% endif %}; min-height: 4px;">
                                 <!-- Tooltip -->
-                                <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                                <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
                                     {{ count }} consultation{{ count|pluralize }}
                                 </div>
                             </div>
@@ -102,7 +139,7 @@
                     </div>
                     
                     <!-- Axe X (jours) -->
-                    <div class="flex justify-between mt-2 ml-4 text-xs text-gray-600">
+                    <div class="flex justify-between mt-2 ml-8 text-xs text-gray-600">
                         {% for day, count in weekly_consultations.items %}
                         <span class="flex-1 text-center">{{ day|slice:":3" }}</span>
                         {% endfor %}
@@ -110,16 +147,14 @@
                 </div>
             </div>
         </div>
-        {% endif %}
 
         <!-- Patients par service hospitalier - GRAPHIQUE EN BARRES COMPACT -->
-        {% if service_patients %}
         <div class="medical-card rounded-lg p-6 fade-in">
             <h2 class="text-xl font-semibold text-primary-dark mb-4 flex items-center">
                 <i class="fas fa-hospital mr-3 text-primary-steel"></i>
                 Patients par service hospitalier
             </h2>
-            <div class="bg-white border border-gray-200 rounded-lg p-4">
+            <div class="bg-white border border-gray-200 rounded-lg p-4" style="height: 350px;">
                 <!-- Titre du graphique -->
                 <div class="text-center mb-4">
                     <h3 class="text-lg font-semibold text-gray-800">Nombre de patients par service</h3>
@@ -130,10 +165,11 @@
                     </div>
                 </div>
                 
+                {% if service_patients %}
                 <!-- Graphique en barres -->
-                <div class="relative">
+                <div class="relative" style="height: 250px;">
                     <!-- Axe Y (valeurs) -->
-                    <div class="absolute left-0 top-0 h-48 flex flex-col justify-between text-xs text-gray-500 -ml-8">
+                    <div class="absolute left-0 top-0 h-full flex flex-col justify-between text-xs text-gray-500" style="margin-left: -30px;">
                         <span>{{ max_patients_service }}</span>
                         <span>{{ max_patients_service|mul:0.75|floatformat:0 }}</span>
                         <span>{{ max_patients_service|mul:0.5|floatformat:0 }}</span>
@@ -142,7 +178,7 @@
                     </div>
                     
                     <!-- Grille horizontale -->
-                    <div class="absolute inset-0 flex flex-col justify-between h-48 ml-4">
+                    <div class="absolute inset-0 flex flex-col justify-between ml-8">
                         <div class="border-t border-gray-200"></div>
                         <div class="border-t border-gray-200"></div>
                         <div class="border-t border-gray-200"></div>
@@ -151,13 +187,13 @@
                     </div>
                     
                     <!-- Barres -->
-                    <div class="flex items-end justify-between h-48 ml-4 space-x-1">
+                    <div class="flex items-end justify-between h-full ml-8 space-x-1" style="height: 200px;">
                         {% for service, count in service_patients.items %}
                         <div class="flex flex-col items-center flex-1">
-                            <div class="w-full bg-green-500 rounded-t transition-all duration-1000 hover:bg-green-600 relative group" 
+                            <div class="w-full bg-green-500 rounded-t transition-all duration-1000 hover:bg-green-600 relative group cursor-pointer" 
                                  style="height: {% if max_patients_service > 0 %}{{ count|mul:100|div:max_patients_service|floatformat:1 }}%{% else %}2%{% endif %}; min-height: 4px;">
                                 <!-- Tooltip -->
-                                <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                                <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
                                     {{ count }} patient{{ count|pluralize }}
                                 </div>
                             </div>
@@ -165,18 +201,27 @@
                         {% endfor %}
                     </div>
                     
-                    <!-- Axe X (services) -->
-                    <div class="flex justify-between mt-2 ml-4 text-xs text-gray-600">
+                    <!-- Axe X (services) - Rotation des labels -->
+                    <div class="flex justify-between mt-2 ml-8 text-xs text-gray-600" style="height: 30px;">
                         {% for service, count in service_patients.items %}
-                        <span class="flex-1 text-center transform -rotate-45 origin-center" style="writing-mode: vertical-lr; text-orientation: mixed;">
-                            {{ service|slice:":8" }}
-                        </span>
+                        <div class="flex-1 flex justify-center">
+                            <span class="transform -rotate-45 origin-center whitespace-nowrap" style="margin-top: 10px;">
+                                {{ service|slice:":10" }}{% if service|length > 10 %}...{% endif %}
+                            </span>
+                        </div>
                         {% endfor %}
                     </div>
                 </div>
+                {% else %}
+                <div class="flex items-center justify-center h-full text-gray-500">
+                    <div class="text-center">
+                        <i class="fas fa-chart-bar text-4xl mb-4"></i>
+                        <p>Aucune donnée disponible</p>
+                    </div>
+                </div>
+                {% endif %}
             </div>
         </div>
-        {% endif %}
     </div>
 
     <!-- Répartition par âge -->
@@ -185,6 +230,9 @@
         <h2 class="text-xl font-semibold text-primary-dark mb-6 flex items-center">
             <i class="fas fa-chart-pie mr-3 text-primary-steel"></i>
             Répartition par âge
+            {% if selected_specialty %}
+            <span class="ml-2 text-sm font-normal text-gray-500">({{ selected_specialty_display }})</span>
+            {% endif %}
         </h2>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             {% for age_group, data in age_groups_with_percent.items %}
@@ -214,7 +262,12 @@
     <div class="medical-card rounded-lg overflow-hidden fade-in">
         <div class="p-6 border-b border-gray-200">
             <div class="flex items-center justify-between">
-                <h2 class="text-xl font-semibold text-primary-dark">Consultations récentes</h2>
+                <h2 class="text-xl font-semibold text-primary-dark">
+                    Consultations récentes
+                    {% if selected_specialty %}
+                    <span class="text-sm font-normal text-gray-500 ml-2">({{ selected_specialty_display }})</span>
+                    {% endif %}
+                </h2>
                 <span class="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">{{ observations_recentes|length }} dernières</span>
             </div>
         </div>
@@ -304,9 +357,19 @@
         <div class="w-24 h-24 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-6">
             <i class="fas fa-file-medical text-3xl text-gray-400"></i>
         </div>
-        <h3 class="text-xl font-semibold text-primary-dark mb-4">Aucune consultation</h3>
+        <h3 class="text-xl font-semibold text-primary-dark mb-4">
+            {% if selected_specialty %}
+                Aucune consultation {{ selected_specialty_display }}
+            {% else %}
+                Aucune consultation
+            {% endif %}
+        </h3>
         <p class="text-gray-600 mb-8 max-w-md mx-auto">
-            Commencez par créer votre première observation médicale pour voir les statistiques de l'hôpital.
+            {% if selected_specialty %}
+                Aucune consultation trouvée pour cette spécialité. Essayez un autre filtre ou créez une nouvelle observation.
+            {% else %}
+                Commencez par créer votre première observation médicale pour voir les statistiques de l'hôpital.
+            {% endif %}
         </p>
         <a href="{% url 'med_assistant:observation_create' %}" 
            class="btn-primary px-8 py-3 rounded-lg font-medium inline-flex items-center space-x-2">
