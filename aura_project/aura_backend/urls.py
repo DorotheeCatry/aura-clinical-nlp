@@ -23,7 +23,7 @@ from django.shortcuts import redirect
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("__reload__/", include("django_browser_reload.urls")),
-    path("", lambda request: redirect('med_assistant:dashboard')),
+    path("", lambda request: redirect('med_assistant:login') if not request.user.is_authenticated else redirect('med_assistant:dashboard')),
     path("aura/", include("med_assistant.urls")),
 ]
 

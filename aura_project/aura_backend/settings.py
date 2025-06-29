@@ -166,3 +166,13 @@ LOGGING = {
 # NLP Pipeline Settings
 NLP_USE_HUGGINGFACE = config('NLP_USE_HUGGINGFACE', default=True, cast=bool)
 NLP_FALLBACK_TO_LOCAL = config('NLP_FALLBACK_TO_LOCAL', default=True, cast=bool)
+
+# Authentication settings
+LOGIN_URL = '/aura/login/'
+LOGIN_REDIRECT_URL = '/aura/'
+LOGOUT_REDIRECT_URL = '/aura/login/'
+
+# Session settings
+SESSION_COOKIE_AGE = 86400  # 24 heures
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+SESSION_SAVE_EVERY_REQUEST = True

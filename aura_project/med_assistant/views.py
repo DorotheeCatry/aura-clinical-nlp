@@ -1,12 +1,16 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
+from django.contrib.auth import login, authenticate
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.views import LoginView, LogoutView
 from django.db.models import Q, Count
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.core.paginator import Paginator
 from django.views.decorators.csrf import csrf_exempt
+from django.urls import reverse_lazy
 from .models import Patient, Observation
-from .forms import PatientForm, ObservationForm, PatientSearchForm, ObservationEditForm
+from .forms import PatientForm, ObservationForm, PatientSearchForm, ObservationEditForm, CustomLoginForm, CustomUserCreationForm
 from .nlp_pipeline import nlp_pipeline
 import json
 from collections import defaultdict
@@ -16,7 +20,47 @@ from datetime import date
 from med_assistant.utils.nlp_status import NLPStatus
 
 
+class CustomLoginView(LoginView):
+    """Vue de connexion personnalisée"""
+    form_class = CustomLoginForm
+    template_name = 'med_assistant/auth/login.html'
+    redirect_authenticated_user = True
+    
+    def get_success_url(self):
+        return reverse_lazy('med_assistant:dashboard')
 
+
+class CustomLogoutView(LogoutView):
+    """Vue de déconnexion personnalisée"""
+    next_page = reverse_lazy('med_assistant:login')
+
+
+def register_view(request):
+    """Vue d'inscription personnalisée"""
+    if request.user.is_authenticated:
+        return redirect('med_assistant:dashboard')
+        
+    if request.method == 'POST':
+        form = CustomUserCreationForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            username = form.cleaned_data.get('username')
+            messages.success(request, f'Compte créé avec succès pour {username}! Vous pouvez maintenant vous connecter.')
+            
+            # Connexion automatique après inscription
+            user = authenticate(username=username, password=form.cleaned_data.get('password1'))
+            if user:
+                login(request, user)
+                return redirect('med_assistant:dashboard')
+            else:
+                return redirect('med_assistant:login')
+    else:
+        form = CustomUserCreationForm()
+    
+    return render(request, 'med_assistant/auth/register.html', {'form': form})
+
+
+@login_required
 def dashboard(request):
     """Vue principale du dashboard AURA avec statistiques avancées"""
     # Statistiques générales
@@ -99,6 +143,7 @@ def dashboard(request):
     return render(request, 'med_assistant/dashboard.html', context)
 
 
+@login_required
 def patient_list(request):
     """Liste des patients avec recherche et filtres avancés"""
     form = PatientSearchForm(request.GET)
@@ -137,6 +182,7 @@ def patient_list(request):
     return render(request, 'med_assistant/patient_list.html', context)
 
 
+@login_required
 def patient_detail(request, patient_id):
     """Détail d'un patient avec ses observations"""
     patient = get_object_or_404(Patient, id=patient_id)
@@ -156,6 +202,7 @@ def patient_detail(request, patient_id):
     return render(request, 'med_assistant/patient_detail.html', context)
 
 
+@login_required
 def patient_create(request):
     """Création d'un nouveau patient"""
     if request.method == 'POST':
@@ -171,6 +218,7 @@ def patient_create(request):
     return render(request, 'med_assistant/patient_form.html', context)
 
 
+@login_required
 def patient_edit(request, patient_id):
     """Modification d'un patient"""
     patient = get_object_or_404(Patient, id=patient_id)
@@ -192,6 +240,7 @@ def patient_edit(request, patient_id):
     return render(request, 'med_assistant/patient_form.html', context)
 
 
+@login_required
 def patient_delete(request, patient_id):
     """Suppression d'un patient"""
     patient = get_object_or_404(Patient, id=patient_id)
@@ -210,6 +259,7 @@ def patient_delete(request, patient_id):
     return render(request, 'med_assistant/patient_delete_confirm.html', context)
 
 
+@login_required
 def observation_create(request):
     """Création d'une nouvelle observation avec traitement NLP via modèles Hugging Face directs"""
     if request.method == 'POST':
@@ -282,6 +332,7 @@ def observation_create(request):
     return render(request, 'med_assistant/observation_form.html', context)
 
 
+@login_required
 def observation_edit(request, observation_id):
     """Modification d'une observation"""
     observation = get_object_or_404(Observation, id=observation_id)
@@ -303,6 +354,7 @@ def observation_edit(request, observation_id):
     return render(request, 'med_assistant/observation_edit.html', context)
 
 
+@login_required
 def observation_delete(request, observation_id):
     """Suppression d'une observation"""
     observation = get_object_or_404(Observation, id=observation_id)
@@ -320,6 +372,7 @@ def observation_delete(request, observation_id):
     return render(request, 'med_assistant/observation_delete_confirm.html', context)
 
 
+@login_required
 @require_http_methods(["POST"])
 def delete_entity(request, observation_id):
     """Suppression d'une entité spécifique d'une observation"""
@@ -400,6 +453,7 @@ def transcribe_audio(request):
         return JsonResponse({"error": str(e)}, status=500)
 
 
+@login_required
 def observation_detail(request, observation_id):
     """Détail d'une observation avec affichage de la prédiction et entités DrBERT"""
     observation = get_object_or_404(
@@ -433,6 +487,7 @@ def observation_detail(request, observation_id):
     return render(request, 'med_assistant/observation_detail.html', context)
 
 
+@login_required
 @require_http_methods(["POST"])
 def observation_reprocess(request, observation_id):
     """Retraitement d'une observation avec modèles Hugging Face directs"""
@@ -486,6 +541,7 @@ def observation_reprocess(request, observation_id):
     return redirect('med_assistant:observation_detail', observation_id=observation.id)
 
 
+@login_required
 def statistics(request):
     """Vue des statistiques avancées avec info modèles Hugging Face et prédictions"""
     # Statistiques par thème avec mapping des pathologies

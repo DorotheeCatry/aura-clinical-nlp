@@ -250,6 +250,32 @@
 
         <!-- Footer Sidebar -->
         <div class="absolute bottom-0 left-0 right-0 p-6">
+            <!-- Informations utilisateur -->
+            {% if user.is_authenticated %}
+            <div class="bg-white/10 rounded-lg p-3 mb-4">
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+                        <i class="fas fa-user text-white text-sm"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium text-white truncate">
+                            {{ user.get_full_name|default:user.username }}
+                        </p>
+                        <p class="text-xs text-gray-300 truncate">
+                            {{ user.email }}
+                        </p>
+                    </div>
+                </div>
+                <div class="mt-3 pt-3 border-t border-white/20">
+                    <a href="{% url 'med_assistant:logout' %}" 
+                       class="flex items-center text-xs text-gray-300 hover:text-white transition-colors">
+                        <i class="fas fa-sign-out-alt mr-2"></i>
+                        Se déconnecter
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+            
             <div class="text-xs text-gray-400 space-y-1">
                 <div class="flex items-center">
                     <i class="fas fa-shield-alt mr-2 text-green-400"></i>

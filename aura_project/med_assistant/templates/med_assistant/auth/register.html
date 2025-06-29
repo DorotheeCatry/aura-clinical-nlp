@@ -1,0 +1,277 @@
+{% load static tailwind_tags %}
+
+<!DOCTYPE html>
+<html lang="fr" class="h-full">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inscription - AURA Medical AI</title>
+    {% tailwind_css %}
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        :root {
+            --primary-dark: #0B111A;
+            --primary-deep: #0D3B58;
+            --primary-steel: #306484;
+            --primary-light: #9AB5C5;
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary-deep) 100%);
+            color: var(--primary-dark);
+        }
+
+        .auth-card {
+            background: white;
+            border: 1px solid #E5E7EB;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            backdrop-filter: blur(10px);
+        }
+
+        .btn-primary {
+            background-color: var(--primary-deep);
+            color: white;
+            border: none;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-steel);
+            transform: translateY(-1px);
+        }
+
+        .fade-in {
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .floating-shapes {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: 0;
+        }
+
+        .floating-shapes::before,
+        .floating-shapes::after {
+            content: '';
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .floating-shapes::before {
+            width: 200px;
+            height: 200px;
+            top: 20%;
+            left: 10%;
+            animation-delay: 0s;
+        }
+
+        .floating-shapes::after {
+            width: 150px;
+            height: 150px;
+            bottom: 20%;
+            right: 10%;
+            animation-delay: 3s;
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0px);
+            }
+            50% {
+                transform: translateY(-20px);
+            }
+        }
+    </style>
+</head>
+
+<body class="h-full">
+    <div class="floating-shapes"></div>
+    
+    <div class="min-h-full flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative z-10">
+        <div class="max-w-md w-full space-y-8 fade-in">
+            <!-- Logo et titre -->
+            <div class="text-center">
+                <div class="mx-auto h-20 w-20 bg-white rounded-2xl flex items-center justify-center shadow-lg">
+                    <i class="fas fa-stethoscope text-3xl" style="color: var(--primary-deep);"></i>
+                </div>
+                <h2 class="mt-6 text-3xl font-bold text-white">
+                    Créer un compte AURA
+                </h2>
+                <p class="mt-2 text-sm text-gray-300">
+                    Rejoignez l'Assistant Médical IA
+                </p>
+            </div>
+
+            <!-- Formulaire d'inscription -->
+            <div class="auth-card rounded-2xl p-8">
+                <form method="post" class="space-y-6">
+                    {% csrf_token %}
+                    
+                    <!-- Messages d'erreur -->
+                    {% if form.errors %}
+                        <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                            {% for field, errors in form.errors.items %}
+                                {% for error in errors %}
+                                    <p class="text-sm text-red-600 flex items-center">
+                                        <i class="fas fa-exclamation-circle mr-2"></i>
+                                        {% if field == '__all__' %}
+                                            {{ error }}
+                                        {% else %}
+                                            {{ form|get_field_label:field }} : {{ error }}
+                                        {% endif %}
+                                    </p>
+                                {% endfor %}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    <!-- Nom d'utilisateur -->
+                    <div>
+                        <label for="{{ form.username.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-user mr-2 text-gray-500"></i>
+                            {{ form.username.label }}
+                        </label>
+                        {{ form.username }}
+                        {% if form.username.help_text %}
+                            <p class="mt-1 text-xs text-gray-500">{{ form.username.help_text }}</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Prénom et Nom -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="{{ form.first_name.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-user mr-2 text-gray-500"></i>
+                                {{ form.first_name.label }}
+                            </label>
+                            {{ form.first_name }}
+                        </div>
+                        <div>
+                            <label for="{{ form.last_name.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-user mr-2 text-gray-500"></i>
+                                {{ form.last_name.label }}
+                            </label>
+                            {{ form.last_name }}
+                        </div>
+                    </div>
+
+                    <!-- Email -->
+                    <div>
+                        <label for="{{ form.email.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-envelope mr-2 text-gray-500"></i>
+                            {{ form.email.label }}
+                        </label>
+                        {{ form.email }}
+                    </div>
+
+                    <!-- Mot de passe -->
+                    <div>
+                        <label for="{{ form.password1.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-lock mr-2 text-gray-500"></i>
+                            {{ form.password1.label }}
+                        </label>
+                        {{ form.password1 }}
+                        {% if form.password1.help_text %}
+                            <div class="mt-1 text-xs text-gray-500">
+                                <ul class="list-disc list-inside space-y-1">
+                                    <li>Au moins 8 caractères</li>
+                                    <li>Ne doit pas être trop commun</li>
+                                    <li>Ne doit pas être entièrement numérique</li>
+                                </ul>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Confirmation mot de passe -->
+                    <div>
+                        <label for="{{ form.password2.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-lock mr-2 text-gray-500"></i>
+                            {{ form.password2.label }}
+                        </label>
+                        {{ form.password2 }}
+                    </div>
+
+                    <!-- Conditions d'utilisation -->
+                    <div class="flex items-start">
+                        <input id="terms" name="terms" type="checkbox" required
+                               class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mt-1">
+                        <label for="terms" class="ml-2 block text-sm text-gray-700">
+                            J'accepte les 
+                            <a href="#" class="font-medium text-blue-600 hover:text-blue-500 transition-colors">
+                                conditions d'utilisation
+                            </a>
+                            et la 
+                            <a href="#" class="font-medium text-blue-600 hover:text-blue-500 transition-colors">
+                                politique de confidentialité
+                            </a>
+                        </label>
+                    </div>
+
+                    <!-- Bouton d'inscription -->
+                    <div>
+                        <button type="submit" 
+                                class="btn-primary w-full py-3 px-4 rounded-lg font-medium text-white shadow-lg hover:shadow-xl transition-all duration-200">
+                            <i class="fas fa-user-plus mr-2"></i>
+                            Créer mon compte
+                        </button>
+                    </div>
+
+                    <!-- Lien de connexion -->
+                    <div class="text-center">
+                        <p class="text-sm text-gray-600">
+                            Déjà un compte ?
+                            <a href="{% url 'med_assistant:login' %}" 
+                               class="font-medium text-blue-600 hover:text-blue-500 transition-colors">
+                                Se connecter
+                            </a>
+                        </p>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Informations de sécurité -->
+            <div class="text-center">
+                <div class="flex items-center justify-center space-x-6 text-xs text-gray-300">
+                    <div class="flex items-center">
+                        <i class="fas fa-shield-alt mr-1 text-green-400"></i>
+                        <span>Conforme RGPD</span>
+                    </div>
+                    <div class="flex items-center">
+                        <i class="fas fa-lock mr-1 text-blue-400"></i>
+                        <span>Données sécurisées</span>
+                    </div>
+                    <div class="flex items-center">
+                        <i class="fas fa-hospital mr-1 text-red-400"></i>
+                        <span>Usage médical</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
