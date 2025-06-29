@@ -219,7 +219,7 @@
                 </div>
                 <div>
                     <h1 class="text-xl font-bold text-white">AURA</h1>
-                    <p class="text-xs text-gray-300">Assistant Médical IA</p>
+                    <p class="text-xs text-white/70">Assistant Médical IA</p>
                 </div>
             </div>
 
@@ -252,35 +252,35 @@
         <div class="absolute bottom-0 left-0 right-0 p-6">
             <!-- Informations utilisateur -->
             {% if user.is_authenticated %}
-            <div class="bg-white/10 rounded-lg p-3 mb-4">
+            <div class="bg-white/10 rounded-lg p-4 mb-4">
                 <div class="flex items-center space-x-3">
-                    <div class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0">
-                        <i class="fas fa-user-md text-white text-sm"></i>
+                    <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-user-md text-white text-lg"></i>
                     </div>
                     <div class="flex-1 min-w-0">
-                        <!-- Nom complet avec troncature -->
-                        <p class="text-sm font-medium text-white truncate">
+                        <!-- Nom complet en BLANC -->
+                        <p class="text-sm font-semibold text-white truncate">
                             {{ user.get_full_name|default:user.username }}
                         </p>
-                        <!-- Rôle professionnel avec troncature -->
-                        <p class="text-xs text-white/70 truncate">
-                            {% if user.profile.role %}
-                                {{ user.profile.get_role_display }}
-                            {% else %}
-                                Personnel médical
-                            {% endif %}
+                        <!-- Rôle professionnel en BLANC avec opacité -->
+                        {% if user.profile.role %}
+                        <p class="text-xs text-white/80 truncate">
+                            {{ user.profile.get_role_display }}
                         </p>
-                        <!-- Établissement avec troncature (optionnel) -->
+                        {% endif %}
+                        <!-- Établissement en BLANC avec plus d'opacité -->
                         {% if user.profile.etablissement %}
-                        <p class="text-xs text-white/50 truncate">
+                        <p class="text-xs text-white/60 truncate">
                             {{ user.profile.etablissement }}
                         </p>
                         {% endif %}
                     </div>
                 </div>
+                
+                <!-- Bouton de déconnexion -->
                 <div class="mt-3 pt-3 border-t border-white/20">
                     <a href="{% url 'med_assistant:logout' %}" 
-                       class="flex items-center text-xs text-white/70 hover:text-white transition-colors">
+                       class="flex items-center text-xs text-white/80 hover:text-white transition-colors">
                         <i class="fas fa-sign-out-alt mr-2"></i>
                         Se déconnecter
                     </a>
@@ -288,8 +288,8 @@
             </div>
             {% endif %}
             
-            <!-- Footer sécurité -->
-            <div class="text-xs text-white/50 space-y-1">
+            <!-- Footer sécurité en BLANC -->
+            <div class="text-xs text-white/60 space-y-1">
                 <div class="flex items-center">
                     <i class="fas fa-shield-alt mr-2 text-green-400"></i>
                     <span>Conforme RGPD</span>
