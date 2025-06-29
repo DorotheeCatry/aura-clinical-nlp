@@ -114,83 +114,74 @@
     </div>
     {% endif %}
 
-    <!-- Graphiques modernes côte à côte -->
+    <!-- Graphiques modernes côte à côte - VERSION COMPACTE -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <!-- Consultations de la semaine -->
-        <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200 fade-in">
-            <div class="flex justify-between pb-4 mb-4 border-b border-gray-200">
+        <div class="bg-white rounded-lg p-4 shadow-sm border border-slate-200 fade-in">
+            <div class="flex justify-between items-center pb-3 mb-3 border-b border-gray-200">
                 <div class="flex items-center">
-                    <div class="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center me-3">
-                        <i class="fas fa-chart-bar text-blue-600"></i>
+                    <div class="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center me-2">
+                        <i class="fas fa-chart-bar text-blue-600 text-sm"></i>
                     </div>
                     <div>
-                        <h5 class="leading-none text-2xl font-bold text-gray-900 pb-1">{{ observations_semaine }}</h5>
-                        <p class="text-sm font-normal text-gray-500">Consultations cette semaine</p>
+                        <h5 class="text-lg font-bold text-gray-900">{{ observations_semaine }}</h5>
+                        <p class="text-xs text-gray-500">Consultations cette semaine</p>
                     </div>
                 </div>
                 <div>
                     {% if observations_semaine > 0 %}
-                    <span class="bg-green-100 text-green-800 text-xs font-medium inline-flex items-center px-2.5 py-1 rounded-md">
-                        <svg class="w-2.5 h-2.5 me-1.5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 14">
-                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13V1m0 0L1 5m4-4 4 4"/>
-                        </svg>
+                    <span class="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded">
                         Actif
                     </span>
                     {% else %}
-                    <span class="bg-gray-100 text-gray-800 text-xs font-medium inline-flex items-center px-2.5 py-1 rounded-md">
+                    <span class="bg-gray-100 text-gray-800 text-xs font-medium px-2 py-1 rounded">
                         Aucune
                     </span>
                     {% endif %}
                 </div>
             </div>
 
-            <div class="grid grid-cols-2 mb-4">
-                <dl class="flex items-center">
-                    <dt class="text-gray-500 text-sm font-normal me-1">Total consultations:</dt>
-                    <dd class="text-gray-900 text-sm font-semibold">{{ total_observations }}</dd>
-                </dl>
-                <dl class="flex items-center justify-end">
-                    <dt class="text-gray-500 text-sm font-normal me-1">Moyenne/jour:</dt>
-                    <dd class="text-gray-900 text-sm font-semibold">{{ observations_semaine|div:7|floatformat:1 }}</dd>
-                </dl>
+            <div class="grid grid-cols-2 mb-3 text-xs">
+                <div class="flex items-center">
+                    <span class="text-gray-500 me-1">Total:</span>
+                    <span class="text-gray-900 font-semibold">{{ total_observations }}</span>
+                </div>
+                <div class="flex items-center justify-end">
+                    <span class="text-gray-500 me-1">Moyenne/jour:</span>
+                    <span class="text-gray-900 font-semibold">{{ observations_semaine|div:7|floatformat:1 }}</span>
+                </div>
             </div>
 
-            <div id="weekly-chart"></div>
+            <div id="weekly-chart" style="height: 200px;"></div>
             
-            <div class="grid grid-cols-1 items-center border-gray-200 border-t justify-between">
-                <div class="flex justify-between items-center pt-5">
-                    <span class="text-sm font-medium text-gray-500">7 derniers jours</span>
-                    <a href="{% url 'med_assistant:statistics' %}" 
-                       class="uppercase text-sm font-semibold inline-flex items-center rounded-lg text-blue-600 hover:text-blue-700 hover:bg-gray-100 px-3 py-2">
-                        Rapport détaillé
-                        <svg class="w-2.5 h-2.5 ms-1.5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
-                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 9 4-4-4-4"/>
-                        </svg>
-                    </a>
-                </div>
+            <div class="flex justify-between items-center pt-3 border-t border-gray-200">
+                <span class="text-xs text-gray-500">7 derniers jours</span>
+                <a href="{% url 'med_assistant:statistics' %}" 
+                   class="text-xs font-semibold text-blue-600 hover:text-blue-700 px-2 py-1 rounded hover:bg-blue-50 transition-colors">
+                    Rapport détaillé
+                </a>
             </div>
         </div>
 
         <!-- Patients par service -->
-        <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200 fade-in">
-            <div class="flex justify-between pb-4 mb-4 border-b border-gray-200">
+        <div class="bg-white rounded-lg p-4 shadow-sm border border-slate-200 fade-in">
+            <div class="flex justify-between items-center pb-3 mb-3 border-b border-gray-200">
                 <div class="flex items-center">
-                    <div class="w-12 h-12 rounded-lg bg-green-100 flex items-center justify-center me-3">
-                        <i class="fas fa-hospital text-green-600"></i>
+                    <div class="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center me-2">
+                        <i class="fas fa-hospital text-green-600 text-sm"></i>
                     </div>
                     <div>
-                        <h5 class="leading-none text-2xl font-bold text-gray-900 pb-1">{{ service_patients|length }}</h5>
-                        <p class="text-sm font-normal text-gray-500">Services actifs</p>
+                        <h5 class="text-lg font-bold text-gray-900">{{ service_patients|length }}</h5>
+                        <p class="text-xs text-gray-500">Services actifs</p>
                     </div>
                 </div>
                 <div>
                     {% if service_patients %}
-                    <span class="bg-blue-100 text-blue-800 text-xs font-medium inline-flex items-center px-2.5 py-1 rounded-md">
-                        <i class="fas fa-users me-1.5"></i>
+                    <span class="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded">
                         {{ total_patients }} patients
                     </span>
                     {% else %}
-                    <span class="bg-gray-100 text-gray-800 text-xs font-medium inline-flex items-center px-2.5 py-1 rounded-md">
+                    <span class="bg-gray-100 text-gray-800 text-xs font-medium px-2 py-1 rounded">
                         Aucun service
                     </span>
                     {% endif %}
@@ -198,42 +189,37 @@
             </div>
 
             {% if service_patients %}
-            <div class="grid grid-cols-2 mb-4">
-                <dl class="flex items-center">
-                    <dt class="text-gray-500 text-sm font-normal me-1">Service principal:</dt>
-                    <dd class="text-gray-900 text-sm font-semibold">
+            <div class="grid grid-cols-2 mb-3 text-xs">
+                <div class="flex items-center">
+                    <span class="text-gray-500 me-1">Service principal:</span>
+                    <span class="text-gray-900 font-semibold">
                         {% for service, count in service_patients.items %}
-                            {% if forloop.first %}{{ service|slice:":12" }}{% if service|length > 12 %}...{% endif %}{% endif %}
+                            {% if forloop.first %}{{ service|slice:":10" }}{% if service|length > 10 %}...{% endif %}{% endif %}
                         {% endfor %}
-                    </dd>
-                </dl>
-                <dl class="flex items-center justify-end">
-                    <dt class="text-gray-500 text-sm font-normal me-1">Max patients:</dt>
-                    <dd class="text-gray-900 text-sm font-semibold">{{ max_patients_service }}</dd>
-                </dl>
+                    </span>
+                </div>
+                <div class="flex items-center justify-end">
+                    <span class="text-gray-500 me-1">Max patients:</span>
+                    <span class="text-gray-900 font-semibold">{{ max_patients_service }}</span>
+                </div>
             </div>
 
-            <div id="services-chart"></div>
+            <div id="services-chart" style="height: 200px;"></div>
             {% else %}
-            <div class="flex items-center justify-center h-64 text-gray-500">
+            <div class="flex items-center justify-center h-32 text-gray-500">
                 <div class="text-center">
-                    <i class="fas fa-chart-bar text-4xl mb-4"></i>
-                    <p>Aucune donnée disponible</p>
+                    <i class="fas fa-chart-bar text-2xl mb-2"></i>
+                    <p class="text-xs">Aucune donnée disponible</p>
                 </div>
             </div>
             {% endif %}
             
-            <div class="grid grid-cols-1 items-center border-gray-200 border-t justify-between">
-                <div class="flex justify-between items-center pt-5">
-                    <span class="text-sm font-medium text-gray-500">Répartition actuelle</span>
-                    <a href="{% url 'med_assistant:patient_list' %}" 
-                       class="uppercase text-sm font-semibold inline-flex items-center rounded-lg text-blue-600 hover:text-blue-700 hover:bg-gray-100 px-3 py-2">
-                        Voir patients
-                        <svg class="w-2.5 h-2.5 ms-1.5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
-                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 9 4-4-4-4"/>
-                        </svg>
-                    </a>
-                </div>
+            <div class="flex justify-between items-center pt-3 border-t border-gray-200">
+                <span class="text-xs text-gray-500">Répartition actuelle</span>
+                <a href="{% url 'med_assistant:patient_list' %}" 
+                   class="text-xs font-semibold text-blue-600 hover:text-blue-700 px-2 py-1 rounded hover:bg-blue-50 transition-colors">
+                    Voir patients
+                </a>
             </div>
         </div>
     </div>
@@ -370,13 +356,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 500);
     });
 
-    // Graphique des consultations hebdomadaires
-    const weeklyData = {{ weekly_consultations|safe }};
+    // Graphique des consultations hebdomadaires - VERSION COMPACTE
     const weeklyOptions = {
-        colors: ["#1A56DB"],
+        colors: ["#3B82F6"],
         series: [{
             name: "Consultations",
-            color: "#1A56DB",
             data: [
                 {% for day, count in weekly_consultations.items %}
                 { x: "{{ day|slice:':3' }}", y: {{ count }} },
@@ -385,34 +369,23 @@ document.addEventListener('DOMContentLoaded', function() {
         }],
         chart: {
             type: "bar",
-            height: "320px",
+            height: 200,
             fontFamily: "Inter, sans-serif",
-            toolbar: {
-                show: false,
-            },
+            toolbar: { show: false },
+            sparkline: { enabled: false }
         },
         plotOptions: {
             bar: {
                 horizontal: false,
-                columnWidth: "70%",
+                columnWidth: "60%",
                 borderRadiusApplication: "end",
-                borderRadius: 8,
+                borderRadius: 4,
             },
         },
         tooltip: {
             shared: true,
             intersect: false,
-            style: {
-                fontFamily: "Inter, sans-serif",
-            },
-        },
-        states: {
-            hover: {
-                filter: {
-                    type: "darken",
-                    value: 1,
-                },
-            },
+            style: { fontFamily: "Inter, sans-serif" },
         },
         stroke: {
             show: true,
@@ -420,42 +393,36 @@ document.addEventListener('DOMContentLoaded', function() {
             colors: ["transparent"],
         },
         grid: {
-            show: false,
-            strokeDashArray: 4,
-            padding: {
-                left: 2,
-                right: 2,
-                top: -14
-            },
+            show: true,
+            strokeDashArray: 2,
+            borderColor: '#f1f5f9',
+            padding: { left: 10, right: 10, top: 0, bottom: 0 }
         },
-        dataLabels: {
-            enabled: false,
-        },
-        legend: {
-            show: false,
-        },
+        dataLabels: { enabled: false },
+        legend: { show: false },
         xaxis: {
-            floating: false,
             labels: {
                 show: true,
                 style: {
                     fontFamily: "Inter, sans-serif",
-                    cssClass: 'text-xs font-normal fill-gray-500'
+                    fontSize: '11px',
+                    colors: '#64748b'
                 }
             },
-            axisBorder: {
-                show: false,
-            },
-            axisTicks: {
-                show: false,
-            },
+            axisBorder: { show: false },
+            axisTicks: { show: false },
         },
         yaxis: {
-            show: false,
+            show: true,
+            labels: {
+                style: {
+                    fontFamily: "Inter, sans-serif",
+                    fontSize: '10px',
+                    colors: '#64748b'
+                }
+            }
         },
-        fill: {
-            opacity: 1,
-        },
+        fill: { opacity: 0.9 },
     };
 
     if(document.getElementById("weekly-chart") && typeof ApexCharts !== 'undefined') {
@@ -463,49 +430,37 @@ document.addEventListener('DOMContentLoaded', function() {
         weeklyChart.render();
     }
 
-    // Graphique des services hospitaliers
+    // Graphique des services hospitaliers - VERSION COMPACTE
     {% if service_patients %}
     const servicesOptions = {
         colors: ["#10B981"],
         series: [{
             name: "Patients",
-            color: "#10B981",
             data: [
                 {% for service, count in service_patients.items %}
-                { x: "{{ service|slice:':8' }}", y: {{ count }} },
+                { x: "{{ service|slice:':6' }}", y: {{ count }} },
                 {% endfor %}
             ],
         }],
         chart: {
             type: "bar",
-            height: "320px",
+            height: 200,
             fontFamily: "Inter, sans-serif",
-            toolbar: {
-                show: false,
-            },
+            toolbar: { show: false },
+            sparkline: { enabled: false }
         },
         plotOptions: {
             bar: {
                 horizontal: false,
-                columnWidth: "70%",
+                columnWidth: "60%",
                 borderRadiusApplication: "end",
-                borderRadius: 8,
+                borderRadius: 4,
             },
         },
         tooltip: {
             shared: true,
             intersect: false,
-            style: {
-                fontFamily: "Inter, sans-serif",
-            },
-        },
-        states: {
-            hover: {
-                filter: {
-                    type: "darken",
-                    value: 1,
-                },
-            },
+            style: { fontFamily: "Inter, sans-serif" },
         },
         stroke: {
             show: true,
@@ -513,42 +468,36 @@ document.addEventListener('DOMContentLoaded', function() {
             colors: ["transparent"],
         },
         grid: {
-            show: false,
-            strokeDashArray: 4,
-            padding: {
-                left: 2,
-                right: 2,
-                top: -14
-            },
+            show: true,
+            strokeDashArray: 2,
+            borderColor: '#f1f5f9',
+            padding: { left: 10, right: 10, top: 0, bottom: 0 }
         },
-        dataLabels: {
-            enabled: false,
-        },
-        legend: {
-            show: false,
-        },
+        dataLabels: { enabled: false },
+        legend: { show: false },
         xaxis: {
-            floating: false,
             labels: {
                 show: true,
                 style: {
                     fontFamily: "Inter, sans-serif",
-                    cssClass: 'text-xs font-normal fill-gray-500'
+                    fontSize: '11px',
+                    colors: '#64748b'
                 }
             },
-            axisBorder: {
-                show: false,
-            },
-            axisTicks: {
-                show: false,
-            },
+            axisBorder: { show: false },
+            axisTicks: { show: false },
         },
         yaxis: {
-            show: false,
+            show: true,
+            labels: {
+                style: {
+                    fontFamily: "Inter, sans-serif",
+                    fontSize: '10px',
+                    colors: '#64748b'
+                }
+            }
         },
-        fill: {
-            opacity: 1,
-        },
+        fill: { opacity: 0.9 },
     };
 
     if(document.getElementById("services-chart") && typeof ApexCharts !== 'undefined') {
