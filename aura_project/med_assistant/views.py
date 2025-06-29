@@ -68,7 +68,7 @@ def dashboard(request):
     weekly_consultations = {}
     weekday_names = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche']
     
-    # Calculer le maximum pour normaliser les barres
+    # Calculer les consultations pour chaque jour
     max_consultations = 0
     for i in range(7):
         day = today - timedelta(days=6-i)  # Commencer par lundi d'il y a 6 jours

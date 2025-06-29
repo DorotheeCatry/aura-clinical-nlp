@@ -106,20 +106,24 @@
                 <!-- Graphique en barres -->
                 <div class="relative" style="height: 250px;">
                     <!-- Axe Y (valeurs) -->
-                    <div class="absolute left-0 top-0 h-full flex flex-col justify-between text-xs text-gray-500" style="margin-left: -30px;">
+                    <div class="absolute left-0 top-0 h-full flex flex-col justify-between text-xs text-gray-500" style="margin-left: -30px; height: 200px;">
                         <span>{{ max_consultations }}</span>
+                        {% if max_consultations > 3 %}
                         <span>{{ max_consultations|mul:0.75|floatformat:0 }}</span>
                         <span>{{ max_consultations|mul:0.5|floatformat:0 }}</span>
                         <span>{{ max_consultations|mul:0.25|floatformat:0 }}</span>
+                        {% endif %}
                         <span>0</span>
                     </div>
                     
                     <!-- Grille horizontale -->
-                    <div class="absolute inset-0 flex flex-col justify-between ml-8">
+                    <div class="absolute inset-0 flex flex-col justify-between ml-8" style="height: 200px;">
+                        <div class="border-t border-gray-200"></div>
+                        {% if max_consultations > 3 %}
                         <div class="border-t border-gray-200"></div>
                         <div class="border-t border-gray-200"></div>
                         <div class="border-t border-gray-200"></div>
-                        <div class="border-t border-gray-200"></div>
+                        {% endif %}
                         <div class="border-t border-gray-300"></div>
                     </div>
                     
@@ -127,13 +131,27 @@
                     <div class="flex items-end justify-between h-full ml-8 space-x-2" style="height: 200px;">
                         {% for day, count in weekly_consultations.items %}
                         <div class="flex flex-col items-center flex-1">
-                            <div class="w-full bg-blue-500 rounded-t transition-all duration-1000 hover:bg-blue-600 relative group cursor-pointer" 
-                                 style="height: {% if max_consultations > 0 %}{{ count|mul:100|div:max_consultations|floatformat:1 }}%{% else %}2%{% endif %}; min-height: 4px;">
-                                <!-- Tooltip -->
-                                <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
-                                    {{ count }} consultation{{ count|pluralize }}
+                            {% if count > 0 %}
+                                {% with height_percent=count|mul:100|div:max_consultations %}
+                                <div class="w-full bg-blue-500 rounded-t transition-all duration-1000 hover:bg-blue-600 relative group cursor-pointer flex items-end justify-center" 
+                                     style="height: {{ height_percent|floatformat:1 }}%; min-height: 8px;">
+                                    <!-- Valeur sur la barre -->
+                                    <span class="text-white text-xs font-bold mb-1">{{ count }}</span>
+                                    <!-- Tooltip -->
+                                    <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                                        {{ count }} consultation{{ count|pluralize }}
+                                    </div>
                                 </div>
-                            </div>
+                                {% endwith %}
+                            {% else %}
+                                <div class="w-full bg-gray-200 rounded-t transition-all duration-1000 relative group cursor-pointer" 
+                                     style="height: 4px; min-height: 4px;">
+                                    <!-- Tooltip pour zéro -->
+                                    <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                                        Aucune consultation
+                                    </div>
+                                </div>
+                            {% endif %}
                         </div>
                         {% endfor %}
                     </div>
@@ -169,20 +187,24 @@
                 <!-- Graphique en barres -->
                 <div class="relative" style="height: 250px;">
                     <!-- Axe Y (valeurs) -->
-                    <div class="absolute left-0 top-0 h-full flex flex-col justify-between text-xs text-gray-500" style="margin-left: -30px;">
+                    <div class="absolute left-0 top-0 h-full flex flex-col justify-between text-xs text-gray-500" style="margin-left: -30px; height: 200px;">
                         <span>{{ max_patients_service }}</span>
+                        {% if max_patients_service > 3 %}
                         <span>{{ max_patients_service|mul:0.75|floatformat:0 }}</span>
                         <span>{{ max_patients_service|mul:0.5|floatformat:0 }}</span>
                         <span>{{ max_patients_service|mul:0.25|floatformat:0 }}</span>
+                        {% endif %}
                         <span>0</span>
                     </div>
                     
                     <!-- Grille horizontale -->
-                    <div class="absolute inset-0 flex flex-col justify-between ml-8">
+                    <div class="absolute inset-0 flex flex-col justify-between ml-8" style="height: 200px;">
+                        <div class="border-t border-gray-200"></div>
+                        {% if max_patients_service > 3 %}
                         <div class="border-t border-gray-200"></div>
                         <div class="border-t border-gray-200"></div>
                         <div class="border-t border-gray-200"></div>
-                        <div class="border-t border-gray-200"></div>
+                        {% endif %}
                         <div class="border-t border-gray-300"></div>
                     </div>
                     
@@ -190,13 +212,27 @@
                     <div class="flex items-end justify-between h-full ml-8 space-x-1" style="height: 200px;">
                         {% for service, count in service_patients.items %}
                         <div class="flex flex-col items-center flex-1">
-                            <div class="w-full bg-green-500 rounded-t transition-all duration-1000 hover:bg-green-600 relative group cursor-pointer" 
-                                 style="height: {% if max_patients_service > 0 %}{{ count|mul:100|div:max_patients_service|floatformat:1 }}%{% else %}2%{% endif %}; min-height: 4px;">
-                                <!-- Tooltip -->
-                                <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
-                                    {{ count }} patient{{ count|pluralize }}
+                            {% if count > 0 %}
+                                {% with height_percent=count|mul:100|div:max_patients_service %}
+                                <div class="w-full bg-green-500 rounded-t transition-all duration-1000 hover:bg-green-600 relative group cursor-pointer flex items-end justify-center" 
+                                     style="height: {{ height_percent|floatformat:1 }}%; min-height: 8px;">
+                                    <!-- Valeur sur la barre -->
+                                    <span class="text-white text-xs font-bold mb-1">{{ count }}</span>
+                                    <!-- Tooltip -->
+                                    <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                                        {{ count }} patient{{ count|pluralize }}
+                                    </div>
                                 </div>
-                            </div>
+                                {% endwith %}
+                            {% else %}
+                                <div class="w-full bg-gray-200 rounded-t transition-all duration-1000 relative group cursor-pointer" 
+                                     style="height: 4px; min-height: 4px;">
+                                    <!-- Tooltip pour zéro -->
+                                    <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                                        Aucun patient
+                                    </div>
+                                </div>
+                            {% endif %}
                         </div>
                         {% endfor %}
                     </div>
