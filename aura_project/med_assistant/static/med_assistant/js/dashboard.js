@@ -19,11 +19,7 @@ document.addEventListener('DOMContentLoaded', function() {
         colors: ["#3B82F6"],
         series: [{
             name: "Consultations",
-            data: [
-                {% for day, count in weekly_consultations.items %}
-                { x: "{{ day|slice:':3' }}", y: {{ count }} },
-                {% endfor %}
-            ],
+            data: window.weeklyConsultationsData || [],
         }],
         chart: {
             type: "bar",
