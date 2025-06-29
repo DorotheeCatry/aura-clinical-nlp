@@ -2,9 +2,22 @@
 
 Assistant intelligent pour la surveillance hospitalière avec analyse NLP avancée utilisant des modèles Hugging Face.
 
+## 📸 Captures d'écran de l'application
+
+## 🌍 Aperçus visuels
+
+| Onglet                   | Image                                                       | Description                                                                |
+|--------------------------|-------------------------------------------------------------|----------------------------------------------------------------------------|
+| Connexion                | ![Connexion](captures_app/aura_login.png)                  | Interface de connexion sécurisée pour accéder à l'application.            |
+| Tableau de bord          | ![Tableau de bord](captures_app/aura_p1_dashboard.png)      | Vue d'ensemble avec statistiques, graphiques et activité récente.         |
+| Liste des patients       | ![Liste des patients](captures_app/aura_p2_patients.png)    | Gestion des patients avec recherche et filtres avancés.                   |
+| Observations médicales   | ![Observations](captures_app/aura_3_nlleobs.png)            | Saisie des observations médicales, texte ou audio.                        |
+| Résultat NLP / Statistiques | ![Statistiques](captures_app/aura_p4_stats.png)         | Analyse des médicaments, pathologies et procédures.                       |
+
 ## 🚀 Démarrage rapide
 
 ### 1. Prérequis
+
 - Python 3.10+
 - GPU NVIDIA recommandé (optionnel, fonctionne aussi en CPU)
 - 8GB RAM minimum, 16GB recommandé
@@ -65,12 +78,14 @@ python manage.py tailwind start
 ## 🔧 Architecture technique
 
 ### Backend Django
+
 - **Interface web complète** avec authentification
 - **API de transcription audio** en temps réel
 - **Gestion des patients et observations** avec CRUD complet
 - **Pipeline NLP intégrée** avec modèles Hugging Face
 
 ### Pipeline NLP optimisée
+
 - **Chargement à la demande** des modèles pour économiser la mémoire
 - **Gestion intelligente du GPU** avec libération automatique
 - **Fallback en simulation** si problème de connexion
@@ -88,12 +103,14 @@ python manage.py tailwind start
 ## 📊 Fonctionnalités principales
 
 ### ✅ Gestion des patients
+
 - CRUD complet avec recherche avancée
 - Filtrage par spécialité médicale
 - Historique des consultations
 - Statistiques par patient
 
 ### ✅ Observations médicales
+
 - Saisie texte et enregistrement audio
 - Transcription automatique Whisper
 - Classification IA par spécialité
@@ -101,12 +118,14 @@ python manage.py tailwind start
 - Génération de résumés automatiques
 
 ### ✅ Dashboard intelligent
+
 - Métriques en temps réel
 - Graphiques interactifs
 - Filtres par spécialité
 - Activité hebdomadaire
 
 ### ✅ Statistiques avancées
+
 - Analyse des médicaments prescrits
 - Pathologies les plus fréquentes
 - Gestes et procédures médicales
@@ -114,8 +133,8 @@ python manage.py tailwind start
 
 ## 🔗 Accès à l'application
 
-- **Application principale :** http://127.0.0.1:8000
-- **Interface d'administration :** http://127.0.0.1:8000/admin
+- **Application principale :** <http://127.0.0.1:8000>
+- **Interface d'administration :** <http://127.0.0.1:8000/admin>
 
 ### Comptes de test créés automatiquement
 
@@ -128,6 +147,7 @@ python manage.py tailwind start
 ## 🛠️ Développement
 
 ### Structure du projet
+
 ```
 aura_project/
 ├── med_assistant/          # App principale
@@ -190,6 +210,7 @@ DEBUG=True python manage.py runserver
 ## 🚀 Déploiement en production
 
 ### Variables d'environnement importantes
+
 ```bash
 SECRET_KEY="votre-clé-secrète-django"
 DEBUG=False
@@ -198,6 +219,7 @@ NLP_FALLBACK_TO_LOCAL=True
 ```
 
 ### Optimisations recommandées
+
 - **GPU NVIDIA** pour accélérer les modèles IA
 - **Redis** pour le cache et les tâches asynchrones
 - **PostgreSQL** pour la base de données en production
@@ -227,6 +249,7 @@ Les contributions sont les bienvenues ! Merci de :
 ## 📞 Support
 
 Pour toute question ou problème :
+
 - Ouvrir une [issue GitHub](https://github.com/DorotheeCatry/aura/issues)
 - Consulter la [documentation](https://github.com/DorotheeCatry/aura/wiki)
 - Contacter l'équipe de développement
