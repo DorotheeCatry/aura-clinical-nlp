@@ -12,7 +12,7 @@ from django.core.paginator import Paginator
 from django.views.decorators.csrf import csrf_exempt
 from django.urls import reverse_lazy
 from .models import Patient, Observation, UserProfile
-from .forms import PatientForm, ObservationForm, PatientSearchForm, ObservationEditForm, CustomLoginForm, CustomUserCreationForm
+from .forms import PatientForm, ObservationForm, PatientSearchForm, ObservationEditForm, CustomLoginForm
 from .nlp_pipeline import nlp_pipeline
 import json
 from collections import defaultdict
@@ -48,31 +48,6 @@ class CustomLoginView(LoginView):
 class CustomLogoutView(LogoutView):
     """Vue de déconnexion personnalisée"""
     next_page = reverse_lazy('med_assistant:login')
-
-
-def register_view(request):
-    """Vue d'inscription avec profil professionnel"""
-    if request.user.is_authenticated:
-        return redirect('med_assistant:dashboard')
-        
-    if request.method == 'POST':
-        form = CustomUserCreationForm(request.POST)
-        if form.is_valid():
-            user = form.save()
-            username = form.cleaned_data.get('username')
-            messages.success(request, f'Compte créé avec succès pour {username}! Vous pouvez maintenant vous connecter.')
-            
-            # Connexion automatique après inscription
-            user = authenticate(username=user.username, password=form.cleaned_data.get('password1'))
-            if user:
-                login(request, user)
-                return redirect('med_assistant:dashboard')
-            else:
-                return redirect('med_assistant:login')
-    else:
-        form = CustomUserCreationForm()
-    
-    return render(request, 'med_assistant/auth/register.html', {'form': form})
 
 
 @login_required

@@ -1,138 +1,27 @@
 from django import forms
-from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
+from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.models import User
 from .models import Patient, Observation, UserProfile
 
 
 class CustomLoginForm(AuthenticationForm):
-    """Formulaire de connexion moderne style image"""
+    """Formulaire de connexion avec style AURA"""
     
-    username = forms.EmailField(
-        label="Email address",
-        widget=forms.EmailInput(attrs={
-            'class': 'w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all',
-            'placeholder': 'Enter your email'
+    username = forms.CharField(
+        label="Nom d'utilisateur",
+        widget=forms.TextInput(attrs={
+            'class': 'form-input',
+            'placeholder': 'Votre nom d\'utilisateur'
         })
     )
     
     password = forms.CharField(
-        label="Password",
+        label="Mot de passe",
         widget=forms.PasswordInput(attrs={
-            'class': 'w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all',
-            'placeholder': 'Enter your password'
+            'class': 'form-input',
+            'placeholder': 'Votre mot de passe'
         })
     )
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # Permettre la connexion par email
-        self.fields['username'].label = 'Email address'
-
-
-class CustomUserCreationForm(UserCreationForm):
-    """Formulaire d'inscription avec profil professionnel"""
-    
-    email = forms.EmailField(
-        required=True,
-        label="Email address",
-        widget=forms.EmailInput(attrs={
-            'class': 'w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all',
-            'placeholder': 'Enter your email'
-        })
-    )
-    
-    first_name = forms.CharField(
-        max_length=30,
-        required=True,
-        label="First name",
-        widget=forms.TextInput(attrs={
-            'class': 'w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all',
-            'placeholder': 'Enter your first name'
-        })
-    )
-    
-    last_name = forms.CharField(
-        max_length=30,
-        required=True,
-        label="Last name",
-        widget=forms.TextInput(attrs={
-            'class': 'w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all',
-            'placeholder': 'Enter your last name'
-        })
-    )
-    
-    role = forms.ChoiceField(
-        choices=UserProfile.ROLE_CHOICES,
-        required=True,
-        label="Professional role",
-        widget=forms.Select(attrs={
-            'class': 'w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all'
-        })
-    )
-    
-    specialite = forms.CharField(
-        max_length=100,
-        required=False,
-        label="Specialty (optional)",
-        widget=forms.TextInput(attrs={
-            'class': 'w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all',
-            'placeholder': 'e.g., Cardiology, Emergency Medicine...'
-        })
-    )
-    
-    etablissement = forms.CharField(
-        max_length=200,
-        required=False,
-        label="Institution (optional)",
-        widget=forms.TextInput(attrs={
-            'class': 'w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all',
-            'placeholder': 'Hospital, clinic, medical center...'
-        })
-    )
-
-    class Meta:
-        model = User
-        fields = ('username', 'first_name', 'last_name', 'email', 'password1', 'password2')
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        
-        # Personnaliser les champs existants
-        self.fields['username'].widget.attrs.update({
-            'class': 'w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all',
-            'placeholder': 'Choose a username'
-        })
-        
-        self.fields['password1'].widget.attrs.update({
-            'class': 'w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all',
-            'placeholder': 'Create a password'
-        })
-        
-        self.fields['password2'].widget.attrs.update({
-            'class': 'w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all',
-            'placeholder': 'Confirm your password'
-        })
-        
-        # Labels en anglais pour correspondre au design
-        self.fields['username'].label = 'Username'
-        self.fields['password1'].label = 'Password'
-        self.fields['password2'].label = 'Confirm password'
-
-    def save(self, commit=True):
-        user = super().save(commit=False)
-        user.email = self.cleaned_data['email']
-        user.first_name = self.cleaned_data['first_name']
-        user.last_name = self.cleaned_data['last_name']
-        if commit:
-            user.save()
-            # Créer le profil utilisateur
-            UserProfile.objects.create(
-                user=user,
-                role=self.cleaned_data['role'],
-                specialite=self.cleaned_data.get('specialite', ''),
-                etablissement=self.cleaned_data.get('etablissement', '')
-            )
-        return user
 
 
 class PatientForm(forms.ModelForm):

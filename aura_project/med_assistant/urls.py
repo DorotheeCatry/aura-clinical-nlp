@@ -4,10 +4,9 @@ from . import views
 app_name = 'med_assistant'
 
 urlpatterns = [
-    # Authentification
+    # Authentification (SANS register)
     path('login/', views.CustomLoginView.as_view(), name='login'),
     path('logout/', views.CustomLogoutView.as_view(), name='logout'),
-    path('register/', views.register_view, name='register'),
     
     # Dashboard
     path('', views.dashboard, name='dashboard'),
