@@ -32,3 +32,8 @@ def subtract(value, arg):
         return float(value) - float(arg)
     except (ValueError, TypeError):
         return 0
+
+@register.filter
+def split(value, delimiter):
+    """Divise une chaîne selon un délimiteur"""
+    return value.split(delimiter)
