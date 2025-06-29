@@ -81,6 +81,39 @@
         </div>
     </div>
 
+    <!-- Répartition par âge - PLACÉE JUSTE APRÈS LES MÉTRIQUES -->
+    {% if age_groups_with_percent %}
+    <div class="medical-card rounded-lg p-6 fade-in">
+        <h2 class="text-xl font-semibold text-primary-dark mb-6 flex items-center">
+            <i class="fas fa-chart-pie mr-3 text-primary-steel"></i>
+            Répartition par âge
+            {% if selected_specialty %}
+            <span class="ml-2 text-sm font-normal text-gray-500">({{ selected_specialty_display }})</span>
+            {% endif %}
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {% for age_group, data in age_groups_with_percent.items %}
+            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                <div class="flex items-center justify-between mb-2">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-4 h-4 rounded-full {% if 'Enfants' in age_group %}bg-blue-500{% elif 'Adultes' in age_group %}bg-green-500{% else %}bg-orange-500{% endif %}"></div>
+                        <span class="font-medium text-gray-700">{{ age_group }}</span>
+                    </div>
+                </div>
+                <div class="text-center mb-2">
+                    <span class="text-3xl font-bold text-primary-dark">{{ data.count }}</span>
+                    <span class="text-lg text-gray-600 ml-2">({{ data.percentage }}%)</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-3">
+                    <div class="progress-bar h-3 rounded-full transition-all duration-1000 {% if 'Enfants' in age_group %}bg-blue-500{% elif 'Adultes' in age_group %}bg-green-500{% else %}bg-orange-500{% endif %}" 
+                         style="width: {{ data.percentage }}%"></div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
     <!-- Graphiques en barres compacts côte à côte -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <!-- Consultations de la semaine - GRAPHIQUE EN BARRES COMPACT -->
@@ -259,39 +292,6 @@
             </div>
         </div>
     </div>
-
-    <!-- Répartition par âge -->
-    {% if age_groups_with_percent %}
-    <div class="medical-card rounded-lg p-6 fade-in">
-        <h2 class="text-xl font-semibold text-primary-dark mb-6 flex items-center">
-            <i class="fas fa-chart-pie mr-3 text-primary-steel"></i>
-            Répartition par âge
-            {% if selected_specialty %}
-            <span class="ml-2 text-sm font-normal text-gray-500">({{ selected_specialty_display }})</span>
-            {% endif %}
-        </h2>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {% for age_group, data in age_groups_with_percent.items %}
-            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                <div class="flex items-center justify-between mb-2">
-                    <div class="flex items-center space-x-3">
-                        <div class="w-4 h-4 rounded-full {% if 'Enfants' in age_group %}bg-blue-500{% elif 'Adultes' in age_group %}bg-green-500{% else %}bg-orange-500{% endif %}"></div>
-                        <span class="font-medium text-gray-700">{{ age_group }}</span>
-                    </div>
-                </div>
-                <div class="text-center mb-2">
-                    <span class="text-3xl font-bold text-primary-dark">{{ data.count }}</span>
-                    <span class="text-lg text-gray-600 ml-2">({{ data.percentage }}%)</span>
-                </div>
-                <div class="w-full bg-gray-200 rounded-full h-3">
-                    <div class="progress-bar h-3 rounded-full transition-all duration-1000 {% if 'Enfants' in age_group %}bg-blue-500{% elif 'Adultes' in age_group %}bg-green-500{% else %}bg-orange-500{% endif %}" 
-                         style="width: {{ data.percentage }}%"></div>
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-    </div>
-    {% endif %}
 
     <!-- Observations récentes -->
     {% if observations_recentes %}
