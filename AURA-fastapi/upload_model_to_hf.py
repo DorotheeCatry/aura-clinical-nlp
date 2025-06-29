@@ -94,7 +94,7 @@ with open(readme_path, "w+", encoding="utf-8") as f:
 upload_folder(
     repo_id=repo_id, 
     folder_path=local_dir, 
-    commit_message="Upload initial avec README")
+    commit_message="Upload du 27 juin avec README")
 
 # force le push ?
 # repo = Repository(local_dir=local_dir, clone_from=repo_url)
