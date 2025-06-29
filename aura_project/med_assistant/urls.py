@@ -4,7 +4,7 @@ from . import views
 app_name = 'med_assistant'
 
 urlpatterns = [
-    # Authentification (SANS register)
+    # Authentification (SANS register - app interne hôpital)
     path('login/', views.CustomLoginView.as_view(), name='login'),
     path('logout/', views.CustomLogoutView.as_view(), name='logout'),
     
