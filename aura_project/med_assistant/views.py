@@ -55,21 +55,53 @@ def custom_logout(request):
 
 @login_required
 def dashboard(request):
-    """Dashboard hospitalier avec métriques médicales"""
+    """Dashboard hospitalier simplifié avec métriques essentielles et filtres"""
+    # Filtre par spécialité
+    selected_specialty = request.GET.get('specialty', '')
+    
     # Statistiques générales
     total_patients = Patient.objects.count()
     total_observations = Observation.objects.count()
     
-    # Patients par tranche d'âge
-    today = date.today()
+    # Consultations par jour de la semaine (7 derniers jours) - TOUS LES JOURS AFFICHÉS
+    today = timezone.now().date()
+    weekly_consultations = {}
+    weekday_names = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche']
+    
+    # Calculer les consultations pour chaque jour - FORCER TOUS LES JOURS
+    max_consultations = 0
+    for i in range(7):
+        day = today - timedelta(days=6-i)  # Commencer par lundi d'il y a 6 jours
+        day_name = weekday_names[day.weekday()]
+        
+        # Appliquer le filtre de spécialité si sélectionné
+        observations_query = Observation.objects.filter(date__date=day)
+        if selected_specialty:
+            observations_query = observations_query.filter(theme_classe=selected_specialty)
+        
+        count = observations_query.count()
+        weekly_consultations[day_name] = count
+        max_consultations = max(max_consultations, count)
+    
+    # S'assurer qu'il y a au moins une valeur pour éviter les graphiques vides
+    if max_consultations == 0:
+        max_consultations = 1
+    
+    # Patients par tranche d'âge avec pourcentages
+    today_date = date.today()
     age_groups = {
         'Enfants (0-17 ans)': 0,
         'Adultes (18-64 ans)': 0,
         'Seniors (65+ ans)': 0
     }
     
-    for patient in Patient.objects.all():
-        age = today.year - patient.date_naissance.year - ((today.month, today.day) < (patient.date_naissance.month, patient.date_naissance.day))
+    # Filtrer les patients selon la spécialité si sélectionnée
+    patients_query = Patient.objects.all()
+    if selected_specialty:
+        patients_query = patients_query.filter(observations__theme_classe=selected_specialty).distinct()
+    
+    for patient in patients_query:
+        age = today_date.year - patient.date_naissance.year - ((today_date.month, today_date.day) < (patient.date_naissance.month, patient.date_naissance.day))
         if age < 18:
             age_groups['Enfants (0-17 ans)'] += 1
         elif age < 65:
@@ -77,89 +109,68 @@ def dashboard(request):
         else:
             age_groups['Seniors (65+ ans)'] += 1
     
-    # Activité des 7 derniers jours
+    # Calculer les pourcentages
+    total_filtered_patients = sum(age_groups.values())
+    age_groups_with_percent = {}
+    for group, count in age_groups.items():
+        percentage = (count / total_filtered_patients * 100) if total_filtered_patients > 0 else 0
+        age_groups_with_percent[group] = {
+            'count': count,
+            'percentage': round(percentage, 1)
+        }
+    
+    # Patients par service hospitalier (TOUTES les spécialités avec patients)
+    service_patients = {}
+    
+    # Récupérer toutes les spécialités possibles depuis THEME_CHOICES
+    all_specialties = dict(Observation.THEME_CHOICES)
+    
+    for theme_code, theme_display in all_specialties.items():
+        # Compter les patients uniques pour chaque spécialité
+        patient_count = Patient.objects.filter(
+            observations__theme_classe=theme_code
+        ).distinct().count()
+        
+        if patient_count > 0:  # Seulement afficher les spécialités avec des patients
+            # Simplifier les noms des services
+            service_name = theme_display.replace('Psychique/Neuropsychiatrique', 'Psychiatrie').replace('Métabolique/Diabète', 'Endocrinologie')
+            service_patients[service_name] = patient_count
+    
+    # Calculer le maximum pour normaliser les barres
+    max_patients_service = max(service_patients.values()) if service_patients else 1
+    
+    # Observations récentes (avec filtre de spécialité)
+    observations_query = Observation.objects.select_related('patient', 'created_by')
+    if selected_specialty:
+        observations_query = observations_query.filter(theme_classe=selected_specialty)
+    observations_recentes = observations_query[:5]
+    
+    # Activité des 7 derniers jours (avec filtre)
     seven_days_ago = timezone.now() - timedelta(days=7)
-    observations_semaine = Observation.objects.filter(date__gte=seven_days_ago).count()
+    observations_query_week = Observation.objects.filter(date__gte=seven_days_ago)
+    if selected_specialty:
+        observations_query_week = observations_query_week.filter(theme_classe=selected_specialty)
+    observations_semaine = observations_query_week.count()
+    
     nouveaux_patients_semaine = Patient.objects.filter(created_at__gte=seven_days_ago).count()
     
-    # Répartition par spécialité médicale
-    specialites_stats = {}
-    specialite_counts = Observation.objects.filter(theme_classe__isnull=False).values('theme_classe').annotate(count=Count('theme_classe'))
-    for item in specialite_counts:
-        specialite_display = dict(Observation.THEME_CHOICES).get(item['theme_classe'], item['theme_classe'])
-        specialites_stats[specialite_display] = item['count']
-    
-    # Statistiques par jour de la semaine - TOUS LES JOURS FORCÉS
-    weekday_stats = {
-        'Lundi': 0, 'Mardi': 0, 'Mercredi': 0, 'Jeudi': 0, 
-        'Vendredi': 0, 'Samedi': 0, 'Dimanche': 0
-    }
-    
-    weekday_names = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche']
-    for obs in Observation.objects.all():
-        weekday = weekday_names[obs.date.weekday()]
-        weekday_stats[weekday] += 1
-    
-    # Top médicaments mentionnés (entités)
-    medicaments_stats = defaultdict(int)
-    observations_with_entities = Observation.objects.exclude(entites={})
-    
-    for obs in observations_with_entities:
-        if obs.entites and 'Médicaments' in obs.entites:
-            medicaments = obs.entites['Médicaments']
-            if isinstance(medicaments, list):
-                for med in medicaments:
-                    medicaments_stats[med] += 1
-    
-    # Top 10 médicaments
-    top_medicaments = dict(sorted(medicaments_stats.items(), key=lambda x: x[1], reverse=True)[:10])
-    
-    # Pathologies fréquentes (entités maladies)
-    pathologies_stats = defaultdict(int)
-    for obs in observations_with_entities:
-        if obs.entites and 'Maladies et Symptômes' in obs.entites:
-            pathologies = obs.entites['Maladies et Symptômes']
-            if isinstance(pathologies, list):
-                for path in pathologies:
-                    pathologies_stats[path] += 1
-    
-    # Top 10 pathologies
-    top_pathologies = dict(sorted(pathologies_stats.items(), key=lambda x: x[1], reverse=True)[:10])
-    
-    # Évolution mensuelle des consultations (6 derniers mois)
-    monthly_consultations = []
-    for i in range(6):
-        month_start = timezone.now().replace(day=1) - timedelta(days=30*i)
-        month_end = month_start.replace(day=1) + timedelta(days=32)
-        month_end = month_end.replace(day=1) - timedelta(days=1)
-        
-        count = Observation.objects.filter(
-            date__gte=month_start,
-            date__lte=month_end
-        ).count()
-        
-        monthly_consultations.append({
-            'month': calendar.month_name[month_start.month],
-            'count': count
-        })
-    
-    monthly_consultations.reverse()
-    
-    # Observations récentes
-    observations_recentes = Observation.objects.select_related('patient', 'created_by')[:5]
+    # Liste des spécialités pour le filtre
+    specialties_for_filter = [('', 'Toutes les spécialités')] + list(Observation.THEME_CHOICES)
     
     context = {
-        'total_patients': total_patients,
+        'total_patients': total_filtered_patients if selected_specialty else total_patients,
         'total_observations': total_observations,
-        'age_groups': age_groups,
+        'weekly_consultations': weekly_consultations,
+        'max_consultations': max_consultations,
+        'age_groups_with_percent': age_groups_with_percent,
+        'service_patients': service_patients,
+        'max_patients_service': max_patients_service,
         'observations_semaine': observations_semaine,
         'nouveaux_patients_semaine': nouveaux_patients_semaine,
-        'specialites_stats': specialites_stats,
-        'weekday_stats': weekday_stats,  # AJOUTÉ pour les graphiques
-        'top_medicaments': top_medicaments,
-        'top_pathologies': top_pathologies,
-        'monthly_consultations': monthly_consultations,
         'observations_recentes': observations_recentes,
+        'specialties_for_filter': specialties_for_filter,
+        'selected_specialty': selected_specialty,
+        'selected_specialty_display': dict(Observation.THEME_CHOICES).get(selected_specialty, 'Toutes les spécialités') if selected_specialty else 'Toutes les spécialités',
     }
     
     return render(request, 'med_assistant/dashboard.html', context)
@@ -565,7 +576,7 @@ def statistics(request):
     }
     
     for patient in Patient.objects.all():
-        age = today.year - patient.date_naissance.year - ((patient.date_naissance.day) > (today.month, today.day))
+        age = today.year - patient.date_naissance.year - ((today.month, patient.date_naissance.day) > (today.month, today.day))
         if age < 18:
             age_groups['Enfants (0-17 ans)'] += 1
         elif age < 65:
