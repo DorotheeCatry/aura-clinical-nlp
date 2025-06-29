@@ -562,130 +562,73 @@ def observation_reprocess(request, observation_id):
 
 @login_required
 def statistics(request):
-    """Statistiques hospitalières détaillées"""
-    # Statistiques générales
-    total_patients = Patient.objects.count()
-    total_observations = Observation.objects.count()
+    """Statistiques médicales focalisées sur médicaments, pathologies et gestes avec filtre par spécialité"""
+    # Filtre par spécialité
+    selected_specialty = request.GET.get('specialty', '')
     
-    # Répartition par âge
-    today = date.today()
-    age_groups = {
-        'Enfants (0-17 ans)': 0,
-        'Adultes (18-64 ans)': 0,
-        'Seniors (65+ ans)': 0
-    }
-    
-    for patient in Patient.objects.all():
-        age = today.year - patient.date_naissance.year - ((today.month, patient.date_naissance.day) > (today.month, today.day))
-        if age < 18:
-            age_groups['Enfants (0-17 ans)'] += 1
-        elif age < 65:
-            age_groups['Adultes (18-64 ans)'] += 1
-        else:
-            age_groups['Seniors (65+ ans)'] += 1
-    
-    # Statistiques par spécialité médicale
-    specialites_stats = {}
-    specialite_counts = Observation.objects.filter(theme_classe__isnull=False).values('theme_classe').annotate(count=Count('theme_classe'))
-    for item in specialite_counts:
-        specialite_display = dict(Observation.THEME_CHOICES).get(item['theme_classe'], item['theme_classe'])
-        specialites_stats[specialite_display] = item['count']
+    # Base query pour les observations avec entités
+    observations_query = Observation.objects.exclude(entites={})
+    if selected_specialty:
+        observations_query = observations_query.filter(theme_classe=selected_specialty)
     
     # Analyse des médicaments
     medicaments_stats = defaultdict(int)
-    observations_with_entities = Observation.objects.exclude(entites={})
-    
-    for obs in observations_with_entities:
+    for obs in observations_query:
         if obs.entites and 'Médicaments' in obs.entites:
             medicaments = obs.entites['Médicaments']
             if isinstance(medicaments, list):
                 for med in medicaments:
                     medicaments_stats[med] += 1
     
-    # Top 15 médicaments
-    top_medicaments = dict(sorted(medicaments_stats.items(), key=lambda x: x[1], reverse=True)[:15])
+    # Top 20 médicaments
+    top_medicaments = dict(sorted(medicaments_stats.items(), key=lambda x: x[1], reverse=True)[:20])
     
     # Analyse des pathologies
     pathologies_stats = defaultdict(int)
-    for obs in observations_with_entities:
+    for obs in observations_query:
         if obs.entites and 'Maladies et Symptômes' in obs.entites:
             pathologies = obs.entites['Maladies et Symptômes']
             if isinstance(pathologies, list):
                 for path in pathologies:
                     pathologies_stats[path] += 1
     
-    # Top 15 pathologies
-    top_pathologies = dict(sorted(pathologies_stats.items(), key=lambda x: x[1], reverse=True)[:15])
+    # Top 20 pathologies
+    top_pathologies = dict(sorted(pathologies_stats.items(), key=lambda x: x[1], reverse=True)[:20])
     
     # Analyse des gestes/procédures médicales
     procedures_stats = defaultdict(int)
-    for obs in observations_with_entities:
+    for obs in observations_query:
         if obs.entites and 'Procédures Médicales' in obs.entites:
             procedures = obs.entites['Procédures Médicales']
             if isinstance(procedures, list):
                 for proc in procedures:
                     procedures_stats[proc] += 1
     
-    # Top 15 procédures
-    top_procedures = dict(sorted(procedures_stats.items(), key=lambda x: x[1], reverse=True)[:15])
+    # Top 20 procédures
+    top_procedures = dict(sorted(procedures_stats.items(), key=lambda x: x[1], reverse=True)[:20])
     
-    # Évolution mensuelle des consultations (12 derniers mois)
-    monthly_evolution = []
-    for i in range(12):
-        month_start = timezone.now().replace(day=1) - timedelta(days=30*i)
-        month_end = month_start.replace(day=1) + timedelta(days=32)
-        month_end = month_end.replace(day=1) - timedelta(days=1)
-        
-        observations_count = Observation.objects.filter(
-            date__gte=month_start,
-            date__lte=month_end
-        ).count()
-        
-        patients_count = Patient.objects.filter(
-            created_at__gte=month_start,
-            created_at__lte=month_end
-        ).count()
-        
-        monthly_evolution.append({
-            'month': f"{calendar.month_name[month_start.month]} {month_start.year}",
-            'observations': observations_count,
-            'nouveaux_patients': patients_count
-        })
+    # Statistiques par spécialité médicale (seulement si pas de filtre)
+    specialites_stats = {}
+    if not selected_specialty:
+        specialite_counts = Observation.objects.filter(theme_classe__isnull=False).values('theme_classe').annotate(count=Count('theme_classe'))
+        for item in specialite_counts:
+            specialite_display = dict(Observation.THEME_CHOICES).get(item['theme_classe'], item['theme_classe'])
+            specialites_stats[specialite_display] = item['count']
     
-    monthly_evolution.reverse()
-    
-    # Activité par jour de la semaine
-    weekday_stats = {
-        'Lundi': 0, 'Mardi': 0, 'Mercredi': 0, 'Jeudi': 0, 
-        'Vendredi': 0, 'Samedi': 0, 'Dimanche': 0
-    }
-    
-    weekday_names = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche']
-    for obs in Observation.objects.all():
-        weekday = weekday_names[obs.date.weekday()]
-        weekday_stats[weekday] += 1
-    
-    # Statistiques par praticien
-    practitioner_stats = {}
-    practitioner_counts = Observation.objects.filter(created_by__isnull=False).values('created_by__first_name', 'created_by__last_name').annotate(count=Count('created_by'))
-    for item in practitioner_counts:
-        name = f"{item['created_by__first_name']} {item['created_by__last_name']}"
-        practitioner_stats[name] = item['count']
+    # Liste des spécialités pour le filtre
+    specialties_for_filter = [('', 'Toutes les spécialités')] + list(Observation.THEME_CHOICES)
     
     context = {
-        'total_patients': total_patients,
-        'total_observations': total_observations,
-        'age_groups': age_groups,
-        'specialites_stats': specialites_stats,
         'top_medicaments': top_medicaments,
         'top_pathologies': top_pathologies,
         'top_procedures': top_procedures,
-        'monthly_evolution': monthly_evolution,
-        'weekday_stats': weekday_stats,
-        'practitioner_stats': practitioner_stats,
+        'specialites_stats': specialites_stats,
         'total_medicaments': len(medicaments_stats),
         'total_pathologies': len(pathologies_stats),
         'total_procedures': len(procedures_stats),
+        'specialties_for_filter': specialties_for_filter,
+        'selected_specialty': selected_specialty,
+        'selected_specialty_display': dict(Observation.THEME_CHOICES).get(selected_specialty, 'Toutes les spécialités') if selected_specialty else None,
     }
     
     return render(request, 'med_assistant/statistics.html', context)
