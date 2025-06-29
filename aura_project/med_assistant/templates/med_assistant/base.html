@@ -142,11 +142,6 @@
             opacity: 0.9 !important;
         }
 
-        .sidebar .user-etablissement {
-            color: #ffffff !important;
-            opacity: 0.8 !important;
-        }
-
         .sidebar .logout-btn {
             color: #ffffff !important;
         }
@@ -277,7 +272,7 @@
             </nav>
         </div>
 
-        <!-- Footer Sidebar - SECTION UTILISATEUR AVEC BLANC FORCÉ -->
+        <!-- Footer Sidebar - SECTION UTILISATEUR SIMPLIFIÉE -->
         <div class="absolute bottom-0 left-0 right-0 p-6">
             <!-- Informations utilisateur -->
             {% if user.is_authenticated %}
@@ -300,16 +295,6 @@
                         {% endif %}
                     </div>
                 </div>
-                
-                <!-- Établissement si disponible -->
-                {% if user.profile.etablissement %}
-                <div class="mb-3 px-3 py-2 bg-white/10 rounded-lg">
-                    <p class="user-etablissement text-xs truncate flex items-center">
-                        <i class="fas fa-hospital mr-2"></i>
-                        {{ user.profile.etablissement }}
-                    </p>
-                </div>
-                {% endif %}
                 
                 <!-- Bouton de déconnexion -->
                 <div class="pt-3 border-t border-white/20">
