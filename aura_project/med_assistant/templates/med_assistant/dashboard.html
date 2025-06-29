@@ -340,171 +340,29 @@
     </div>
     {% endif %}
 </div>
+{% endblock %}
 
+{% block extra_js %}
 <!-- ApexCharts CDN -->
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 
+<!-- Données pour les graphiques -->
 <script>
-// Animation des barres de progression au chargement
-document.addEventListener('DOMContentLoaded', function() {
-    const progressBars = document.querySelectorAll('.progress-bar');
-    progressBars.forEach(bar => {
-        const width = bar.style.width;
-        bar.style.width = '0%';
-        setTimeout(() => {
-            bar.style.width = width;
-        }, 500);
-    });
+// Données des consultations hebdomadaires
+window.weeklyConsultationsData = [
+    {% for day, count in weekly_consultations.items %}
+    { x: "{{ day|slice:':3' }}", y: {{ count }} },
+    {% endfor %}
+];
 
-    // Graphique des consultations hebdomadaires - VERSION COMPACTE
-    const weeklyOptions = {
-        colors: ["#3B82F6"],
-        series: [{
-            name: "Consultations",
-            data: [
-                {% for day, count in weekly_consultations.items %}
-                { x: "{{ day|slice:':3' }}", y: {{ count }} },
-                {% endfor %}
-            ],
-        }],
-        chart: {
-            type: "bar",
-            height: 200,
-            fontFamily: "Inter, sans-serif",
-            toolbar: { show: false },
-            sparkline: { enabled: false }
-        },
-        plotOptions: {
-            bar: {
-                horizontal: false,
-                columnWidth: "60%",
-                borderRadiusApplication: "end",
-                borderRadius: 4,
-            },
-        },
-        tooltip: {
-            shared: true,
-            intersect: false,
-            style: { fontFamily: "Inter, sans-serif" },
-        },
-        stroke: {
-            show: true,
-            width: 0,
-            colors: ["transparent"],
-        },
-        grid: {
-            show: true,
-            strokeDashArray: 2,
-            borderColor: '#f1f5f9',
-            padding: { left: 10, right: 10, top: 0, bottom: 0 }
-        },
-        dataLabels: { enabled: false },
-        legend: { show: false },
-        xaxis: {
-            labels: {
-                show: true,
-                style: {
-                    fontFamily: "Inter, sans-serif",
-                    fontSize: '11px',
-                    colors: '#64748b'
-                }
-            },
-            axisBorder: { show: false },
-            axisTicks: { show: false },
-        },
-        yaxis: {
-            show: true,
-            labels: {
-                style: {
-                    fontFamily: "Inter, sans-serif",
-                    fontSize: '10px',
-                    colors: '#64748b'
-                }
-            }
-        },
-        fill: { opacity: 0.9 },
-    };
-
-    if(document.getElementById("weekly-chart") && typeof ApexCharts !== 'undefined') {
-        const weeklyChart = new ApexCharts(document.getElementById("weekly-chart"), weeklyOptions);
-        weeklyChart.render();
-    }
-
-    // Graphique des services hospitaliers - VERSION COMPACTE
-    {% if service_patients %}
-    const servicesOptions = {
-        colors: ["#10B981"],
-        series: [{
-            name: "Patients",
-            data: [
-                {% for service, count in service_patients.items %}
-                { x: "{{ service|slice:':6' }}", y: {{ count }} },
-                {% endfor %}
-            ],
-        }],
-        chart: {
-            type: "bar",
-            height: 200,
-            fontFamily: "Inter, sans-serif",
-            toolbar: { show: false },
-            sparkline: { enabled: false }
-        },
-        plotOptions: {
-            bar: {
-                horizontal: false,
-                columnWidth: "60%",
-                borderRadiusApplication: "end",
-                borderRadius: 4,
-            },
-        },
-        tooltip: {
-            shared: true,
-            intersect: false,
-            style: { fontFamily: "Inter, sans-serif" },
-        },
-        stroke: {
-            show: true,
-            width: 0,
-            colors: ["transparent"],
-        },
-        grid: {
-            show: true,
-            strokeDashArray: 2,
-            borderColor: '#f1f5f9',
-            padding: { left: 10, right: 10, top: 0, bottom: 0 }
-        },
-        dataLabels: { enabled: false },
-        legend: { show: false },
-        xaxis: {
-            labels: {
-                show: true,
-                style: {
-                    fontFamily: "Inter, sans-serif",
-                    fontSize: '11px',
-                    colors: '#64748b'
-                }
-            },
-            axisBorder: { show: false },
-            axisTicks: { show: false },
-        },
-        yaxis: {
-            show: true,
-            labels: {
-                style: {
-                    fontFamily: "Inter, sans-serif",
-                    fontSize: '10px',
-                    colors: '#64748b'
-                }
-            }
-        },
-        fill: { opacity: 0.9 },
-    };
-
-    if(document.getElementById("services-chart") && typeof ApexCharts !== 'undefined') {
-        const servicesChart = new ApexCharts(document.getElementById("services-chart"), servicesOptions);
-        servicesChart.render();
-    }
-    {% endif %}
-});
+// Données des services hospitaliers
+window.servicesData = [
+    {% for service, count in service_patients.items %}
+    { x: "{{ service|slice:':6' }}", y: {{ count }} },
+    {% endfor %}
+];
 </script>
+
+<!-- Script du dashboard -->
+<script src="{% static 'med_assistant/js/dashboard.js' %}"></script>
 {% endblock %}

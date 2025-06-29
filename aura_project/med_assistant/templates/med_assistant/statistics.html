@@ -202,19 +202,8 @@
     </div>
     {% endif %}
 </div>
+{% endblock %}
 
-<script>
-// Animation des barres de progression au chargement
-document.addEventListener('DOMContentLoaded', function() {
-    const progressBars = document.querySelectorAll('[data-width]');
-    progressBars.forEach(bar => {
-        const width = bar.getAttribute('data-width');
-        bar.style.width = '0%';
-        setTimeout(() => {
-            bar.style.transition = 'width 1.5s ease-out';
-            bar.style.width = width;
-        }, 500);
-    });
-});
-</script>
+{% block extra_js %}
+<script src="{% static 'med_assistant/js/statistics.js' %}"></script>
 {% endblock %}

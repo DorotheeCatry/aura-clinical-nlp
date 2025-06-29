@@ -232,7 +232,8 @@ Structure suggérée :
         </div>
     </form>
 </div>
+{% endblock %}
 
-<!-- Chargement du script JavaScript -->
-<script src="{% load static %}{% static 'med_assistant/js/audio_recorder.js' %}"></script>
+{% block extra_js %}
+<script src="{% static 'med_assistant/js/audio_recorder.js' %}"></script>
 {% endblock %}

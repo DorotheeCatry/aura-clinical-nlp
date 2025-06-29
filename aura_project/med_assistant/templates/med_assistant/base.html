@@ -127,7 +127,7 @@
             color: white;
         }
 
-        /* FORCER LE BLANC DANS LA SIDEBAR */
+        /* Forcer le blanc dans la sidebar */
         .sidebar .user-section * {
             color: white !important;
         }
@@ -272,7 +272,7 @@
             </nav>
         </div>
 
-        <!-- Footer Sidebar - SECTION UTILISATEUR SIMPLIFIÉE -->
+        <!-- Footer Sidebar - Section utilisateur simplifiée -->
         <div class="absolute bottom-0 left-0 right-0 p-6">
             <!-- Informations utilisateur -->
             {% if user.is_authenticated %}
@@ -283,11 +283,11 @@
                         <i class="fas fa-user-md text-white text-lg"></i>
                     </div>
                     <div class="flex-1 min-w-0">
-                        <!-- Nom complet en BLANC PUR -->
+                        <!-- Nom complet en blanc pur -->
                         <h3 class="user-name text-base font-semibold truncate">
                             {{ user.get_full_name|default:user.username }}
                         </h3>
-                        <!-- Rôle professionnel en BLANC PUR -->
+                        <!-- Rôle professionnel en blanc pur -->
                         {% if user.profile.role %}
                         <p class="user-role text-sm truncate">
                             {{ user.profile.get_role_display }}
@@ -385,52 +385,8 @@
     <!-- Mobile Overlay -->
     <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden lg:hidden"></div>
 
-    <!-- Scripts -->
-    <script>
-        // Sidebar toggle for mobile
-        const sidebarToggle = document.getElementById('sidebar-toggle');
-        const sidebar = document.getElementById('sidebar');
-        const overlay = document.getElementById('sidebar-overlay');
-
-        sidebarToggle?.addEventListener('click', function () {
-            sidebar.classList.toggle('open');
-            overlay.classList.toggle('hidden');
-        });
-
-        overlay?.addEventListener('click', function () {
-            sidebar.classList.remove('open');
-            overlay.classList.add('hidden');
-        });
-
-        // Auto-hide messages
-        setTimeout(function () {
-            const messages = document.querySelectorAll('.fade-in');
-            messages.forEach(function (message) {
-                if (message.classList.contains('border-l-4')) {
-                    message.style.transition = 'all 0.5s ease-out';
-                    message.style.opacity = '0';
-                    message.style.transform = 'translateY(-20px)';
-                    setTimeout(function () {
-                        message.remove();
-                    }, 500);
-                }
-            });
-        }, 5000);
-
-        // Progress bars animation
-        document.addEventListener('DOMContentLoaded', function () {
-            const progressBars = document.querySelectorAll('.progress-bar');
-            progressBars.forEach(bar => {
-                const width = bar.getAttribute('data-width') || bar.style.width;
-                if (width) {
-                    bar.style.width = '0%';
-                    setTimeout(() => {
-                        bar.style.width = width;
-                    }, 500);
-                }
-            });
-        });
-    </script>
+    <!-- Scripts de base -->
+    <script src="{% static 'med_assistant/js/base.js' %}"></script>
 
     {% block extra_js %}
     {% endblock %}
