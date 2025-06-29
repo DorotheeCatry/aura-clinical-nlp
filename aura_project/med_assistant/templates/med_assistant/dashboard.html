@@ -45,89 +45,168 @@
         </div>
     </div>
 
-    <!-- Graphique consultations semaine -->
-    {% if weekly_consultations %}
+    <!-- Graphiques en barres compacts côte à côte -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Consultations de la semaine - GRAPHIQUE EN BARRES COMPACT -->
+        {% if weekly_consultations %}
+        <div class="medical-card rounded-lg p-6 fade-in">
+            <h2 class="text-xl font-semibold text-primary-dark mb-4 flex items-center">
+                <i class="fas fa-chart-bar mr-3 text-primary-steel"></i>
+                Consultations de la semaine
+            </h2>
+            <div class="bg-white border border-gray-200 rounded-lg p-4">
+                <!-- Titre du graphique -->
+                <div class="text-center mb-4">
+                    <h3 class="text-lg font-semibold text-gray-800">Consultations par jour</h3>
+                    <div class="flex justify-center items-center mt-2">
+                        <div class="h-px bg-gray-300 flex-1"></div>
+                        <span class="px-3 text-sm text-gray-500">7 derniers jours</span>
+                        <div class="h-px bg-gray-300 flex-1"></div>
+                    </div>
+                </div>
+                
+                <!-- Graphique en barres -->
+                <div class="relative">
+                    <!-- Axe Y (valeurs) -->
+                    <div class="absolute left-0 top-0 h-48 flex flex-col justify-between text-xs text-gray-500 -ml-8">
+                        <span>{{ max_consultations }}</span>
+                        <span>{{ max_consultations|floatformat:0|add:"0"|floatformat:0|mul:0.75|floatformat:0 }}</span>
+                        <span>{{ max_consultations|floatformat:0|add:"0"|floatformat:0|mul:0.5|floatformat:0 }}</span>
+                        <span>{{ max_consultations|floatformat:0|add:"0"|floatformat:0|mul:0.25|floatformat:0 }}</span>
+                        <span>0</span>
+                    </div>
+                    
+                    <!-- Grille horizontale -->
+                    <div class="absolute inset-0 flex flex-col justify-between h-48 ml-4">
+                        <div class="border-t border-gray-200"></div>
+                        <div class="border-t border-gray-200"></div>
+                        <div class="border-t border-gray-200"></div>
+                        <div class="border-t border-gray-200"></div>
+                        <div class="border-t border-gray-300"></div>
+                    </div>
+                    
+                    <!-- Barres -->
+                    <div class="flex items-end justify-between h-48 ml-4 space-x-2">
+                        {% for day, count in weekly_consultations.items %}
+                        <div class="flex flex-col items-center flex-1">
+                            <div class="w-full bg-blue-500 rounded-t transition-all duration-1000 hover:bg-blue-600 relative group" 
+                                 style="height: {% if max_consultations > 0 %}{{ count|mul:100|div:max_consultations }}%{% else %}2%{% endif %}; min-height: 4px;">
+                                <!-- Tooltip -->
+                                <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                                    {{ count }} consultation{{ count|pluralize }}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <!-- Axe X (jours) -->
+                    <div class="flex justify-between mt-2 ml-4 text-xs text-gray-600">
+                        {% for day, count in weekly_consultations.items %}
+                        <span class="flex-1 text-center">{{ day|slice:":3" }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Patients par service hospitalier - GRAPHIQUE EN BARRES COMPACT -->
+        {% if service_patients %}
+        <div class="medical-card rounded-lg p-6 fade-in">
+            <h2 class="text-xl font-semibold text-primary-dark mb-4 flex items-center">
+                <i class="fas fa-hospital mr-3 text-primary-steel"></i>
+                Patients par service hospitalier
+            </h2>
+            <div class="bg-white border border-gray-200 rounded-lg p-4">
+                <!-- Titre du graphique -->
+                <div class="text-center mb-4">
+                    <h3 class="text-lg font-semibold text-gray-800">Nombre de patients par service</h3>
+                    <div class="flex justify-center items-center mt-2">
+                        <div class="h-px bg-gray-300 flex-1"></div>
+                        <span class="px-3 text-sm text-gray-500">Répartition actuelle</span>
+                        <div class="h-px bg-gray-300 flex-1"></div>
+                    </div>
+                </div>
+                
+                <!-- Graphique en barres -->
+                <div class="relative">
+                    <!-- Axe Y (valeurs) -->
+                    <div class="absolute left-0 top-0 h-48 flex flex-col justify-between text-xs text-gray-500 -ml-8">
+                        <span>{{ max_patients_service }}</span>
+                        <span>{{ max_patients_service|floatformat:0|add:"0"|floatformat:0|mul:0.75|floatformat:0 }}</span>
+                        <span>{{ max_patients_service|floatformat:0|add:"0"|floatformat:0|mul:0.5|floatformat:0 }}</span>
+                        <span>{{ max_patients_service|floatformat:0|add:"0"|floatformat:0|mul:0.25|floatformat:0 }}</span>
+                        <span>0</span>
+                    </div>
+                    
+                    <!-- Grille horizontale -->
+                    <div class="absolute inset-0 flex flex-col justify-between h-48 ml-4">
+                        <div class="border-t border-gray-200"></div>
+                        <div class="border-t border-gray-200"></div>
+                        <div class="border-t border-gray-200"></div>
+                        <div class="border-t border-gray-200"></div>
+                        <div class="border-t border-gray-300"></div>
+                    </div>
+                    
+                    <!-- Barres -->
+                    <div class="flex items-end justify-between h-48 ml-4 space-x-1">
+                        {% for service, count in service_patients.items %}
+                        <div class="flex flex-col items-center flex-1">
+                            <div class="w-full bg-green-500 rounded-t transition-all duration-1000 hover:bg-green-600 relative group" 
+                                 style="height: {% if max_patients_service > 0 %}{{ count|mul:100|div:max_patients_service }}%{% else %}2%{% endif %}; min-height: 4px;">
+                                <!-- Tooltip -->
+                                <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                                    {{ count }} patient{{ count|pluralize }}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <!-- Axe X (services) -->
+                    <div class="flex justify-between mt-2 ml-4 text-xs text-gray-600">
+                        {% for service, count in service_patients.items %}
+                        <span class="flex-1 text-center transform -rotate-45 origin-center" style="writing-mode: vertical-lr; text-orientation: mixed;">
+                            {{ service|slice:":8" }}
+                        </span>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Répartition par âge -->
+    {% if age_groups_with_percent %}
     <div class="medical-card rounded-lg p-6 fade-in">
         <h2 class="text-xl font-semibold text-primary-dark mb-6 flex items-center">
-            <i class="fas fa-chart-bar mr-3 text-primary-steel"></i>
-            Consultations de la semaine
+            <i class="fas fa-chart-pie mr-3 text-primary-steel"></i>
+            Répartition par âge
         </h2>
-        <div class="grid grid-cols-7 gap-4">
-            {% for day, count in weekly_consultations.items %}
-            <div class="text-center">
-                <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                    <h3 class="font-semibold text-primary-dark text-sm mb-2">{{ day }}</h3>
-                    <div class="h-24 flex items-end justify-center mb-2">
-                        <div class="w-8 bg-primary-steel rounded-t transition-all duration-1000" 
-                             style="height: {% if count > 0 %}{{ count|add:20 }}%{% else %}5%{% endif %}; min-height: 8px;"></div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {% for age_group, data in age_groups_with_percent.items %}
+            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                <div class="flex items-center justify-between mb-2">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-4 h-4 rounded-full {% if 'Enfants' in age_group %}bg-blue-500{% elif 'Adultes' in age_group %}bg-green-500{% else %}bg-orange-500{% endif %}"></div>
+                        <span class="font-medium text-gray-700">{{ age_group }}</span>
                     </div>
-                    <p class="text-lg font-bold text-primary-steel">{{ count }}</p>
+                </div>
+                <div class="text-center mb-2">
+                    <span class="text-3xl font-bold text-primary-dark">{{ data.count }}</span>
+                    <span class="text-lg text-gray-600 ml-2">({{ data.percentage }}%)</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-3">
+                    <div class="progress-bar h-3 rounded-full transition-all duration-1000 {% if 'Enfants' in age_group %}bg-blue-500{% elif 'Adultes' in age_group %}bg-green-500{% else %}bg-orange-500{% endif %}" 
+                         style="width: {{ data.percentage }}%"></div>
                 </div>
             </div>
             {% endfor %}
         </div>
     </div>
     {% endif %}
-
-    <!-- Répartition par âge et spécialités -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <!-- Répartition par âge AVEC POURCENTAGES -->
-        {% if age_groups_with_percent %}
-        <div class="medical-card rounded-lg p-6 fade-in">
-            <h2 class="text-xl font-semibold text-primary-dark mb-6 flex items-center">
-                <i class="fas fa-chart-pie mr-3 text-primary-steel"></i>
-                Répartition par âge
-            </h2>
-            <div class="space-y-4">
-                {% for age_group, data in age_groups_with_percent.items %}
-                <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                    <div class="flex items-center justify-between mb-2">
-                        <div class="flex items-center space-x-3">
-                            <div class="w-4 h-4 rounded-full {% if 'Enfants' in age_group %}bg-blue-500{% elif 'Adultes' in age_group %}bg-green-500{% else %}bg-orange-500{% endif %}"></div>
-                            <span class="font-medium text-gray-700">{{ age_group }}</span>
-                        </div>
-                        <div class="text-right">
-                            <span class="text-2xl font-bold text-primary-dark">{{ data.count }}</span>
-                            <span class="text-sm text-gray-600 ml-2">({{ data.percentage }}%)</span>
-                        </div>
-                    </div>
-                    <div class="w-full bg-gray-200 rounded-full h-3">
-                        <div class="progress-bar h-3 rounded-full transition-all duration-1000" 
-                             style="width: {{ data.percentage }}%"></div>
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-        {% endif %}
-
-        <!-- Spécialités médicales -->
-        {% if specialites_stats %}
-        <div class="medical-card rounded-lg p-6 fade-in">
-            <h2 class="text-xl font-semibold text-primary-dark mb-6 flex items-center">
-                <i class="fas fa-stethoscope mr-3 text-primary-steel"></i>
-                Spécialités médicales
-            </h2>
-            <div class="space-y-4">
-                {% for specialite, count in specialites_stats.items %}
-                <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                    <div class="flex items-center justify-between mb-2">
-                        <div class="flex items-center space-x-3">
-                            <div class="w-4 h-4 rounded-full {% if 'Cardio' in specialite %}bg-red-500{% elif 'Psychique' in specialite %}bg-purple-500{% elif 'Diabète' in specialite or 'Métabolique' in specialite %}bg-yellow-500{% else %}bg-gray-500{% endif %}"></div>
-                            <span class="font-medium text-gray-700">{{ specialite }}</span>
-                        </div>
-                        <span class="text-2xl font-bold text-primary-dark">{{ count }}</span>
-                    </div>
-                    <div class="w-full bg-gray-200 rounded-full h-3">
-                        <div class="progress-bar h-3 rounded-full transition-all duration-1000" 
-                             style="width: {{ count|add:20 }}%"></div>
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-        {% endif %}
-    </div>
 
     <!-- Observations récentes -->
     {% if observations_recentes %}

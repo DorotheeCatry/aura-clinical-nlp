@@ -65,6 +65,8 @@ def dashboard(request):
     weekly_consultations = {}
     weekday_names = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche']
     
+    # Calculer le maximum pour normaliser les barres
+    max_consultations = 0
     for i in range(7):
         day = today - timedelta(days=6-i)  # Commencer par lundi d'il y a 6 jours
         day_name = weekday_names[day.weekday()]
@@ -72,6 +74,7 @@ def dashboard(request):
             date__date=day
         ).count()
         weekly_consultations[day_name] = count
+        max_consultations = max(max_consultations, count)
     
     # Patients par tranche d'âge avec pourcentages
     today_date = date.today()
@@ -99,12 +102,18 @@ def dashboard(request):
             'percentage': round(percentage, 1)
         }
     
-    # Répartition par spécialité médicale
-    specialites_stats = {}
-    specialite_counts = Observation.objects.filter(theme_classe__isnull=False).values('theme_classe').annotate(count=Count('theme_classe'))
+    # Patients par service hospitalier (basé sur les spécialités médicales)
+    service_patients = {}
+    specialite_counts = Observation.objects.filter(theme_classe__isnull=False).values('theme_classe').annotate(patient_count=Count('patient', distinct=True))
+    
+    # Calculer le maximum pour normaliser les barres
+    max_patients_service = 0
     for item in specialite_counts:
         specialite_display = dict(Observation.THEME_CHOICES).get(item['theme_classe'], item['theme_classe'])
-        specialites_stats[specialite_display] = item['count']
+        # Simplifier les noms des services
+        service_name = specialite_display.replace('Psychique/Neuropsychiatrique', 'Psychiatrie').replace('Métabolique/Diabète', 'Endocrinologie')
+        service_patients[service_name] = item['patient_count']
+        max_patients_service = max(max_patients_service, item['patient_count'])
     
     # Observations récentes
     observations_recentes = Observation.objects.select_related('patient', 'created_by')[:5]
@@ -118,10 +127,12 @@ def dashboard(request):
         'total_patients': total_patients,
         'total_observations': total_observations,
         'weekly_consultations': weekly_consultations,
+        'max_consultations': max_consultations,
         'age_groups_with_percent': age_groups_with_percent,
+        'service_patients': service_patients,
+        'max_patients_service': max_patients_service,
         'observations_semaine': observations_semaine,
         'nouveaux_patients_semaine': nouveaux_patients_semaine,
-        'specialites_stats': specialites_stats,
         'observations_recentes': observations_recentes,
     }
     
