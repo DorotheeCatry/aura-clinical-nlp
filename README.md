@@ -11,7 +11,7 @@ Assistant intelligent pour la surveillance hospitalière avec analyse NLP avanc�
 | Connexion                | ![Connexion](captures_app/aura_login.png)                  | Interface de connexion sécurisée pour accéder à l'application.            |
 | Tableau de bord          | ![Tableau de bord](captures_app/aura_p1_dashboard.png)      | Vue d'ensemble avec statistiques, graphiques et activité récente.         |
 | Liste des patients       | ![Liste des patients](captures_app/aura_p2_patients.png)    | Gestion des patients avec recherche et filtres avancés.                   |
-| Observations médicales   | ![Observations](captures_app/aura_3_nlleobs.png)            | Saisie des observations médicales, texte ou audio.                        |
+| Observations médicales   | ![Observations](captures_app/aura_p3_nlleobs.png)            | Saisie des observations médicales, texte ou audio.                        |
 | Résultat NLP / Statistiques | ![Statistiques](captures_app/aura_p4_stats.png)         | Analyse des médicaments, pathologies et procédures.                       |
 
 ## 🚀 Démarrage rapide
@@ -235,24 +235,6 @@ NLP_FALLBACK_TO_LOCAL=True
 ## 📄 Licence
 
 MIT License - Voir le fichier [LICENSE](LICENSE) pour plus de détails.
-
-## 🤝 Contribution
-
-Les contributions sont les bienvenues ! Merci de :
-
-1. Fork le projet
-2. Créer une branche feature (`git checkout -b feature/AmazingFeature`)
-3. Commit vos changements (`git commit -m 'Add some AmazingFeature'`)
-4. Push vers la branche (`git push origin feature/AmazingFeature`)
-5. Ouvrir une Pull Request
-
-## 📞 Support
-
-Pour toute question ou problème :
-
-- Ouvrir une [issue GitHub](https://github.com/DorotheeCatry/aura/issues)
-- Consulter la [documentation](https://github.com/DorotheeCatry/aura/wiki)
-- Contacter l'équipe de développement
 
 ---
 
