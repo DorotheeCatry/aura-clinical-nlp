@@ -254,24 +254,28 @@
             {% if user.is_authenticated %}
             <div class="bg-white/10 rounded-lg p-3 mb-4">
                 <div class="flex items-center space-x-3">
-                    <div class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+                    <div class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0">
                         <i class="fas fa-user-md text-white text-sm"></i>
                     </div>
                     <div class="flex-1 min-w-0">
+                        <!-- Nom complet avec troncature -->
                         <p class="text-sm font-medium text-white truncate">
-                            {% if user.profile.display_name %}
-                                {{ user.profile.display_name }}
-                            {% else %}
-                                {{ user.get_full_name|default:user.username }}
-                            {% endif %}
+                            {{ user.get_full_name|default:user.username }}
                         </p>
+                        <!-- Rôle professionnel avec troncature -->
                         <p class="text-xs text-gray-300 truncate">
-                            {% if user.profile.etablissement %}
-                                {{ user.profile.etablissement }}
+                            {% if user.profile.role %}
+                                {{ user.profile.get_role_display }}
                             {% else %}
-                                {{ user.email }}
+                                Personnel médical
                             {% endif %}
                         </p>
+                        <!-- Établissement avec troncature (optionnel) -->
+                        {% if user.profile.etablissement %}
+                        <p class="text-xs text-gray-400 truncate">
+                            {{ user.profile.etablissement }}
+                        </p>
+                        {% endif %}
                     </div>
                 </div>
                 <div class="mt-3 pt-3 border-t border-white/20">
@@ -284,6 +288,7 @@
             </div>
             {% endif %}
             
+            <!-- Footer sécurité -->
             <div class="text-xs text-gray-400 space-y-1">
                 <div class="flex items-center">
                     <i class="fas fa-shield-alt mr-2 text-green-400"></i>
