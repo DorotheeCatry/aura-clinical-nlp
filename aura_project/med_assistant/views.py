@@ -63,12 +63,12 @@ def dashboard(request):
     total_patients = Patient.objects.count()
     total_observations = Observation.objects.count()
     
-    # Consultations par jour de la semaine (7 derniers jours)
+    # Consultations par jour de la semaine (7 derniers jours) - TOUS LES JOURS AFFICHÉS
     today = timezone.now().date()
     weekly_consultations = {}
     weekday_names = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche']
     
-    # Calculer les consultations pour chaque jour
+    # Calculer les consultations pour chaque jour - FORCER TOUS LES JOURS
     max_consultations = 0
     for i in range(7):
         day = today - timedelta(days=6-i)  # Commencer par lundi d'il y a 6 jours
@@ -119,7 +119,7 @@ def dashboard(request):
             'percentage': round(percentage, 1)
         }
     
-    # Patients par service hospitalier (TOUTES les spécialités)
+    # Patients par service hospitalier (TOUTES les spécialités avec patients)
     service_patients = {}
     
     # Récupérer toutes les spécialités possibles depuis THEME_CHOICES
