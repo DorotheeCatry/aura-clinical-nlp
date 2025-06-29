@@ -58,10 +58,10 @@ class NLPPipeline:
         self.drbert_pipeline = None
         self.t5_pipeline = None
         
-        # Configuration des modèles - RETOUR au modèle original
+        # Configuration des modèles - MODÈLE NICO
         self.models_config = {
-            'classification': 'waelbensoltana/finetuned-medical-fr',
-            'entities': 'Thibeb/DrBert_generalized',  # RETOUR AU MODÈLE ORIGINAL !
+            'classification': 'NicoCasso/finetuned-medical-fr',
+            'entities': 'Thibeb/DrBert_generalized',
             'summarization': 'plguillou/t5-base-fr-sum-cnndm'
         }
         
@@ -72,7 +72,7 @@ class NLPPipeline:
             2: 'diabete'
         }
         
-        # Mapping des entités DrBERT vers nos catégories AVEC NOMS COMPRÉHENSIBLES
+        # Mapping des entités DrBERT vers nos catégories avec noms compréhensibles
         self.drbert_entity_mapping = {
             'DISO': 'Maladies et Symptômes',     # Disorders/Maladies
             'CHEM': 'Médicaments',              # Chemicals/Médicaments
@@ -195,7 +195,7 @@ class NLPPipeline:
                 low_cpu_mem_usage=True
             )
             
-            # Créer le pipeline NER avec aggregation_strategy="simple" comme dans votre exemple
+            # Créer le pipeline NER avec aggregation_strategy="simple"
             self.drbert_pipeline = pipeline(
                 "ner",
                 model=model,
@@ -292,8 +292,8 @@ class NLPPipeline:
     
     def clean_entities(self, entities: List[Dict]) -> List[Dict]:
         """
-        Votre fonction clean_entities exactement comme vous l'avez écrite !
         Post-traitement pour nettoyer les entités DrBERT
+        Fusionne les tokens fragmentés et améliore la lisibilité
         
         Args:
             entities: Liste des entités brutes de DrBERT
@@ -419,7 +419,7 @@ class NLPPipeline:
     
     def classify_theme(self, text: str) -> tuple[Optional[str], Optional[int]]:
         """
-        Classifie le thème médical avec le modèle waelbensoltana/finetuned-medical-fr
+        Classifie le thème médical avec le modèle NicoCasso/finetuned-medical-fr
         
         Args:
             text: Texte à classifier
@@ -475,7 +475,7 @@ class NLPPipeline:
     
     def extract_entities_drbert(self, text: str) -> Dict[str, List[str]]:
         """
-        Extrait les entités médicales avec DrBERT en utilisant votre fonction clean_entities
+        Extrait les entités médicales avec DrBERT en utilisant la fonction clean_entities
         
         Args:
             text: Texte à analyser
@@ -500,7 +500,7 @@ class NLPPipeline:
             for i, ent in enumerate(entities[:5]):
                 logger.info(f"  Entité brute {i}: {ent}")
             
-            # Appliquer votre fonction clean_entities
+            # Appliquer la fonction clean_entities
             cleaned_entities = self.clean_entities(entities)
             
             logger.info(f"🧹 Après clean_entities: {len(cleaned_entities)} entités nettoyées")
@@ -509,7 +509,7 @@ class NLPPipeline:
             for i, ent in enumerate(cleaned_entities[:5]):
                 logger.info(f"  Entité nettoyée {i}: {ent}")
             
-            # Organiser les entités par catégorie AVEC NOMS COMPRÉHENSIBLES
+            # Organiser les entités par catégorie avec noms compréhensibles
             categorized_entities = {
                 'Maladies et Symptômes': [],      # DISO
                 'Médicaments': [],                # CHEM
@@ -673,7 +673,7 @@ class NLPPipeline:
                 results['model_prediction'] = prediction
                 logger.info(f"🏷️ Thème classifié: {theme} (prédiction: {prediction})")
             
-            # 4. Extraction d'entités (DrBERT avec votre fonction clean_entities)
+            # 4. Extraction d'entités (DrBERT avec la fonction clean_entities)
             entities = self.extract_entities(text_source)
             results['entites'] = entities
             logger.info(f"🔍 Entités extraites avec clean_entities: {len(entities)} catégories")
@@ -707,8 +707,8 @@ class NLPPipeline:
             't5_available': self.transformers_available,
             'classification_available': self.transformers_available,
             'available_models': [
-                'waelbensoltana/finetuned-medical-fr',
-                'Thibeb/DrBert_generalized',  # RETOUR AU MODÈLE ORIGINAL !
+                'NicoCasso/finetuned-medical-fr',
+                'Thibeb/DrBert_generalized',
                 'plguillou/t5-base-fr-sum-cnndm'
             ] if self.transformers_available else [],
             'models_loaded': self.models_loaded,
