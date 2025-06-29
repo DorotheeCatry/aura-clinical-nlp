@@ -48,6 +48,12 @@ class CustomLoginView(LoginView):
 class CustomLogoutView(LogoutView):
     """Vue de déconnexion personnalisée"""
     next_page = reverse_lazy('med_assistant:login')
+    
+    def dispatch(self, request, *args, **kwargs):
+        """Override pour s'assurer que la déconnexion fonctionne"""
+        if request.user.is_authenticated:
+            messages.success(request, 'Vous avez été déconnecté avec succès.')
+        return super().dispatch(request, *args, **kwargs)
 
 
 @login_required
