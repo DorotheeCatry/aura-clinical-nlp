@@ -6,7 +6,7 @@ app_name = 'med_assistant'
 urlpatterns = [
     # Authentification (SANS register - app interne hôpital)
     path('login/', views.CustomLoginView.as_view(), name='login'),
-    path('logout/', views.CustomLogoutView.as_view(), name='logout'),
+    path('logout/', views.custom_logout, name='logout'),  # CORRIGÉ : fonction au lieu de classe
     
     # Dashboard
     path('', views.dashboard, name='dashboard'),

@@ -1,6 +1,6 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
-from django.contrib.auth import login, authenticate
+from django.contrib.auth import login, authenticate, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LoginView, LogoutView
 from django.contrib.auth.backends import ModelBackend
@@ -45,15 +45,15 @@ class CustomLoginView(LoginView):
         return reverse_lazy('med_assistant:dashboard')
 
 
-class CustomLogoutView(LogoutView):
-    """Vue de déconnexion personnalisée"""
-    next_page = reverse_lazy('med_assistant:login')
+@login_required
+def custom_logout(request):
+    """Vue de déconnexion personnalisée qui fonctionne"""
+    if request.user.is_authenticated:
+        user_name = request.user.get_full_name() or request.user.username
+        logout(request)
+        messages.success(request, f'Au revoir {user_name} ! Vous avez été déconnecté avec succès.')
     
-    def dispatch(self, request, *args, **kwargs):
-        """Override pour s'assurer que la déconnexion fonctionne"""
-        if request.user.is_authenticated:
-            messages.success(request, 'Vous avez été déconnecté avec succès.')
-        return super().dispatch(request, *args, **kwargs)
+    return redirect('med_assistant:login')
 
 
 @login_required
