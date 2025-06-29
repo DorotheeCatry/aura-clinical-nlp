@@ -22,26 +22,21 @@ from datetime import date
 from med_assistant.utils.nlp_status import NLPStatus
 
 
-class EmailBackend(ModelBackend):
-    """Backend d'authentification par email"""
+class UsernameBackend(ModelBackend):
+    """Backend d'authentification par username (pas email)"""
     def authenticate(self, request, username=None, password=None, **kwargs):
         try:
-            # Essayer de trouver l'utilisateur par email
-            user = User.objects.get(email=username)
+            # Chercher par username uniquement
+            user = User.objects.get(username=username)
+            if user.check_password(password):
+                return user
         except User.DoesNotExist:
-            # Fallback sur le username
-            try:
-                user = User.objects.get(username=username)
-            except User.DoesNotExist:
-                return None
-        
-        if user.check_password(password):
-            return user
+            return None
         return None
 
 
 class CustomLoginView(LoginView):
-    """Vue de connexion personnalisée avec style moderne"""
+    """Vue de connexion personnalisée avec style AURA"""
     form_class = CustomLoginForm
     template_name = 'med_assistant/auth/login.html'
     redirect_authenticated_user = True
@@ -65,10 +60,10 @@ def register_view(request):
         if form.is_valid():
             user = form.save()
             username = form.cleaned_data.get('username')
-            messages.success(request, f'Account created successfully for {username}! You can now sign in.')
+            messages.success(request, f'Compte créé avec succès pour {username}! Vous pouvez maintenant vous connecter.')
             
             # Connexion automatique après inscription
-            user = authenticate(username=user.email, password=form.cleaned_data.get('password1'))
+            user = authenticate(username=user.username, password=form.cleaned_data.get('password1'))
             if user:
                 login(request, user)
                 return redirect('med_assistant:dashboard')
@@ -86,7 +81,7 @@ def dashboard(request):
     # Statistiques générales
     total_patients = Patient.objects.count()
     total_observations = Observation.objects.count()
-    observations_recentes = Observation.objects.select_related('patient')[:5]
+    observations_recentes = Observation.objects.select_related('patient', 'created_by')[:5]
     
     # Répartition par thème avec mapping des pathologies
     themes_stats = {}
@@ -206,7 +201,7 @@ def patient_list(request):
 def patient_detail(request, patient_id):
     """Détail d'un patient avec ses observations"""
     patient = get_object_or_404(Patient, id=patient_id)
-    observations = patient.observations.all()
+    observations = patient.observations.select_related('created_by', 'modified_by').all()
     
     # Pagination des observations
     paginator = Paginator(observations, 5)
@@ -281,11 +276,13 @@ def patient_delete(request, patient_id):
 
 @login_required
 def observation_create(request):
-    """Création d'une nouvelle observation avec traitement NLP via modèles Hugging Face directs"""
+    """Création d'une nouvelle observation avec traitement NLP et traçabilité"""
     if request.method == 'POST':
         form = ObservationForm(request.POST, request.FILES)
         if form.is_valid():
             observation = form.save(commit=False)
+            # TRAÇABILITÉ : Enregistrer qui a créé l'observation
+            observation.created_by = request.user
             observation.save()
             
             # Traitement NLP avec modèles Hugging Face directs
@@ -354,13 +351,16 @@ def observation_create(request):
 
 @login_required
 def observation_edit(request, observation_id):
-    """Modification d'une observation"""
+    """Modification d'une observation avec traçabilité"""
     observation = get_object_or_404(Observation, id=observation_id)
     
     if request.method == 'POST':
         form = ObservationEditForm(request.POST, instance=observation)
         if form.is_valid():
-            observation = form.save()
+            observation = form.save(commit=False)
+            # TRAÇABILITÉ : Enregistrer qui a modifié l'observation
+            observation.modified_by = request.user
+            observation.save()
             messages.success(request, 'Observation modifiée avec succès.')
             return redirect('med_assistant:observation_detail', observation_id=observation.id)
     else:
@@ -427,7 +427,8 @@ def delete_entity(request, observation_id):
                 if not entities_list:
                     del observation.entites[category]
                 
-                # Sauvegarder les modifications
+                # TRAÇABILITÉ : Enregistrer qui a modifié
+                observation.modified_by = request.user
                 observation.save()
                 
                 messages.success(request, f'Entité "{entity_text}" supprimée de la catégorie "{category}".')
@@ -478,7 +479,7 @@ def transcribe_audio(request):
 def observation_detail(request, observation_id):
     """Détail d'une observation avec affichage de la prédiction et entités DrBERT"""
     observation = get_object_or_404(
-        Observation.objects.select_related('patient'), 
+        Observation.objects.select_related('patient', 'created_by', 'modified_by'), 
         id=observation_id
     )
     
@@ -523,6 +524,9 @@ def observation_reprocess(request, observation_id):
         observation.entites = {}
         observation.traitement_termine = False
         observation.traitement_erreur = None
+        
+        # TRAÇABILITÉ : Enregistrer qui a relancé le traitement
+        observation.modified_by = request.user
         
         # Nouveau traitement avec modèles Hugging Face directs
         results = nlp_pipeline.process_observation(observation)

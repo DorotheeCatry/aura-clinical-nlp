@@ -21,6 +21,22 @@
                     </span>
                     {% endif %}
                 </div>
+                
+                <!-- NOUVEAU : Informations d'auteur -->
+                <div class="mt-3 flex flex-wrap items-center gap-4 text-xs text-slate-500">
+                    {% if observation.created_by %}
+                    <span class="flex items-center">
+                        <i class="fas fa-user-edit mr-1 text-green-600"></i>
+                        <strong>Créé par:</strong> {{ observation.author_display }}
+                    </span>
+                    {% endif %}
+                    {% if observation.modified_by %}
+                    <span class="flex items-center">
+                        <i class="fas fa-edit mr-1 text-orange-600"></i>
+                        <strong>Modifié par:</strong> {{ observation.modifier_display }}
+                    </span>
+                    {% endif %}
+                </div>
             </div>
             <div class="mt-4 sm:mt-0 flex flex-wrap gap-2">
                 <a href="{% url 'med_assistant:patient_detail' observation.patient.id %}"
@@ -242,6 +258,18 @@
                     {% if observation.traitement_termine %}Terminé{% else %}En cours{% endif %}
                 </span>
             </div>
+            {% if observation.created_by %}
+            <div class="md:col-span-2">
+                <span class="font-medium text-slate-700">Auteur:</span>
+                <span class="text-slate-600 ml-2">{{ observation.author_display }}</span>
+            </div>
+            {% endif %}
+            {% if observation.modified_by %}
+            <div class="md:col-span-2">
+                <span class="font-medium text-slate-700">Dernière modification:</span>
+                <span class="text-slate-600 ml-2">{{ observation.modifier_display }}</span>
+            </div>
+            {% endif %}
         </div>
     </div>
 </div>

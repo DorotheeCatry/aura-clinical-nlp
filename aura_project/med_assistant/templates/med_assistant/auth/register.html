@@ -6,7 +6,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Create your account - AURA</title>
+    <title>Inscription - AURA Medical AI</title>
     {% tailwind_css %}
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -14,9 +14,17 @@
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
         }
 
+        :root {
+            --primary-dark: #0B111A;
+            --primary-deep: #0D3B58;
+            --primary-steel: #306484;
+            --primary-light: #9AB5C5;
+        }
+
         body {
-            background: #1e293b;
+            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary-deep) 100%);
             color: white;
+            min-height: 100vh;
         }
 
         .auth-container {
@@ -28,86 +36,88 @@
         }
 
         .auth-card {
-            background: #1e293b;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             width: 100%;
-            max-width: 500px;
-            padding: 2rem;
+            max-width: 600px;
+            padding: 2.5rem;
+            border-radius: 16px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
         }
 
         .logo {
-            width: 48px;
-            height: 48px;
-            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-            border-radius: 12px;
+            width: 64px;
+            height: 64px;
+            background: linear-gradient(135deg, var(--primary-steel) 0%, var(--primary-light) 100%);
+            border-radius: 16px;
             display: flex;
             align-items: center;
             justify-content: center;
             margin: 0 auto 2rem;
-        }
-
-        .logo::after {
-            content: '~';
-            color: white;
-            font-size: 24px;
-            font-weight: bold;
+            box-shadow: 0 8px 25px rgba(48, 100, 132, 0.3);
         }
 
         .form-input {
             width: 100%;
-            padding: 12px 16px;
-            background: #374151;
-            border: 1px solid #4b5563;
-            border-radius: 8px;
+            padding: 14px 18px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
             color: white;
             font-size: 14px;
-            transition: all 0.2s ease;
+            transition: all 0.3s ease;
         }
 
         .form-input::placeholder {
-            color: #9ca3af;
+            color: rgba(255, 255, 255, 0.5);
         }
 
         .form-input:focus {
             outline: none;
-            border-color: #6366f1;
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+            border-color: var(--primary-light);
+            background: rgba(255, 255, 255, 0.12);
+            box-shadow: 0 0 0 3px rgba(154, 181, 197, 0.2);
         }
 
         .btn-primary {
             width: 100%;
-            padding: 12px 16px;
-            background: #6366f1;
+            padding: 14px 18px;
+            background: linear-gradient(135deg, var(--primary-steel) 0%, var(--primary-light) 100%);
             color: white;
             border: none;
-            border-radius: 8px;
-            font-weight: 500;
+            border-radius: 12px;
+            font-weight: 600;
             font-size: 14px;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(48, 100, 132, 0.3);
         }
 
         .btn-primary:hover {
-            background: #5b5bd6;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(48, 100, 132, 0.4);
         }
 
         .link {
-            color: #6366f1;
+            color: var(--primary-light);
             text-decoration: none;
             font-weight: 500;
+            transition: color 0.2s ease;
         }
 
         .link:hover {
-            color: #5b5bd6;
+            color: white;
         }
 
         .fade-in {
-            animation: fadeIn 0.6s ease-out;
+            animation: fadeIn 0.8s ease-out;
         }
 
         @keyframes fadeIn {
             from {
                 opacity: 0;
-                transform: translateY(20px);
+                transform: translateY(30px);
             }
             to {
                 opacity: 1;
@@ -126,21 +136,40 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        .medical-badge {
+            background: rgba(154, 181, 197, 0.1);
+            border: 1px solid rgba(154, 181, 197, 0.2);
+            border-radius: 8px;
+            padding: 8px 12px;
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
     </style>
 </head>
 
 <body>
     <div class="auth-container">
         <div class="auth-card fade-in">
-            <!-- Logo -->
-            <div class="logo"></div>
+            <!-- Logo AURA -->
+            <div class="logo">
+                <i class="fas fa-stethoscope text-white text-2xl"></i>
+            </div>
+
+            <!-- Badge médical -->
+            <div class="medical-badge">
+                <p class="text-xs text-white/80 font-medium">
+                    <i class="fas fa-hospital mr-2"></i>
+                    Inscription personnel médical
+                </p>
+            </div>
 
             <!-- Titre -->
-            <h1 class="text-2xl font-semibold text-center text-white mb-2">
-                Create your account
+            <h1 class="text-2xl font-bold text-center text-white mb-2">
+                Rejoindre AURA
             </h1>
-            <p class="text-center text-gray-400 mb-8">
-                Join AURA Medical AI Platform
+            <p class="text-center text-white/70 mb-8 text-sm">
+                Créez votre compte professionnel
             </p>
 
             <!-- Formulaire -->
@@ -149,10 +178,11 @@
                 
                 <!-- Messages d'erreur -->
                 {% if form.errors %}
-                    <div class="bg-red-900/50 border border-red-700 rounded-lg p-4 mb-6">
+                    <div class="bg-red-900/30 border border-red-500/50 rounded-lg p-4 mb-6">
                         {% for field, errors in form.errors.items %}
                             {% for error in errors %}
-                                <p class="text-sm text-red-300">
+                                <p class="text-sm text-red-300 flex items-center">
+                                    <i class="fas fa-exclamation-circle mr-2"></i>
                                     {% if field == '__all__' %}
                                         {{ error }}
                                     {% else %}
@@ -167,39 +197,44 @@
                 <!-- Nom et Prénom -->
                 <div class="grid-2">
                     <div>
-                        <label for="{{ form.first_name.id_for_label }}" class="block text-sm font-medium text-gray-300 mb-2">
-                            First name
+                        <label for="{{ form.first_name.id_for_label }}" class="block text-sm font-medium text-white/90 mb-2">
+                            <i class="fas fa-user mr-2"></i>
+                            Prénom
                         </label>
                         {{ form.first_name }}
                     </div>
                     <div>
-                        <label for="{{ form.last_name.id_for_label }}" class="block text-sm font-medium text-gray-300 mb-2">
-                            Last name
+                        <label for="{{ form.last_name.id_for_label }}" class="block text-sm font-medium text-white/90 mb-2">
+                            <i class="fas fa-user mr-2"></i>
+                            Nom
                         </label>
                         {{ form.last_name }}
                     </div>
                 </div>
 
-                <!-- Email -->
-                <div>
-                    <label for="{{ form.email.id_for_label }}" class="block text-sm font-medium text-gray-300 mb-2">
-                        Email address
-                    </label>
-                    {{ form.email }}
-                </div>
-
-                <!-- Username -->
-                <div>
-                    <label for="{{ form.username.id_for_label }}" class="block text-sm font-medium text-gray-300 mb-2">
-                        Username
-                    </label>
-                    {{ form.username }}
+                <!-- Email et Username -->
+                <div class="grid-2">
+                    <div>
+                        <label for="{{ form.email.id_for_label }}" class="block text-sm font-medium text-white/90 mb-2">
+                            <i class="fas fa-envelope mr-2"></i>
+                            Email professionnel
+                        </label>
+                        {{ form.email }}
+                    </div>
+                    <div>
+                        <label for="{{ form.username.id_for_label }}" class="block text-sm font-medium text-white/90 mb-2">
+                            <i class="fas fa-id-badge mr-2"></i>
+                            Nom d'utilisateur
+                        </label>
+                        {{ form.username }}
+                    </div>
                 </div>
 
                 <!-- Rôle professionnel -->
                 <div>
-                    <label for="{{ form.role.id_for_label }}" class="block text-sm font-medium text-gray-300 mb-2">
-                        Professional role
+                    <label for="{{ form.role.id_for_label }}" class="block text-sm font-medium text-white/90 mb-2">
+                        <i class="fas fa-user-md mr-2"></i>
+                        Fonction professionnelle
                     </label>
                     {{ form.role }}
                 </div>
@@ -207,14 +242,16 @@
                 <!-- Spécialité et Établissement -->
                 <div class="grid-2">
                     <div>
-                        <label for="{{ form.specialite.id_for_label }}" class="block text-sm font-medium text-gray-300 mb-2">
-                            Specialty
+                        <label for="{{ form.specialite.id_for_label }}" class="block text-sm font-medium text-white/90 mb-2">
+                            <i class="fas fa-stethoscope mr-2"></i>
+                            Spécialité
                         </label>
                         {{ form.specialite }}
                     </div>
                     <div>
-                        <label for="{{ form.etablissement.id_for_label }}" class="block text-sm font-medium text-gray-300 mb-2">
-                            Institution
+                        <label for="{{ form.etablissement.id_for_label }}" class="block text-sm font-medium text-white/90 mb-2">
+                            <i class="fas fa-hospital mr-2"></i>
+                            Établissement
                         </label>
                         {{ form.etablissement }}
                     </div>
@@ -223,14 +260,16 @@
                 <!-- Mots de passe -->
                 <div class="grid-2">
                     <div>
-                        <label for="{{ form.password1.id_for_label }}" class="block text-sm font-medium text-gray-300 mb-2">
-                            Password
+                        <label for="{{ form.password1.id_for_label }}" class="block text-sm font-medium text-white/90 mb-2">
+                            <i class="fas fa-lock mr-2"></i>
+                            Mot de passe
                         </label>
                         {{ form.password1 }}
                     </div>
                     <div>
-                        <label for="{{ form.password2.id_for_label }}" class="block text-sm font-medium text-gray-300 mb-2">
-                            Confirm password
+                        <label for="{{ form.password2.id_for_label }}" class="block text-sm font-medium text-white/90 mb-2">
+                            <i class="fas fa-lock mr-2"></i>
+                            Confirmer
                         </label>
                         {{ form.password2 }}
                     </div>
@@ -240,27 +279,47 @@
                 <div class="flex items-start">
                     <input id="terms" name="terms" type="checkbox" required
                            class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-600 bg-gray-700 rounded mt-1">
-                    <label for="terms" class="ml-2 block text-sm text-gray-300">
-                        I agree to the 
-                        <a href="#" class="link">Terms of Service</a>
-                        and 
-                        <a href="#" class="link">Privacy Policy</a>
+                    <label for="terms" class="ml-2 block text-sm text-white/80">
+                        J'accepte les 
+                        <a href="#" class="link">conditions d'utilisation</a>
+                        et la 
+                        <a href="#" class="link">politique de confidentialité</a>
+                        de la plateforme médicale AURA
                     </label>
                 </div>
 
                 <!-- Bouton d'inscription -->
                 <button type="submit" class="btn-primary">
-                    Create account
+                    <i class="fas fa-user-plus mr-2"></i>
+                    Créer mon compte
                 </button>
 
                 <!-- Lien de connexion -->
                 <div class="text-center">
-                    <p class="text-sm text-gray-400">
-                        Already have an account? 
-                        <a href="{% url 'med_assistant:login' %}" class="link">Sign in</a>
+                    <p class="text-sm text-white/60">
+                        Déjà membre ? 
+                        <a href="{% url 'med_assistant:login' %}" class="link">Se connecter</a>
                     </p>
                 </div>
             </form>
+
+            <!-- Footer sécurité -->
+            <div class="mt-8 pt-6 border-t border-white/10">
+                <div class="flex items-center justify-center space-x-4 text-xs text-white/50">
+                    <span class="flex items-center">
+                        <i class="fas fa-shield-alt mr-1"></i>
+                        RGPD
+                    </span>
+                    <span class="flex items-center">
+                        <i class="fas fa-lock mr-1"></i>
+                        Sécurisé
+                    </span>
+                    <span class="flex items-center">
+                        <i class="fas fa-user-md mr-1"></i>
+                        Médical
+                    </span>
+                </div>
+            </div>
         </div>
     </div>
 </body>

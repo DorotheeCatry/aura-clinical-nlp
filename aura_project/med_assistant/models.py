@@ -156,6 +156,25 @@ class Observation(models.Model):
         related_name='observations',
         verbose_name="Patient"
     )
+    
+    # NOUVEAU : Traçabilité de l'auteur
+    created_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='observations_created',
+        verbose_name="Créé par"
+    )
+    modified_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='observations_modified',
+        verbose_name="Modifié par"
+    )
+    
     date = models.DateTimeField(auto_now_add=True, verbose_name="Date de création")
     
     # Données d'entrée
@@ -231,7 +250,8 @@ class Observation(models.Model):
         ordering = ['-date']
 
     def __str__(self):
-        return f"Observation {self.patient.nom_complet} - {self.date.strftime('%d/%m/%Y %H:%M')}"
+        author_info = f" par {self.created_by.get_full_name() or self.created_by.username}" if self.created_by else ""
+        return f"Observation {self.patient.nom_complet} - {self.date.strftime('%d/%m/%Y %H:%M')}{author_info}"
 
     @property
     def texte_source(self):
@@ -244,6 +264,30 @@ class Observation(models.Model):
         if not self.entites:
             return {}
         return self.entites
+
+    @property
+    def author_display(self):
+        """Affichage de l'auteur avec son rôle professionnel"""
+        if not self.created_by:
+            return "Utilisateur inconnu"
+        
+        try:
+            profile = self.created_by.profile
+            return f"{profile.get_role_display()} {self.created_by.get_full_name() or self.created_by.username}"
+        except:
+            return self.created_by.get_full_name() or self.created_by.username
+
+    @property
+    def modifier_display(self):
+        """Affichage du modificateur avec son rôle professionnel"""
+        if not self.modified_by:
+            return None
+        
+        try:
+            profile = self.modified_by.profile
+            return f"{profile.get_role_display()} {self.modified_by.get_full_name() or self.modified_by.username}"
+        except:
+            return self.modified_by.get_full_name() or self.modified_by.username
 
     @classmethod
     def get_pathology_from_prediction(cls, prediction):
