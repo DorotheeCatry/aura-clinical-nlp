@@ -1,58 +1,92 @@
 from django import forms
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.contrib.auth.models import User
-from .models import Patient, Observation
+from .models import Patient, Observation, UserProfile
 
 
 class CustomLoginForm(AuthenticationForm):
-    """Formulaire de connexion personnalisé avec le style AURA"""
+    """Formulaire de connexion moderne style image"""
     
-    username = forms.CharField(
-        widget=forms.TextInput(attrs={
-            'class': 'w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors',
-            'placeholder': 'Nom d\'utilisateur'
+    username = forms.EmailField(
+        label="Email address",
+        widget=forms.EmailInput(attrs={
+            'class': 'w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all',
+            'placeholder': 'Enter your email'
         })
     )
     
     password = forms.CharField(
+        label="Password",
         widget=forms.PasswordInput(attrs={
-            'class': 'w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors',
-            'placeholder': 'Mot de passe'
+            'class': 'w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all',
+            'placeholder': 'Enter your password'
         })
     )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['username'].label = 'Nom d\'utilisateur'
-        self.fields['password'].label = 'Mot de passe'
+        # Permettre la connexion par email
+        self.fields['username'].label = 'Email address'
 
 
 class CustomUserCreationForm(UserCreationForm):
-    """Formulaire d'inscription personnalisé avec le style AURA"""
+    """Formulaire d'inscription avec profil professionnel"""
     
     email = forms.EmailField(
         required=True,
+        label="Email address",
         widget=forms.EmailInput(attrs={
-            'class': 'w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors',
-            'placeholder': 'Adresse email'
+            'class': 'w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all',
+            'placeholder': 'Enter your email'
         })
     )
     
     first_name = forms.CharField(
         max_length=30,
         required=True,
+        label="First name",
         widget=forms.TextInput(attrs={
-            'class': 'w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors',
-            'placeholder': 'Prénom'
+            'class': 'w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all',
+            'placeholder': 'Enter your first name'
         })
     )
     
     last_name = forms.CharField(
         max_length=30,
         required=True,
+        label="Last name",
         widget=forms.TextInput(attrs={
-            'class': 'w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors',
-            'placeholder': 'Nom'
+            'class': 'w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all',
+            'placeholder': 'Enter your last name'
+        })
+    )
+    
+    role = forms.ChoiceField(
+        choices=UserProfile.ROLE_CHOICES,
+        required=True,
+        label="Professional role",
+        widget=forms.Select(attrs={
+            'class': 'w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all'
+        })
+    )
+    
+    specialite = forms.CharField(
+        max_length=100,
+        required=False,
+        label="Specialty (optional)",
+        widget=forms.TextInput(attrs={
+            'class': 'w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all',
+            'placeholder': 'e.g., Cardiology, Emergency Medicine...'
+        })
+    )
+    
+    etablissement = forms.CharField(
+        max_length=200,
+        required=False,
+        label="Institution (optional)",
+        widget=forms.TextInput(attrs={
+            'class': 'w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all',
+            'placeholder': 'Hospital, clinic, medical center...'
         })
     )
 
@@ -65,27 +99,24 @@ class CustomUserCreationForm(UserCreationForm):
         
         # Personnaliser les champs existants
         self.fields['username'].widget.attrs.update({
-            'class': 'w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors',
-            'placeholder': 'Nom d\'utilisateur'
+            'class': 'w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all',
+            'placeholder': 'Choose a username'
         })
         
         self.fields['password1'].widget.attrs.update({
-            'class': 'w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors',
-            'placeholder': 'Mot de passe'
+            'class': 'w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all',
+            'placeholder': 'Create a password'
         })
         
         self.fields['password2'].widget.attrs.update({
-            'class': 'w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors',
-            'placeholder': 'Confirmer le mot de passe'
+            'class': 'w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all',
+            'placeholder': 'Confirm your password'
         })
         
-        # Labels en français
-        self.fields['username'].label = 'Nom d\'utilisateur'
-        self.fields['first_name'].label = 'Prénom'
-        self.fields['last_name'].label = 'Nom'
-        self.fields['email'].label = 'Adresse email'
-        self.fields['password1'].label = 'Mot de passe'
-        self.fields['password2'].label = 'Confirmer le mot de passe'
+        # Labels en anglais pour correspondre au design
+        self.fields['username'].label = 'Username'
+        self.fields['password1'].label = 'Password'
+        self.fields['password2'].label = 'Confirm password'
 
     def save(self, commit=True):
         user = super().save(commit=False)
@@ -94,6 +125,13 @@ class CustomUserCreationForm(UserCreationForm):
         user.last_name = self.cleaned_data['last_name']
         if commit:
             user.save()
+            # Créer le profil utilisateur
+            UserProfile.objects.create(
+                user=user,
+                role=self.cleaned_data['role'],
+                specialite=self.cleaned_data.get('specialite', ''),
+                etablissement=self.cleaned_data.get('etablissement', '')
+            )
         return user
 
 

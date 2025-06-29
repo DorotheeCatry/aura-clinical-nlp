@@ -255,14 +255,22 @@
             <div class="bg-white/10 rounded-lg p-3 mb-4">
                 <div class="flex items-center space-x-3">
                     <div class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
-                        <i class="fas fa-user text-white text-sm"></i>
+                        <i class="fas fa-user-md text-white text-sm"></i>
                     </div>
                     <div class="flex-1 min-w-0">
                         <p class="text-sm font-medium text-white truncate">
-                            {{ user.get_full_name|default:user.username }}
+                            {% if user.profile.display_name %}
+                                {{ user.profile.display_name }}
+                            {% else %}
+                                {{ user.get_full_name|default:user.username }}
+                            {% endif %}
                         </p>
                         <p class="text-xs text-gray-300 truncate">
-                            {{ user.email }}
+                            {% if user.profile.etablissement %}
+                                {{ user.profile.etablissement }}
+                            {% else %}
+                                {{ user.email }}
+                            {% endif %}
                         </p>
                     </div>
                 </div>

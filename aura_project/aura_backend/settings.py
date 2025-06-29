@@ -176,3 +176,9 @@ LOGOUT_REDIRECT_URL = '/aura/login/'
 SESSION_COOKIE_AGE = 86400  # 24 heures
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False
 SESSION_SAVE_EVERY_REQUEST = True
+
+# Authentication backends
+AUTHENTICATION_BACKENDS = [
+    'med_assistant.views.EmailBackend',  # Notre backend personnalisé
+    'django.contrib.auth.backends.ModelBackend',  # Backend par défaut
+]

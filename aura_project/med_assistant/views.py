@@ -3,13 +3,15 @@ from django.contrib import messages
 from django.contrib.auth import login, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LoginView, LogoutView
+from django.contrib.auth.backends import ModelBackend
+from django.contrib.auth.models import User
 from django.db.models import Q, Count
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.core.paginator import Paginator
 from django.views.decorators.csrf import csrf_exempt
 from django.urls import reverse_lazy
-from .models import Patient, Observation
+from .models import Patient, Observation, UserProfile
 from .forms import PatientForm, ObservationForm, PatientSearchForm, ObservationEditForm, CustomLoginForm, CustomUserCreationForm
 from .nlp_pipeline import nlp_pipeline
 import json
@@ -20,8 +22,26 @@ from datetime import date
 from med_assistant.utils.nlp_status import NLPStatus
 
 
+class EmailBackend(ModelBackend):
+    """Backend d'authentification par email"""
+    def authenticate(self, request, username=None, password=None, **kwargs):
+        try:
+            # Essayer de trouver l'utilisateur par email
+            user = User.objects.get(email=username)
+        except User.DoesNotExist:
+            # Fallback sur le username
+            try:
+                user = User.objects.get(username=username)
+            except User.DoesNotExist:
+                return None
+        
+        if user.check_password(password):
+            return user
+        return None
+
+
 class CustomLoginView(LoginView):
-    """Vue de connexion personnalisée"""
+    """Vue de connexion personnalisée avec style moderne"""
     form_class = CustomLoginForm
     template_name = 'med_assistant/auth/login.html'
     redirect_authenticated_user = True
@@ -36,7 +56,7 @@ class CustomLogoutView(LogoutView):
 
 
 def register_view(request):
-    """Vue d'inscription personnalisée"""
+    """Vue d'inscription avec profil professionnel"""
     if request.user.is_authenticated:
         return redirect('med_assistant:dashboard')
         
@@ -45,10 +65,10 @@ def register_view(request):
         if form.is_valid():
             user = form.save()
             username = form.cleaned_data.get('username')
-            messages.success(request, f'Compte créé avec succès pour {username}! Vous pouvez maintenant vous connecter.')
+            messages.success(request, f'Account created successfully for {username}! You can now sign in.')
             
             # Connexion automatique après inscription
-            user = authenticate(username=username, password=form.cleaned_data.get('password1'))
+            user = authenticate(username=user.email, password=form.cleaned_data.get('password1'))
             if user:
                 login(request, user)
                 return redirect('med_assistant:dashboard')
@@ -422,6 +442,7 @@ def delete_entity(request, observation_id):
     return redirect('med_assistant:observation_detail', observation_id=observation.id)
 
 
+@login_required
 @csrf_exempt
 def transcribe_audio(request):
     """Endpoint pour la transcription audio via Whisper local"""
@@ -612,6 +633,7 @@ def statistics(request):
     return render(request, 'med_assistant/statistics.html', context)
 
 
+@login_required
 def api_patient_search(request):
     """API pour la recherche de patients (pour l'autocomplétion)"""
     query = request.GET.get('q', '')
@@ -635,6 +657,7 @@ def api_patient_search(request):
     return JsonResponse({'patients': patients_data})
 
 
+@login_required
 def api_nlp_status(request):
     """API pour récupérer le statut de la pipeline NLP"""
     status = nlp_pipeline.get_status()

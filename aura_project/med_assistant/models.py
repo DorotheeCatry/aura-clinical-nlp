@@ -1,6 +1,69 @@
 from django.db import models
 from django.core.validators import FileExtensionValidator
+from django.contrib.auth.models import User
 import json
+
+
+class UserProfile(models.Model):
+    """Profil utilisateur étendu avec informations professionnelles"""
+    
+    ROLE_CHOICES = [
+        ('medecin_generaliste', 'Médecin généraliste'),
+        ('medecin_specialiste', 'Médecin spécialiste'),
+        ('infirmiere', 'Infirmière'),
+        ('aide_soignant', 'Aide-soignant'),
+        ('sage_femme', 'Sage-femme'),
+        ('kinesitherapeute', 'Kinésithérapeute'),
+        ('pharmacien', 'Pharmacien'),
+        ('psychologue', 'Psychologue'),
+        ('administrateur', 'Administrateur'),
+        ('autre', 'Autre'),
+    ]
+    
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    role = models.CharField(
+        max_length=30,
+        choices=ROLE_CHOICES,
+        default='autre',
+        verbose_name="Rôle professionnel"
+    )
+    specialite = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        verbose_name="Spécialité",
+        help_text="Spécialité médicale ou domaine d'expertise"
+    )
+    etablissement = models.CharField(
+        max_length=200,
+        blank=True,
+        null=True,
+        verbose_name="Établissement",
+        help_text="Hôpital, clinique, cabinet médical..."
+    )
+    numero_ordre = models.CharField(
+        max_length=50,
+        blank=True,
+        null=True,
+        verbose_name="Numéro d'ordre",
+        help_text="Numéro RPPS, ADELI ou autre identifiant professionnel"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Profil utilisateur"
+        verbose_name_plural = "Profils utilisateurs"
+
+    def __str__(self):
+        return f"{self.user.get_full_name()} - {self.get_role_display()}"
+
+    @property
+    def display_name(self):
+        """Nom d'affichage complet avec titre professionnel"""
+        role_display = self.get_role_display()
+        full_name = self.user.get_full_name() or self.user.username
+        return f"{role_display} {full_name}"
 
 
 class Patient(models.Model):
