@@ -6,15 +6,15 @@
 {% block page_subtitle %}Analyse des médicaments, pathologies et gestes médicaux{% endblock %}
 
 {% block content %}
-<div class="space-y-4">
-    <!-- Filtre par spécialité - COMPACT -->
+<div class="space-y-6">
+    <!-- Filtre par spécialité -->
     <div class="medical-card rounded-lg p-4 fade-in">
         <form method="get" class="flex items-center justify-between">
-            <div class="flex items-center space-x-3">
+            <div class="flex items-center space-x-4">
                 <i class="fas fa-filter text-primary-steel"></i>
-                <label for="specialty" class="text-sm font-medium text-gray-700">Spécialité :</label>
+                <label for="specialty" class="text-sm font-medium text-gray-700">Filtrer par spécialité :</label>
                 <select name="specialty" id="specialty" 
-                        class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-steel focus:border-primary-steel transition-colors text-sm"
+                        class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-steel focus:border-primary-steel transition-colors"
                         onchange="this.form.submit()">
                     {% for value, display in specialties_for_filter %}
                     <option value="{{ value }}" {% if value == selected_specialty %}selected{% endif %}>
@@ -24,161 +24,196 @@
                 </select>
             </div>
             {% if selected_specialty %}
-            <div class="flex items-center space-x-3">
+            <div class="flex items-center space-x-4">
                 <span class="text-sm text-gray-600">
-                    <i class="fas fa-info-circle mr-1"></i>
-                    Filtré : <strong>{{ selected_specialty_display }}</strong>
+                    <i class="fas fa-info-circle mr-2"></i>
+                    Affichage filtré pour : <strong>{{ selected_specialty_display }}</strong>
                 </span>
                 <a href="{% url 'med_assistant:statistics' %}" 
                    class="text-sm text-gray-500 hover:text-gray-700 transition-colors">
-                    <i class="fas fa-times mr-1"></i>Réinitialiser
+                    <i class="fas fa-times mr-2"></i>Réinitialiser
                 </a>
             </div>
             {% endif %}
         </form>
     </div>
 
-    <!-- Métriques principales - COMPACT -->
-    <div class="grid grid-cols-3 gap-4">
-        <div class="bg-blue-600 rounded-lg p-4 text-white fade-in">
+    <!-- Métriques principales -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="stat-card rounded-lg p-6 text-white fade-in">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-white/80 text-xs font-medium uppercase">Médicaments</p>
-                    <p class="text-2xl font-bold">{{ total_medicaments|default:0 }}</p>
+                    <p class="text-white/80 text-sm font-medium">Médicaments identifiés</p>
+                    <p class="text-3xl font-bold mt-1">{{ total_medicaments|default:0 }}</p>
                 </div>
-                <i class="fas fa-pills text-white/60 text-lg"></i>
+                <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-pills text-white"></i>
+                </div>
             </div>
         </div>
 
-        <div class="bg-red-600 rounded-lg p-4 text-white fade-in">
+        <div class="stat-card rounded-lg p-6 text-white fade-in">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-white/80 text-xs font-medium uppercase">Pathologies</p>
-                    <p class="text-2xl font-bold">{{ total_pathologies|default:0 }}</p>
+                    <p class="text-white/80 text-sm font-medium">Pathologies recensées</p>
+                    <p class="text-3xl font-bold mt-1">{{ total_pathologies|default:0 }}</p>
                 </div>
-                <i class="fas fa-heartbeat text-white/60 text-lg"></i>
+                <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-heartbeat text-white"></i>
+                </div>
             </div>
         </div>
 
-        <div class="bg-green-600 rounded-lg p-4 text-white fade-in">
+        <div class="stat-card rounded-lg p-6 text-white fade-in">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-white/80 text-xs font-medium uppercase">Gestes</p>
-                    <p class="text-2xl font-bold">{{ total_procedures|default:0 }}</p>
+                    <p class="text-white/80 text-sm font-medium">Gestes médicaux</p>
+                    <p class="text-3xl font-bold mt-1">{{ total_procedures|default:0 }}</p>
                 </div>
-                <i class="fas fa-cogs text-white/60 text-lg"></i>
+                <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-cogs text-white"></i>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Grille principale - TRÈS COMPACT -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <!-- Médicaments -->
-        <div class="medical-card rounded-lg p-4 fade-in">
-            <h3 class="text-lg font-semibold text-blue-700 mb-3 flex items-center">
-                <i class="fas fa-pills mr-2"></i>
-                Médicaments
-                {% if selected_specialty %}<span class="text-xs font-normal text-gray-500 ml-1">({{ selected_specialty_display }})</span>{% endif %}
-            </h3>
-            {% if top_medicaments %}
-            <div class="space-y-2 max-h-80 overflow-y-auto">
+    <!-- Analyses détaillées -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Médicaments les plus prescrits -->
+        {% if top_medicaments %}
+        <div class="medical-card rounded-lg p-6 fade-in">
+            <h2 class="text-xl font-semibold text-primary-dark mb-6 flex items-center">
+                <i class="fas fa-pills mr-3 text-primary-steel"></i>
+                Médicaments les plus prescrits
+                {% if selected_specialty %}
+                <span class="ml-2 text-sm font-normal text-gray-500">({{ selected_specialty_display }})</span>
+                {% endif %}
+            </h2>
+            <div class="space-y-3 max-h-96 overflow-y-auto">
                 {% for medicament, count in top_medicaments.items %}
-                <div class="flex items-center justify-between p-2 bg-blue-50 rounded border border-blue-100 hover:bg-blue-100 transition-colors">
-                    <span class="text-sm font-medium text-blue-800 flex-1 truncate">{{ medicament }}</span>
-                    <span class="text-sm font-bold text-blue-600 ml-2">{{ count }}</span>
+                <div class="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200 hover:bg-blue-100 transition-colors">
+                    <span class="font-medium text-blue-800">{{ medicament }}</span>
+                    <span class="text-lg font-bold text-blue-600">{{ count }}</span>
                 </div>
                 {% endfor %}
             </div>
-            {% else %}
-            <div class="text-center py-6 text-gray-500">
-                <i class="fas fa-pills text-2xl mb-2 text-blue-300"></i>
-                <p class="text-sm">Aucun médicament identifié</p>
-            </div>
-            {% endif %}
         </div>
+        {% endif %}
 
-        <!-- Pathologies -->
-        <div class="medical-card rounded-lg p-4 fade-in">
-            <h3 class="text-lg font-semibold text-red-700 mb-3 flex items-center">
-                <i class="fas fa-heartbeat mr-2"></i>
-                Pathologies
-                {% if selected_specialty %}<span class="text-xs font-normal text-gray-500 ml-1">({{ selected_specialty_display }})</span>{% endif %}
-            </h3>
-            {% if top_pathologies %}
-            <div class="space-y-2 max-h-80 overflow-y-auto">
+        <!-- Pathologies les plus fréquentes -->
+        {% if top_pathologies %}
+        <div class="medical-card rounded-lg p-6 fade-in">
+            <h2 class="text-xl font-semibold text-primary-dark mb-6 flex items-center">
+                <i class="fas fa-heartbeat mr-3 text-primary-steel"></i>
+                Pathologies les plus fréquentes
+                {% if selected_specialty %}
+                <span class="ml-2 text-sm font-normal text-gray-500">({{ selected_specialty_display }})</span>
+                {% endif %}
+            </h2>
+            <div class="space-y-3 max-h-96 overflow-y-auto">
                 {% for pathologie, count in top_pathologies.items %}
-                <div class="flex items-center justify-between p-2 bg-red-50 rounded border border-red-100 hover:bg-red-100 transition-colors">
-                    <span class="text-sm font-medium text-red-800 flex-1 truncate">{{ pathologie }}</span>
-                    <span class="text-sm font-bold text-red-600 ml-2">{{ count }}</span>
+                <div class="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-200 hover:bg-red-100 transition-colors">
+                    <span class="font-medium text-red-800">{{ pathologie }}</span>
+                    <span class="text-lg font-bold text-red-600">{{ count }}</span>
                 </div>
                 {% endfor %}
             </div>
-            {% else %}
-            <div class="text-center py-6 text-gray-500">
-                <i class="fas fa-heartbeat text-2xl mb-2 text-red-300"></i>
-                <p class="text-sm">Aucune pathologie identifiée</p>
-            </div>
-            {% endif %}
         </div>
+        {% endif %}
 
-        <!-- Gestes médicaux -->
-        <div class="medical-card rounded-lg p-4 fade-in">
-            <h3 class="text-lg font-semibold text-green-700 mb-3 flex items-center">
-                <i class="fas fa-cogs mr-2"></i>
-                Gestes médicaux
-                {% if selected_specialty %}<span class="text-xs font-normal text-gray-500 ml-1">({{ selected_specialty_display }})</span>{% endif %}
-            </h3>
-            {% if top_procedures %}
-            <div class="space-y-2 max-h-80 overflow-y-auto">
+        <!-- Gestes et procédures médicales -->
+        {% if top_procedures %}
+        <div class="medical-card rounded-lg p-6 fade-in">
+            <h2 class="text-xl font-semibold text-primary-dark mb-6 flex items-center">
+                <i class="fas fa-cogs mr-3 text-primary-steel"></i>
+                Gestes et procédures
+                {% if selected_specialty %}
+                <span class="ml-2 text-sm font-normal text-gray-500">({{ selected_specialty_display }})</span>
+                {% endif %}
+            </h2>
+            <div class="space-y-3 max-h-96 overflow-y-auto">
                 {% for procedure, count in top_procedures.items %}
-                <div class="flex items-center justify-between p-2 bg-green-50 rounded border border-green-100 hover:bg-green-100 transition-colors">
-                    <span class="text-sm font-medium text-green-800 flex-1 truncate">{{ procedure }}</span>
-                    <span class="text-sm font-bold text-green-600 ml-2">{{ count }}</span>
+                <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200 hover:bg-green-100 transition-colors">
+                    <span class="font-medium text-green-800">{{ procedure }}</span>
+                    <span class="text-lg font-bold text-green-600">{{ count }}</span>
                 </div>
                 {% endfor %}
             </div>
-            {% else %}
-            <div class="text-center py-6 text-gray-500">
-                <i class="fas fa-cogs text-2xl mb-2 text-green-300"></i>
-                <p class="text-sm">Aucun geste identifié</p>
-            </div>
-            {% endif %}
         </div>
+        {% endif %}
     </div>
 
-    <!-- Répartition par spécialité (si pas de filtre) - COMPACT -->
+    <!-- Répartition par spécialité (seulement si pas de filtre) -->
     {% if not selected_specialty and specialites_stats %}
-    <div class="medical-card rounded-lg p-4 fade-in">
-        <h3 class="text-lg font-semibold text-primary-dark mb-3 flex items-center">
-            <i class="fas fa-stethoscope mr-2 text-primary-steel"></i>
-            Répartition par spécialité
-        </h3>
-        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+    <div class="medical-card rounded-lg p-6 fade-in">
+        <h2 class="text-xl font-semibold text-primary-dark mb-6 flex items-center">
+            <i class="fas fa-stethoscope mr-3 text-primary-steel"></i>
+            Répartition par spécialité médicale
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {% for specialite, count in specialites_stats.items %}
-            <div class="bg-purple-50 rounded-lg p-3 border border-purple-200 hover:bg-purple-100 transition-colors text-center">
-                <h4 class="font-semibold text-purple-800 text-xs mb-1 truncate">{{ specialite }}</h4>
-                <span class="text-lg font-bold text-purple-600">{{ count }}</span>
-                <p class="text-xs text-purple-600">obs.</p>
+            <div class="bg-purple-50 rounded-lg p-4 border border-purple-200 hover:bg-purple-100 transition-colors">
+                <div class="flex items-center justify-between">
+                    <span class="font-medium text-purple-800 text-sm">{{ specialite }}</span>
+                    <span class="text-lg font-bold text-purple-600">{{ count }}</span>
+                </div>
+                <div class="w-full bg-purple-200 rounded-full h-2 mt-2">
+                    <div class="progress-bar h-2 rounded-full bg-purple-500" data-width="{{ count|add:20 }}%"></div>
+                </div>
             </div>
             {% endfor %}
         </div>
     </div>
     {% endif %}
+
+    <!-- États vides -->
+    {% if not top_medicaments and not top_pathologies and not top_procedures %}
+    <div class="medical-card rounded-lg p-12 text-center fade-in">
+        <div class="w-24 h-24 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-6">
+            <i class="fas fa-chart-bar text-3xl text-gray-400"></i>
+        </div>
+        <h3 class="text-xl font-semibold text-primary-dark mb-4">
+            {% if selected_specialty %}
+                Aucune donnée pour {{ selected_specialty_display }}
+            {% else %}
+                Aucune donnée médicale disponible
+            {% endif %}
+        </h3>
+        <p class="text-gray-600 mb-8">
+            {% if selected_specialty %}
+                Aucune entité médicale trouvée pour cette spécialité. Essayez un autre filtre ou créez des observations.
+            {% else %}
+                Commencez par créer des observations médicales pour voir les analyses statistiques.
+            {% endif %}
+        </p>
+        {% if selected_specialty %}
+        <a href="{% url 'med_assistant:statistics' %}" 
+           class="btn-secondary px-8 py-3 rounded-lg font-medium inline-flex items-center space-x-2">
+            <i class="fas fa-times"></i>
+            <span>Voir toutes les spécialités</span>
+        </a>
+        {% else %}
+        <a href="{% url 'med_assistant:observation_create' %}" 
+           class="btn-primary px-8 py-3 rounded-lg font-medium inline-flex items-center space-x-2">
+            <i class="fas fa-plus"></i>
+            <span>Créer une observation</span>
+        </a>
+        {% endif %}
+    </div>
+    {% endif %}
 </div>
 
 <script>
-// Animation des éléments au chargement
+// Animation des barres de progression au chargement
 document.addEventListener('DOMContentLoaded', function() {
-    // Animation d'apparition progressive
-    const elements = document.querySelectorAll('.fade-in');
-    elements.forEach((el, index) => {
-        el.style.opacity = '0';
-        el.style.transform = 'translateY(20px)';
+    const progressBars = document.querySelectorAll('[data-width]');
+    progressBars.forEach(bar => {
+        const width = bar.getAttribute('data-width');
+        bar.style.width = '0%';
         setTimeout(() => {
-            el.style.transition = 'all 0.5s ease-out';
-            el.style.opacity = '1';
-            el.style.transform = 'translateY(0)';
-        }, index * 100);
+            bar.style.transition = 'width 1.5s ease-out';
+            bar.style.width = width;
+        }, 500);
     });
 });
 </script>
