@@ -6,8 +6,8 @@
 
 {% block content %}
 <div class="space-y-6">
-    <!-- Métriques principales -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <!-- Métriques principales - SIMPLIFIÉES -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <!-- Total Patients -->
         <div class="stat-card rounded-lg p-6 text-white fade-in">
             <div class="flex items-center justify-between">
@@ -43,65 +43,57 @@
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- Médicaments identifiés -->
-        <div class="medical-card rounded-lg p-6 fade-in">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-gray-600 text-sm font-medium uppercase tracking-wide">Médicaments</p>
-                    <p class="text-3xl font-bold mt-2 text-primary-dark">
-                        {{ top_medicaments|length|default:0 }}
-                    </p>
-                    <p class="text-gray-500 text-sm mt-1 flex items-center">
-                        <i class="fas fa-pills mr-1"></i>
-                        Types identifiés
-                    </p>
-                </div>
-                <div class="w-12 h-12 bg-primary-light/20 rounded-lg flex items-center justify-center">
-                    <i class="fas fa-pills text-xl text-primary-steel"></i>
+    <!-- Graphique consultations semaine -->
+    {% if weekly_consultations %}
+    <div class="medical-card rounded-lg p-6 fade-in">
+        <h2 class="text-xl font-semibold text-primary-dark mb-6 flex items-center">
+            <i class="fas fa-chart-bar mr-3 text-primary-steel"></i>
+            Consultations de la semaine
+        </h2>
+        <div class="grid grid-cols-7 gap-4">
+            {% for day, count in weekly_consultations.items %}
+            <div class="text-center">
+                <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                    <h3 class="font-semibold text-primary-dark text-sm mb-2">{{ day }}</h3>
+                    <div class="h-24 flex items-end justify-center mb-2">
+                        <div class="w-8 bg-primary-steel rounded-t transition-all duration-1000" 
+                             style="height: {% if count > 0 %}{{ count|add:20 }}%{% else %}5%{% endif %}; min-height: 8px;"></div>
+                    </div>
+                    <p class="text-lg font-bold text-primary-steel">{{ count }}</p>
                 </div>
             </div>
-        </div>
-
-        <!-- Pathologies -->
-        <div class="stat-card rounded-lg p-6 text-white fade-in">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-white/80 text-sm font-medium uppercase tracking-wide">Pathologies</p>
-                    <p class="text-3xl font-bold mt-2">{{ top_pathologies|length|default:0 }}</p>
-                    <p class="text-white/90 text-sm mt-1 flex items-center">
-                        <i class="fas fa-heartbeat mr-1"></i>
-                        Types recensés
-                    </p>
-                </div>
-                <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
-                    <i class="fas fa-heartbeat text-xl"></i>
-                </div>
-            </div>
+            {% endfor %}
         </div>
     </div>
+    {% endif %}
 
     <!-- Répartition par âge et spécialités -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <!-- Répartition par âge -->
-        {% if age_groups %}
+        <!-- Répartition par âge AVEC POURCENTAGES -->
+        {% if age_groups_with_percent %}
         <div class="medical-card rounded-lg p-6 fade-in">
-            <div class="flex items-center justify-between mb-6">
-                <h2 class="text-xl font-semibold text-primary-dark">Répartition par âge</h2>
-                <i class="fas fa-chart-pie text-xl text-primary-steel"></i>
-            </div>
+            <h2 class="text-xl font-semibold text-primary-dark mb-6 flex items-center">
+                <i class="fas fa-chart-pie mr-3 text-primary-steel"></i>
+                Répartition par âge
+            </h2>
             <div class="space-y-4">
-                {% for age_group, count in age_groups.items %}
-                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                    <div class="flex items-center space-x-3">
-                        <div class="w-4 h-4 rounded-full {% if 'Enfants' in age_group %}bg-blue-500{% elif 'Adultes' in age_group %}bg-green-500{% else %}bg-orange-500{% endif %}"></div>
-                        <span class="font-medium text-gray-700">{{ age_group }}</span>
-                    </div>
-                    <div class="flex items-center space-x-4">
-                        <div class="w-24 bg-gray-200 rounded-full h-2">
-                            <div class="progress-bar h-2 rounded-full" data-width="{% if total_patients > 0 %}{{ count|floatformat:0 }}%{% else %}0%{% endif %}"></div>
+                {% for age_group, data in age_groups_with_percent.items %}
+                <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-4 h-4 rounded-full {% if 'Enfants' in age_group %}bg-blue-500{% elif 'Adultes' in age_group %}bg-green-500{% else %}bg-orange-500{% endif %}"></div>
+                            <span class="font-medium text-gray-700">{{ age_group }}</span>
                         </div>
-                        <span class="text-lg font-bold text-primary-dark min-w-[2rem]">{{ count }}</span>
+                        <div class="text-right">
+                            <span class="text-2xl font-bold text-primary-dark">{{ data.count }}</span>
+                            <span class="text-sm text-gray-600 ml-2">({{ data.percentage }}%)</span>
+                        </div>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-3">
+                        <div class="progress-bar h-3 rounded-full transition-all duration-1000" 
+                             style="width: {{ data.percentage }}%"></div>
                     </div>
                 </div>
                 {% endfor %}
@@ -112,22 +104,23 @@
         <!-- Spécialités médicales -->
         {% if specialites_stats %}
         <div class="medical-card rounded-lg p-6 fade-in">
-            <div class="flex items-center justify-between mb-6">
-                <h2 class="text-xl font-semibold text-primary-dark">Spécialités médicales</h2>
-                <i class="fas fa-stethoscope text-xl text-primary-steel"></i>
-            </div>
+            <h2 class="text-xl font-semibold text-primary-dark mb-6 flex items-center">
+                <i class="fas fa-stethoscope mr-3 text-primary-steel"></i>
+                Spécialités médicales
+            </h2>
             <div class="space-y-4">
                 {% for specialite, count in specialites_stats.items %}
-                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                    <div class="flex items-center space-x-3">
-                        <div class="w-4 h-4 rounded-full {% if 'Cardio' in specialite %}bg-red-500{% elif 'Psychique' in specialite %}bg-purple-500{% elif 'Diabète' in specialite or 'Métabolique' in specialite %}bg-yellow-500{% else %}bg-gray-500{% endif %}"></div>
-                        <span class="font-medium text-gray-700">{{ specialite }}</span>
-                    </div>
-                    <div class="flex items-center space-x-4">
-                        <div class="w-24 bg-gray-200 rounded-full h-2">
-                            <div class="progress-bar h-2 rounded-full" data-width="{{ count|add:10 }}%"></div>
+                <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-4 h-4 rounded-full {% if 'Cardio' in specialite %}bg-red-500{% elif 'Psychique' in specialite %}bg-purple-500{% elif 'Diabète' in specialite or 'Métabolique' in specialite %}bg-yellow-500{% else %}bg-gray-500{% endif %}"></div>
+                            <span class="font-medium text-gray-700">{{ specialite }}</span>
                         </div>
-                        <span class="text-lg font-bold text-primary-dark min-w-[2rem]">{{ count }}</span>
+                        <span class="text-2xl font-bold text-primary-dark">{{ count }}</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-3">
+                        <div class="progress-bar h-3 rounded-full transition-all duration-1000" 
+                             style="width: {{ count|add:20 }}%"></div>
                     </div>
                 </div>
                 {% endfor %}
@@ -135,68 +128,6 @@
         </div>
         {% endif %}
     </div>
-
-    <!-- Top médicaments et pathologies -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <!-- Top médicaments -->
-        {% if top_medicaments %}
-        <div class="medical-card rounded-lg p-6 fade-in">
-            <div class="flex items-center justify-between mb-6">
-                <h2 class="text-xl font-semibold text-primary-dark">Médicaments fréquents</h2>
-                <i class="fas fa-pills text-xl text-primary-steel"></i>
-            </div>
-            <div class="space-y-3">
-                {% for medicament, count in top_medicaments.items %}
-                <div class="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
-                    <span class="font-medium text-blue-800">{{ medicament }}</span>
-                    <span class="text-lg font-bold text-blue-600">{{ count }}</span>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-        {% endif %}
-
-        <!-- Top pathologies -->
-        {% if top_pathologies %}
-        <div class="medical-card rounded-lg p-6 fade-in">
-            <div class="flex items-center justify-between mb-6">
-                <h2 class="text-xl font-semibold text-primary-dark">Pathologies fréquentes</h2>
-                <i class="fas fa-heartbeat text-xl text-primary-steel"></i>
-            </div>
-            <div class="space-y-3">
-                {% for pathologie, count in top_pathologies.items %}
-                <div class="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-200">
-                    <span class="font-medium text-red-800">{{ pathologie }}</span>
-                    <span class="text-lg font-bold text-red-600">{{ count }}</span>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-        {% endif %}
-    </div>
-
-    <!-- Évolution mensuelle -->
-    {% if monthly_consultations %}
-    <div class="medical-card rounded-lg p-6 fade-in">
-        <div class="flex items-center justify-between mb-6">
-            <h2 class="text-xl font-semibold text-primary-dark">Évolution des consultations</h2>
-            <i class="fas fa-chart-line text-xl text-primary-steel"></i>
-        </div>
-        <div class="space-y-4">
-            {% for stat in monthly_consultations %}
-            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                <span class="font-medium text-gray-700">{{ stat.month }}</span>
-                <div class="flex items-center space-x-4">
-                    <div class="w-32 bg-gray-200 rounded-full h-2">
-                        <div class="progress-bar h-2 rounded-full" data-width="{% if stat.count > 0 %}{{ stat.count|add:20 }}%{% else %}5%{% endif %}"></div>
-                    </div>
-                    <span class="text-lg font-bold text-primary-dark min-w-[2rem]">{{ stat.count }}</span>
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-    </div>
-    {% endif %}
 
     <!-- Observations récentes -->
     {% if observations_recentes %}
@@ -305,4 +236,18 @@
     </div>
     {% endif %}
 </div>
+
+<script>
+// Animation des barres de progression au chargement
+document.addEventListener('DOMContentLoaded', function() {
+    const progressBars = document.querySelectorAll('.progress-bar');
+    progressBars.forEach(bar => {
+        const width = bar.style.width;
+        bar.style.width = '0%';
+        setTimeout(() => {
+            bar.style.width = width;
+        }, 500);
+    });
+});
+</script>
 {% endblock %}

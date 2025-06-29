@@ -55,13 +55,26 @@ def custom_logout(request):
 
 @login_required
 def dashboard(request):
-    """Dashboard hospitalier avec métriques médicales"""
+    """Dashboard hospitalier simplifié avec métriques essentielles"""
     # Statistiques générales
     total_patients = Patient.objects.count()
     total_observations = Observation.objects.count()
     
-    # Patients par tranche d'âge
-    today = date.today()
+    # Consultations par jour de la semaine (7 derniers jours)
+    today = timezone.now().date()
+    weekly_consultations = {}
+    weekday_names = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche']
+    
+    for i in range(7):
+        day = today - timedelta(days=6-i)  # Commencer par lundi d'il y a 6 jours
+        day_name = weekday_names[day.weekday()]
+        count = Observation.objects.filter(
+            date__date=day
+        ).count()
+        weekly_consultations[day_name] = count
+    
+    # Patients par tranche d'âge avec pourcentages
+    today_date = date.today()
     age_groups = {
         'Enfants (0-17 ans)': 0,
         'Adultes (18-64 ans)': 0,
@@ -69,7 +82,7 @@ def dashboard(request):
     }
     
     for patient in Patient.objects.all():
-        age = today.year - patient.date_naissance.year - ((today.month, today.day) < (patient.date_naissance.month, patient.date_naissance.day))
+        age = today_date.year - patient.date_naissance.year - ((today_date.month, today_date.day) < (patient.date_naissance.month, patient.date_naissance.day))
         if age < 18:
             age_groups['Enfants (0-17 ans)'] += 1
         elif age < 65:
@@ -77,10 +90,14 @@ def dashboard(request):
         else:
             age_groups['Seniors (65+ ans)'] += 1
     
-    # Activité des 7 derniers jours
-    seven_days_ago = timezone.now() - timedelta(days=7)
-    observations_semaine = Observation.objects.filter(date__gte=seven_days_ago).count()
-    nouveaux_patients_semaine = Patient.objects.filter(created_at__gte=seven_days_ago).count()
+    # Calculer les pourcentages
+    age_groups_with_percent = {}
+    for group, count in age_groups.items():
+        percentage = (count / total_patients * 100) if total_patients > 0 else 0
+        age_groups_with_percent[group] = {
+            'count': count,
+            'percentage': round(percentage, 1)
+        }
     
     # Répartition par spécialité médicale
     specialites_stats = {}
@@ -89,75 +106,23 @@ def dashboard(request):
         specialite_display = dict(Observation.THEME_CHOICES).get(item['theme_classe'], item['theme_classe'])
         specialites_stats[specialite_display] = item['count']
     
-    # Top médicaments mentionnés (entités)
-    medicaments_stats = defaultdict(int)
-    observations_with_entities = Observation.objects.exclude(entites={})
-    
-    for obs in observations_with_entities:
-        if obs.entites and 'Médicaments' in obs.entites:
-            medicaments = obs.entites['Médicaments']
-            if isinstance(medicaments, list):
-                for med in medicaments:
-                    medicaments_stats[med] += 1
-    
-    # Top 10 médicaments
-    top_medicaments = dict(sorted(medicaments_stats.items(), key=lambda x: x[1], reverse=True)[:10])
-    
-    # Pathologies fréquentes (entités maladies)
-    pathologies_stats = defaultdict(int)
-    for obs in observations_with_entities:
-        if obs.entites and 'Maladies et Symptômes' in obs.entites:
-            pathologies = obs.entites['Maladies et Symptômes']
-            if isinstance(pathologies, list):
-                for path in pathologies:
-                    pathologies_stats[path] += 1
-    
-    # Top 10 pathologies
-    top_pathologies = dict(sorted(pathologies_stats.items(), key=lambda x: x[1], reverse=True)[:10])
-    
-    # Évolution mensuelle des consultations (6 derniers mois)
-    monthly_consultations = []
-    for i in range(6):
-        month_start = timezone.now().replace(day=1) - timedelta(days=30*i)
-        month_end = month_start.replace(day=1) + timedelta(days=32)
-        month_end = month_end.replace(day=1) - timedelta(days=1)
-        
-        count = Observation.objects.filter(
-            date__gte=month_start,
-            date__lte=month_end
-        ).count()
-        
-        monthly_consultations.append({
-            'month': calendar.month_name[month_start.month],
-            'count': count
-        })
-    
-    monthly_consultations.reverse()
-    
     # Observations récentes
     observations_recentes = Observation.objects.select_related('patient', 'created_by')[:5]
     
-    # Statut de la pipeline (pour le traitement en arrière-plan)
-    raw_status = nlp_pipeline.get_status()
-    nlp_status = NLPStatus(
-        classification=raw_status.get("classification_available"),
-        drbert=raw_status.get("drbert_available"),
-        t5=raw_status.get("t5_available"),
-        whisper=raw_status.get("whisper_available"),
-    )
+    # Activité des 7 derniers jours
+    seven_days_ago = timezone.now() - timedelta(days=7)
+    observations_semaine = Observation.objects.filter(date__gte=seven_days_ago).count()
+    nouveaux_patients_semaine = Patient.objects.filter(created_at__gte=seven_days_ago).count()
     
     context = {
         'total_patients': total_patients,
         'total_observations': total_observations,
-        'age_groups': age_groups,
+        'weekly_consultations': weekly_consultations,
+        'age_groups_with_percent': age_groups_with_percent,
         'observations_semaine': observations_semaine,
         'nouveaux_patients_semaine': nouveaux_patients_semaine,
         'specialites_stats': specialites_stats,
-        'top_medicaments': top_medicaments,
-        'top_pathologies': top_pathologies,
-        'monthly_consultations': monthly_consultations,
         'observations_recentes': observations_recentes,
-        'nlp_status': nlp_status,  # Pour le traitement en arrière-plan
     }
     
     return render(request, 'med_assistant/dashboard.html', context)
