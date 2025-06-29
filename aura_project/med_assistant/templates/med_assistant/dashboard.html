@@ -50,7 +50,7 @@
                     <p class="text-3xl font-bold mt-2">{{ total_patients }}</p>
                     {% if nouveaux_patients_semaine %}
                     <p class="text-white/90 text-sm mt-1 flex items-center">
-                        <i class="fas fa-arrow-up mr-1"></i>
+                        <i class="fas fa-arrow-up mr-2"></i>
                         +{{ nouveaux_patients_semaine }} cette semaine
                     </p>
                     {% endif %}
@@ -70,7 +70,7 @@
                     </p>
                     <p class="text-3xl font-bold mt-2">{{ total_observations }}</p>
                     <p class="text-white/90 text-sm mt-1 flex items-center">
-                        <i class="fas fa-calendar-week mr-1"></i>
+                        <i class="fas fa-calendar-week mr-2"></i>
                         {{ observations_semaine }} cette semaine
                     </p>
                 </div>
@@ -120,7 +120,7 @@
         <div class="bg-white rounded-lg p-4 shadow-sm border border-slate-200 fade-in">
             <div class="flex justify-between items-center pb-3 mb-3 border-b border-gray-200">
                 <div class="flex items-center">
-                    <div class="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center me-2">
+                    <div class="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center mr-3">
                         <i class="fas fa-chart-bar text-blue-600 text-sm"></i>
                     </div>
                     <div>
@@ -143,11 +143,11 @@
 
             <div class="grid grid-cols-2 mb-3 text-xs">
                 <div class="flex items-center">
-                    <span class="text-gray-500 me-1">Total:</span>
+                    <span class="text-gray-500 mr-1">Total :</span>
                     <span class="text-gray-900 font-semibold">{{ total_observations }}</span>
                 </div>
                 <div class="flex items-center justify-end">
-                    <span class="text-gray-500 me-1">Moyenne/jour:</span>
+                    <span class="text-gray-500 mr-1">Moyenne/jour :</span>
                     <span class="text-gray-900 font-semibold">{{ observations_semaine|div:7|floatformat:1 }}</span>
                 </div>
             </div>
@@ -167,7 +167,7 @@
         <div class="bg-white rounded-lg p-4 shadow-sm border border-slate-200 fade-in">
             <div class="flex justify-between items-center pb-3 mb-3 border-b border-gray-200">
                 <div class="flex items-center">
-                    <div class="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center me-2">
+                    <div class="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center mr-3">
                         <i class="fas fa-hospital text-green-600 text-sm"></i>
                     </div>
                     <div>
@@ -191,7 +191,7 @@
             {% if service_patients %}
             <div class="grid grid-cols-2 mb-3 text-xs">
                 <div class="flex items-center">
-                    <span class="text-gray-500 me-1">Service principal:</span>
+                    <span class="text-gray-500 mr-1">Service principal :</span>
                     <span class="text-gray-900 font-semibold">
                         {% for service, count in service_patients.items %}
                             {% if forloop.first %}{{ service|slice:":10" }}{% if service|length > 10 %}...{% endif %}{% endif %}
@@ -199,7 +199,7 @@
                     </span>
                 </div>
                 <div class="flex items-center justify-end">
-                    <span class="text-gray-500 me-1">Max patients:</span>
+                    <span class="text-gray-500 mr-1">Max patients :</span>
                     <span class="text-gray-900 font-semibold">{{ max_patients_service }}</span>
                 </div>
             </div>
@@ -276,17 +276,17 @@
                                     
                                     {% if not observation.traitement_termine %}
                                     <span class="flex items-center text-yellow-600 text-sm">
-                                        <i class="fas fa-clock mr-1"></i>
+                                        <i class="fas fa-clock mr-2"></i>
                                         <span class="hidden sm:inline">En cours</span>
                                     </span>
                                     {% elif observation.traitement_erreur %}
                                     <span class="flex items-center text-red-600 text-sm">
-                                        <i class="fas fa-exclamation-triangle mr-1"></i>
+                                        <i class="fas fa-exclamation-triangle mr-2"></i>
                                         <span class="hidden sm:inline">Erreur</span>
                                     </span>
                                     {% else %}
                                     <span class="flex items-center text-green-600 text-sm">
-                                        <i class="fas fa-check-circle mr-1"></i>
+                                        <i class="fas fa-check-circle mr-2"></i>
                                         <span class="hidden sm:inline">Terminé</span>
                                     </span>
                                     {% endif %}
