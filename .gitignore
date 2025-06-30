@@ -64,3 +64,4 @@ theme/static_src/postcss.config.js
 **/migrations/__pycache__/
 migration/
 theme/
+.env
