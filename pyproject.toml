@@ -28,6 +28,10 @@ torchaudio = "^2.0.0"
 transformers = "^4.35.0"
 librosa = "^0.10.0"
 soundfile = "^0.12.0"
+faster-whisper = "^1.1.1"
+sentencepiece = "^0.2.0"
+accelerate = "^1.8.1"
+flake8 = "^7.3.0"
 
 [tool.poetry.group.dev.dependencies]
 black = "^24.3.0"
